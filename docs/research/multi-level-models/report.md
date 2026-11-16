@@ -15,7 +15,7 @@
 
 The design in sections 4 to 7 is an inference from the sources. Section 8 reports what was then measured on one library, with an LLM standing in for the human reader; no person has been tested.
 
-**Notes:** [sources, with evidence tags](notes/sources.md). **Builds on:** [abstraction levels](../abstraction-levels/report.md) (how levels are related and checked), [abstraction function](../abstraction-function/report.md) (how upper state is computed and guarded), [trace visualization](../trace-visualization/report.md) (how a trace is drawn).
+**Notes:** [sources, with evidence tags](notes/sources.md). **Walkthrough:** [how one rq run becomes the ladder, step by step, with diagrams](ladder-walkthrough.md). **Builds on:** [abstraction levels](../abstraction-levels/report.md) (how levels are related and checked), [abstraction function](../abstraction-function/report.md) (how upper state is computed and guarded), [trace visualization](../trace-visualization/report.md) (how a trace is drawn).
 
 ---
 
