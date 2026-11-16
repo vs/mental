@@ -7,11 +7,13 @@
 1. **A level exists for a reader with a question.** Research on how people describe actions agrees on one structure: going up a level answers *why*, going down answers *how*. A level that cannot say whose question it answers, and what the answer to "why" and "how" is at its edges, should not exist. Each level therefore carries a **charter**: its readers, its question, what one step is, and what it hides.
 2. **A step is one goal reached.** People cut activity into events where the goal, the actor, the thing worked on or the causal chain changes. Those points can be found mechanically in Mental's lower model: a message handed over, a wait, a commit, a change in what the level above can observe. So the step map, the record of which lower steps make up each upper step, is computed by **closing rules**, one per kind of level. The LLM names the steps; it does not cut them.
 3. **Two axes, not one ladder.** "Why and how" (purpose) and "whole and part" (containment) are different directions. The specification's ladder mixes them: *system*, *services* and *components* describe the same kind of step with different boxes opened. Our own seven-level trial shows the cost: only one of six adjacent pairs of levels gave a real change of grain. The proposal keeps levels for purpose and leaves containment to space zoom.
-4. **Levels are admitted by tests, not listed in advance.** A fixed skeleton of seven kinds of level (outcome, stage, goal, exchange, activation, move, effect) is instantiated per project. A candidate level is kept when it changes vocabulary, groups two to seven lower steps into one on the median, has a finding or a decision that can only be named there, and reads as a story in its own words.
+4. **Levels are admitted by tests, not listed in advance.** A fixed skeleton of seven kinds of level (outcome, stage, goal, exchange, activation, move, effect) is instantiated per project. A candidate level is kept when it changes vocabulary, does not merely restate its neighbour, has a finding or a decision that can only be named there, and reads as a story in its own words.
 5. **A trace is shown as a cut, not as a level.** People stay at the highest level that works and go down where something breaks. A trace view should do the same: high everywhere, opened where the anomaly is, with the steps on the causal chain kept and bookkeeping folded.
 6. **The LLM gets eight small tasks with typed answers**: name the subjects, the actors, the steps and their goals, write the charters, group lifecycle states into stages, propose intent invariants, and narrate a given cut. Every answer is checked. It is never asked to choose a boundary, drop a step or invent a level's structure.
 
-Nothing in this report was built or measured, except where it reuses the recorded rq witness and the counts of the seven-level trial. The design is an inference from the sources, and section 8 gives the experiments that would test it against two competing designs.
+7. **The experiment supports the core and corrects one rule.** We ran the closing rules on 2,097 explored runs of rq, with the specification's fixed ladder and a free-form LLM ladder beside them (section 8). The rules cut every run without an author. Every one of the 554 anomalous runs shows its symptom at the outcome or goal level, and its cause at the move or activation level in 490 of them, in a cut of at most 6 lines. A stand-in reader answered all manager questions from 2 to 3 lines, all product questions from 3 to 4 lines and all developer questions from 9 to 15 lines; under the fixed ladder the developer needed 24 to 43 lines. A free-form LLM ladder disagreed with itself on where steps end and never reused a step name. The rule that failed is the grain band: on rq most pairs of levels have about two lower steps per upper step or fewer, in both designs. It is replaced by a weaker merge test.
+
+The design in sections 4 to 7 is an inference from the sources. Section 8 reports what was then measured on one library, with an LLM standing in for the human reader; no person has been tested.
 
 **Notes:** [sources, with evidence tags](notes/sources.md). **Builds on:** [abstraction levels](../abstraction-levels/report.md) (how levels are related and checked), [abstraction function](../abstraction-function/report.md) (how upper state is computed and guarded), [trace visualization](../trace-visualization/report.md) (how a trace is drawn).
 
@@ -203,6 +205,8 @@ A3 answers an open question of the specification: "when an extra level should be
 
 The band "two to seven" is a starting value taken from working-memory figures of three to five chunks and the older seven. It is a parameter to tune by experiment, not a law.
 
+**After the experiment (section 8.2): A3 as written does not hold.** On rq the mean number of lower steps per upper step is 2.0, 2.2, 1.5 and 1.6 going up design B, and three of the fixed ladder's four figures are below two as well. A subject's life simply has few goals, and a goal few activations. What the data does separate cleanly is a level that *restates* its neighbour: 84% of activations contain exactly one status change, so a stage level would repeat the activation level, and an exchange is the goal again in every case. The revised test: **merge two levels when at least about four in five upper steps have exactly one lower step; look for a level in between when the typical upper step has more than seven.** Below that, a small grain is not a reason to drop a level; test A4 decides.
+
 ### 5.5 The level charter
 
 ```json
@@ -276,7 +280,18 @@ What the example shows:
 - **The cause has a level.** "The retry committed less than the first attempt prepared" can be said at the move level and nowhere above it. Below it, it is three missing commands that must be noticed by comparing two long lines. This is F-Z4 again, and it is test A4 for the move level.
 - **The cut that explains the bug is mixed.** It has 2 closed goals, 1 closed activation and 2 moves: five lines for 42 steps. Effect 25 is shown under the second move as its evidence, on demand. The tree above is that cut, with the closed parts opened one level for orientation.
 - **No stage or exchange level appears.** One queue and one store give them nothing to add in this run: stage would restate goal, and exchange would restate activation. Tests A2 and A3 would merge them. A system with several services, or a subject that changes hands between people, would admit them.
-- **Some fan-ins are below two.** With one or two jobs the upper levels are small. Whether the band of A3 holds on realistic runs is an open measurement (section 8).
+- **Some fan-ins are below two.** With one or two jobs the upper levels are small. The experiment confirmed this for all runs, and test A3 was revised (5.4).
+
+**The same run, cut by the implemented rules** (`experiments/results/levels.json`, key `witness`):
+
+| | By hand | By the rules |
+|---|---|---|
+| Goals | 3 | 3, the same |
+| Activations | 5 | 5, the same |
+| Moves | 11 | 13 |
+| Support steps | 12 | 14 |
+
+The rules differ from the hand grouping in four places, all at the bottom. They close a move at every write, so "mark started" became two moves (the status write, then a `PERSIST`), and the job's heartbeat before the first commit attempt became a move of its own. They fold two more steps as support: registering the queue name, which nothing in the run reads, and a heartbeat on `j2`. The two attempts, the rejected one and the one that commits less, come out exactly as drawn. The hand version read intent into the code ("mark started" is one thing); the rule sees two writes. Whether a move should close at every write or at the end of an atomic group is a choice the experiment exposes and does not settle.
 
 ### 5.9 Processes around the software
 
@@ -352,26 +367,167 @@ These follow from the rules of section 4 and are proposals for the viewer study 
 - **One vocabulary per line.** A line of a trace uses the words of its level. A mixed cut therefore shows, by its wording, which level each line is at.
 - **For the coding agent.** The focus sent to the agent carries the step, its charter's question, its parent's goal sentence and its children's names: the why and the how, in a few lines.
 
-## 8. Experiment plan
+## 8. The experiment
 
-**Status: Experiment.** Three designs for obtaining the ladder should be kept side by side.
+Run on 2026-11-16. Code and results are in [`experiments/`](experiments/README.md). The subject is rq 2.12, with the eight two-actor scenarios and the oracle of the [abstraction-function report](../abstraction-function/report.md): 2,097 runs explored up to two preemptions, 554 of them anomalous. The harness was extended to record, for every step, the concrete keys it touches, the rq functions on the call stack and whether a transaction was rejected, and all runs were explored again.
 
-| Design | Who decides the levels | Who decides the boundaries |
-|---|---|---|
-| **A. Fixed ladder** (the specification today) | the specification: six names | per level, by its own definition |
-| **B. Closing rules and admission** (this report) | seven kinds, admitted per project by tests | closing rules, computed |
-| **C. LLM-proposed ladder** | the LLM, from the code and docs | the LLM, checked afterwards |
+### 8.1 Three designs
 
-| # | Experiment | Measures | Passes when |
+| Design | Who decides the levels | Who decides the boundaries | How it was run |
 |---|---|---|---|
-| E1 | Implement the closing rules on the rq graphs that already exist, and on report-jobs | fan-in per pair of levels; share of support steps; how many levels are admitted | most pairs fall in the band; the hand grouping of 5.8 is reproduced |
-| E2 | `name-step` with several samples and two models | agreement between samples; barrier pass rate | agreement well above the 0.54 measured for free-form names |
-| E3 | Reader tasks: questions per role (taken from the 44 kinds of developer questions, and from manager and product questions written in advance), answered from each design's levels | time and correctness, as in the trace visualization experiments | B is no worse than A for developers and better for non-developers |
-| E4 | Finding placement: for each known rq anomaly, at which level does each design name the symptom and the cause | level of naming; length of the explaining cut | the cut is a handful of lines |
-| E5 | A project with runbooks and a pipeline definition: build the stage level from documents | share of stages with software steps under them; disagreements found | at least one documented stage is checked against runs |
-| E6 | Stability: rebuild after a commit and compare step classes and names | share of step classes and names unchanged | names move only where code moved |
+| **A. Fixed ladder** (the specification today) | the specification | each level's own definition | read onto rq: *business* is a change of the status field, *system* a call across the library's boundary, *services* a round trip to Redis, *components* the same plus calls between rq classes, *statements* single commands. *Mechanisms* renames steps without regrouping them (as in the seven-level trial) and was not run. |
+| **A+** | as A | as A | A, with each step annotated by the documented observables instead of the status field alone. It separates the effect of the ladder from the effect of the observables. |
+| **B. Closing rules** (this report) | kinds, admitted by tests | closing rules, computed | implemented in `mlexp/levels.py`: effect, move, activation, goal, outcome; stage and exchange as candidates |
+| **C. LLM-proposed ladder** | the LLM | the LLM | 3 samples of Opus and 3 of Sonnet, given the rq sources and the 42-step witness, asked for levels and for a cut of the run at each |
 
-E3 needs people. A first pass can use an LLM as a stand-in reader, restricted to one level's records at a time, but that measures whether the answer is *present* at a level, not whether a person finds it.
+How B's rules were made concrete. An *effect* is one scheduler step. A *move* closes after each on-chain effect that writes, or after a rejected transaction; reads join the move they feed. An *activation* closes where the API call returns or calls the job body. A *goal* is one API call. An *outcome* collects, per job, the goals that change what the documentation lets a user observe about it. An effect is on the causal chain when it changes an observable, writes a key that a later on-chain effect reads, or is a read of an actor that then acts on the chain in the same call.
+
+### 8.2 E1: do the rules cut runs, and at what grain?
+
+They do. All 2,097 runs were cut with no author and no LLM (`results/levels.json`).
+
+| Design B | Steps per run (mean) | Lower steps per step (mean) | Upper steps with exactly one lower step |
+|---|---|---|---|
+| Outcome | 1.2 | 1.6 goals | 52% |
+| Goal | 2.2 | 1.5 activations | 49% |
+| Activation | 3.3 | 2.2 moves | 30% |
+| Move | 7.3 | 2.0 effects on the chain | 57% |
+| Effect, on the chain | 14.7 | | |
+| Effect, all | 25.7 | | |
+
+| Design A | Steps per run (mean) | Lower steps per step |
+|---|---|---|
+| Business | 3.0 | 1.8 |
+| System | 5.5 | 4.6 |
+| Services | 25.7 | 1.5 |
+| Components | 38.0 | 1.4 |
+| Statements | 53.9 | |
+
+- **Support steps.** 43% of all effects are off the causal chain and fold away: worker state, heartbeats, registrations nothing reads. The move level therefore shows 7.3 lines where the raw run has 25.7.
+- **The grain band fails.** No pair of levels in B reaches a mean of 2.5, and A has one large jump (services to system, 4.6) and nothing else above 1.8. Test A3 was revised (5.4).
+- **Candidates that restate a neighbour.** 84% of activations contain exactly one change of a job's status, so a *stage* level would repeat the activation level. An *exchange* is the API call, that is the goal, in every case. Both are merged, as the hand analysis expected.
+- **The top is not a tree.** 4.4% of goals change two jobs (completing `j1` also releases `j2`) and so belong to two outcomes. Outcomes overlap; the step map above the goal is a relation, not a partition.
+- **A's levels do not order by purpose.** From services down, design A only adds lines (25.7, 38.0, 53.9) without regrouping. This is the part axis, as section 5.1 argued from the earlier trial.
+
+### 8.3 E4: at which level does each anomaly show?
+
+For each of the 554 anomalous runs, the highest level at which the run differs from every clean run of its scenario (`results/levels.json`, key `placement`). *Symptom* compares what happened together with the observable change of each step. *Cause* compares only which steps happened and how the steps of different actors overlap.
+
+| | Outcome | Goal | Activation | Move | Effect |
+|---|---|---|---|---|---|
+| **B, symptom** | 500 | 54 | 0 | 0 | 0 |
+| **B, cause** | 64 | 0 | 205 | 285 | 0 |
+
+| | Business | System | Services | Components | Statements |
+|---|---|---|---|---|---|
+| **A** (status field only) | 407 | 0 | 147 | 0 | 0 |
+
+- **Every symptom is at the top two levels of B.** A manager's or a product owner's level shows that something is wrong in all 554 runs.
+- **Causes sit two or three levels down.** 285 at the move level (a rejected attempt, a commit with a different write set) and 205 at the activation level (which activations overlapped). The 64 at the outcome level are cleanup runs, where the set of goals that touched the job already differs. This is F-Z4 measured: each problem has a level where it can be named, and it is not the level of its symptom.
+- **Under A, 147 anomalies (27%) are invisible above the raw commands.** They include all 20 runs of the real rq bug. The business level of A is the status field, and the status is right in those runs. The first level of A that differs is *services*, at 25.7 lines per run.
+- **The explaining cut is short.** The smallest cut that opens only what differs from clean runs has a median of 6 lines for the dependency bug, 3 for cancel, and 2 for cleanup and delete; the maximum over all 554 is 6.
+- **The activation level earns its place by test A4.** Its grain is small (1.5 per goal), but 205 causes are named there and nowhere above.
+
+### 8.4 E2: how stable are names when the LLM only names?
+
+Six samples (3 Opus, 3 Sonnet) each named all 29 move classes, 8 activation classes and 7 goal classes from one sheet (`results/naming-sheet.json`, `results/llm.json`).
+
+| Level | Classes | Pairs of samples with the identical name | Shared words between two samples' names | Storage words used | Two classes given one name |
+|---|---|---|---|---|---|
+| Goal | 7 | 37% | 0.85 | 0 of 42 | 0 |
+| Activation | 8 | 21% | 0.57 | 0 of 48 | 0 |
+| Move | 29 | 22% | 0.51 | 0 of 174 | 0 |
+
+- **The barrier holds.** No name at any level used a Redis command, key or storage word, and no sample gave two classes the same name.
+- **Wording is not stable.** Two samples pick the identical name for a goal about one time in three, and for a move one time in five. Goal names share most of their words ("enqueue a job", "enqueue job"); move names share half. The plan's pass mark, agreement well above the 0.54 of free-form names, is met for goals and not for moves.
+- **Consequence.** A name must be generated once and stored with its step class, never regenerated on rebuild. Because step classes are identified from code (8.7), the stored name stays attached. The majority names read well: goals are *enqueue a job*, *run next job*, *cancel a job*, *requeue a failed job*; the two activations of a worker are *pick up and start job* and *record job outcome*; the two moves of the bug are *attempt success commit, rejected* and *finish job and release dependents*.
+- **One wrong name.** The majority called a write of the job's heartbeat *record worker heartbeat*. Names are checked for vocabulary, not for truth; a check of a name against what its step writes is missing.
+
+### 8.5 Design C: what a free-form LLM ladder looks like
+
+Six samples proposed levels and cut the 42-step witness themselves (`results/llm.json`, key `ladder`).
+
+| Measure | Result |
+|---|---|
+| Number of levels | 3, 3, 4, 3, 4, 3 |
+| Level names | every sample has an outcome-like top level ("Outcome", "Business outcome", "Business story") and a "Job lifecycle" level; below that: "rq operation", "Protocol phase", "Redis transaction protocol", "Redis mechanisms", "rq call" |
+| Valid cuts (every step in exactly one group per level) | all levels of all samples |
+| Levels nest (each lower group inside one upper group) | in 3 of 6 samples; broken in the other 3 |
+| Agreement between samples on boundaries (best-matching levels, adjusted Rand) | mean 0.75, minimum 0.28 |
+| Step names shared between two samples | 0.01 |
+| Agreement with B: goal level | 0.83 to 1.0 |
+| Agreement with B: activation level | 0.54 to 0.88 |
+| Agreement with B: move level | 0.42 to 0.66 |
+| Cost | $0.30 to $0.65 per sample, for one run |
+
+- **The LLMs find the same top as the rules.** Two or three groups at the top, matching B's three goals closely, and a "Job lifecycle" level in all six that matches B's activation level. That is independent support for those two levels, and "job lifecycle" is the name a reader would expect for the activation level in a system like rq.
+- **Below the top they disagree with each other.** Between 7 and 26 groups at the lowest level, half of the ladders not nested, and no step name in common.
+- **C must be asked again for every run.** B's rules cut all 2,097 runs in seconds; C's cut exists for one run per call.
+- **What C is good for.** One Opus sample named the defect in a step name: "execution cleanup skipped, x1w1 left in wip". An LLM that reads the code can explain. That is the `narrate` task, on a cut the rules made.
+
+### 8.6 E3: can each reader's questions be answered at their level?
+
+A stand-in reader (Sonnet, with no code and no other context) was given one run rendered at one level, a clean run of the same scenario at the same level, and seven multiple-choice questions, each with a "cannot tell" option. The questions and their keys were written before any rendering existed: two for a manager (how many jobs finished; is any record inconsistent), two for a product owner (did two parties' actions on a job overlap; what did the client get done), three for a developer (was a commit rejected and retried; which part is responsible; what does the last commit fail to do). Three runs: the bug witness, a cancel anomaly, and a clean run with overlap. Each prompt was run twice: 90 calls (`results/reader.json`).
+
+| Variant and level | Lines to read (three runs) | Manager right | Product right | Developer right | Wrong answers |
+|---|---|---|---|---|---|
+| **B** outcome | 3, 2, 3 | **12 of 12** | 6 of 12 | 6 of 18 | 0 |
+| **B** goal | 4, 3, 4 | 12 | **12 of 12** | 9 | 0 |
+| **B** activation | 6, 4, 6 | 12 | 10 | 13 | 2 |
+| **B** move | 15, 9, 14 | 12 | 8 | **18 of 18** | 4 |
+| **B** effect | 43, 24, 40 | 12 | 12 | 18 | 0 |
+| **A** business | 7, 4, 7 | 6 | 6 | 1 | 3 |
+| **A** system | 9, 6, 9 | 6 | 9 | 0 | 0 |
+| **A** services | 43, 24, 40 | 11 | 12 | 16 | 3 |
+| **A** components | 65, 36, 61 | 11 | 12 | 16 | 3 |
+| **A** statements | 111, 50, 98 | 10 | 12 | 14 | 6 |
+| **A+** business | 7, 4, 7 | **12 of 12** | 6 | 7 | 3 |
+| **A+** system | 9, 6, 9 | 12 | **12 of 12** | 9 | 0 |
+| **A+** services | 43, 24, 40 | 12 | 12 | **18 of 18** | 0 |
+| **A+** components | 65, 36, 61 | 12 | 12 | 18 | 0 |
+| **A+** statements | 111, 50, 98 | 12 | 12 | 18 | 0 |
+
+- **Each reader has a level in B where everything is answered.** The manager at outcome (2 to 3 lines), the product owner at goal (3 to 4 lines), the developer at move (9 to 15 lines). Below a reader's level the answers cost more lines and, apart from one ambiguous question (last point), stay right; above it the reader says "cannot tell" and does not guess.
+- **The ladder's gain is the developer's level.** With the same observables (A+), manager and product questions are answered from as few lines as in B. The developer's are not: A+ has nothing between *system* (9 of 18) and *services* (18 of 18, at 24 to 43 lines). B's move level answers all 18 from 9 to 15 lines. The activation level answers 13.
+- **The observables' gain is the manager's level.** Design A as it stands answers half of the manager's questions at its business level and never all of them, because the status field does not show an inconsistent record. This repeats the abstraction-function report's finding from the reader's side.
+- **More detail made the reader worse under A.** At the statements level (50 to 111 lines) the reader gave 6 wrong answers, more than at any other level of any variant.
+- **B's six wrong answers are one question.** "Did one party start acting on a job while another party's action on that same job was still in progress?" The key says yes whenever two goals overlap in time. At the move and activation levels the reader saw that the client was writing `j2` while the worker handled `j1` and answered no. The question was ambiguous about "the same job"; it was fixed in advance and is reported as scored.
+
+### 8.7 E6: do step classes survive a new version?
+
+Step classes computed on rq 2.12 compared with those on 3.0 and 2.0 (`results/levels.json`, key `class_stability`).
+
+| Step class, identified by | Shared with rq 3.0 | Shared with rq 2.0 |
+|---|---|---|
+| Goal (API call) | 1.00 | 1.00 |
+| Activation (API call and part) | 1.00 | 1.00 |
+| Move (call, closing function, set of key families written) | 0.50 | 0.46 |
+| Move (call and closing function only) | 0.86 | 0.52 |
+
+The upper classes are unchanged across two years of releases. Move classes are stable only when identified by the function that closes them; the set of keys a move writes changes with every storage change. A move's identity should come from code names, as P9 already says, and its write set is a property, not part of the name.
+
+### 8.8 What the data supports
+
+| Question | Answer from the data |
+|---|---|
+| Can the step map be computed by closing rules, with no author? | Yes, on every run. The grouping matches the hand-made one at goal and activation level and differs slightly at the move level. |
+| Do the rules give a tree? | Up to the goal, yes. Outcomes overlap in 4.4% of goals. |
+| Is the grain band a usable admission test? | No. Replaced by merging levels that restate each other. |
+| Does each problem have a level? | Yes: symptoms at outcome and goal, causes at activation and move, in cuts of at most 6 lines. |
+| Does each reader have a level? | For the stand-in reader, yes: 2–3, 3–4 and 9–15 lines for manager, product and developer. |
+| What does the ladder add beyond better observables? | The developer's level: 9–15 lines against 24–43. Nothing measurable for manager and product. |
+| Should the LLM propose the ladder and the cuts? | No. Its ladders agree at the top, disagree below, half do not nest, share no names, and cost a call per run. |
+| Are LLM names stable enough to regenerate? | No. Generate once, store with the step class. |
+| Which levels does rq end up with? | Five: outcome, goal, activation (which readers would call the job lifecycle), move, effect. Stage and exchange merge away. |
+
+**Not run.**
+
+- **E3 with people.** The reader was an LLM. It measures whether an answer is present at a level and can be read off; it does not measure a person's time or errors.
+- **E5, processes from documents.** rq has no runbooks or pipeline that describe people's work. This needs another project.
+- **Other subjects.** One library with one store. Stage and exchange were merged here for reasons specific to it; a system with several services and a subject that changes hands is where they would be tested.
+- **Design A's mechanisms level**, which renames steps without regrouping.
+
+**Costs.** The naming and ladder samples cost $3.93, the 90 reader calls $1.34.
 
 ## 9. Where this touches the specification
 
@@ -393,18 +549,21 @@ Recommendations for the owner to decide. Nothing has been changed.
 
 **Evidence, from others.** How people describe actions (why and how), where they place event boundaries, what they remember of a story, the basic level and its shift with expertise, the capacity of working memory, the expertise reversal effect, the gains from question-asking and from trace views. Most of this was checked only in abstracts and secondary summaries this session; the notes say which.
 
-**Evidence, our own.** The step counts of the seven-level trial; findings F-Z1 to F-Z9; the 42-step rq witness and its listing; the measured instability of free LLM naming (0.54) and the excess fineness of LLM state functions; the need for the take/complete split.
+**Evidence, our own.** The step counts of the seven-level trial; findings F-Z1 to F-Z9; the measured instability of free LLM naming (0.54) in the rq abstraction-function experiment; and section 8 of this report: closing rules on 2,097 runs, placement of 554 anomalies, six naming samples, six free-form ladders, 90 stand-in reader calls, and step classes on three rq versions.
 
-**Inference.** Everything in sections 4 to 9: that these perceptual findings transfer from physical activity, stories and process control to software traces; the seven kinds and their closing rules; the admission tests and the band of two to seven; the cut and its degree of interest; the task list for the LLM. None of it has been built.
+**Inference.** That the perceptual findings transfer from physical activity, stories and process control to software traces; the seven kinds as a general skeleton; the charter; the degree-of-interest cut; the processes around the software; everything about the viewer. Of the seven kinds, five were run and two were merged on rq.
 
 **Known weak points.**
 
 - **Transfer.** Event segmentation was studied on films of everyday activity, and the causal network on short stories. No study we found tests them on program traces.
-- **The band.** Two to seven is borrowed from memory research on unrelated material. The worked example already has fan-ins below two.
+- **The band.** Tested and rejected in its first form (8.2). The replacement, merging levels that restate each other, was fitted to the same data and needs another subject.
+- **The reader was an LLM.** It reads every line with equal attention and has no working-memory limit of four. The line counts are the nearest thing to a human cost in this experiment, and they are a proxy.
+- **Design A is a reading.** The specification's ladder was written for services and handlers, not for a library with one store. Another reading of *business* or *components* onto rq would move A's numbers.
+- **Bounds.** Two actors, two preemptions, one or two jobs. Clean runs within these bounds define what counts as different.
 - **The top of the ladder.** Outcome, stage and goal need subjects with lifecycles. A system that is mostly computation, such as a compiler, has few; its upper levels may have to come from its own domain ladder, through project-specific levels.
 - **Closing rules need a good lower model.** They read waits, replies, atomic groups and observables. Errors in extraction move the boundaries.
-- **The hand-built example.** The grouping in 5.8 was made by the author of the rules. E1 exists to remove that bias.
-- **People.** Whether the result is easier for a person is exactly what was not measured. E3 is the experiment that matters most, and the hardest to run without a budget.
+- **The hand-built example.** The implemented rules reproduced it at goal and activation level and differed at the move level (5.8).
+- **People.** Whether the result is easier for a person was not measured. It is the experiment that matters most, and the hardest to run without a budget.
 
 ## 11. Sources
 

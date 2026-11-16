@@ -44,6 +44,7 @@ class Gate:
         self.running: str | None = None
         self.events: list[tuple[str, str, str, Any]] = []
         self.results: dict[str, list[tuple[str, Any]]] = {}
+        self.detail: dict[str, dict[str, Any]] = {}
 
     def arrive(self, actor: str, label: str) -> None:
         with self.cv:
@@ -144,12 +145,47 @@ _orig_info = redis.client.Redis.info
 UNGATED_COMMANDS = {'CLIENT'}
 
 
+MULTI_KEY = {'DEL', 'EXISTS', 'WATCH', 'UNLINK', 'TOUCH'}
+TWO_KEY = {'LMOVE', 'BLMOVE', 'RPOPLPUSH', 'SMOVE'}
+
+
+def command_keys(args: tuple[Any, ...]) -> tuple[str, list[str]]:
+    """A command's name and the concrete keys it touches."""
+    name = _text(args[0]).upper()
+    if name in ('EVALSHA', 'EVAL'):
+        count = int(args[2])
+        return name, [_text(a) for a in args[3 : 3 + count]]
+    if name in MULTI_KEY:
+        return name, [_text(a) for a in args[1:]]
+    if name in TWO_KEY:
+        return name, [_text(a) for a in args[1:3]]
+    return name, [_text(a) for a in args[1:2]]
+
+
+def rq_stack() -> list[str]:
+    """Qualified names of the rq functions on the calling thread's stack, outermost first."""
+    out = []
+    frame = sys._getframe(1)
+    while frame is not None:
+        if '/rq/' in frame.f_code.co_filename:
+            out.append(frame.f_code.co_qualname)
+        frame = frame.f_back
+    return out[::-1]
+
+
+def _arrive(ga: tuple[Gate, str] | None, label: str, commands: list[tuple[str, list[str]]]) -> dict[str, Any]:
+    detail: dict[str, Any] = {'commands': commands, 'stack': rq_stack(), 'rejected': False}
+    if ga is not None:
+        ga[0].detail[ga[1]] = detail
+        ga[0].arrive(ga[1], label)
+    return detail
+
+
 def _gated_execute_command(self: Any, *args: Any, **options: Any) -> Any:
     label = command_label(args)
     # CLIENT touches no key, so it commutes with every other step.
     ga = None if label.split(' ')[0] in UNGATED_COMMANDS else _current_gate()
-    if ga is not None:
-        ga[0].arrive(ga[1], label)
+    _arrive(ga, label, [command_keys(args)])
     result = _orig_execute_command(self, *args, **options)
     _after(ga, label, result)
     return result
@@ -158,8 +194,7 @@ def _gated_execute_command(self: Any, *args: Any, **options: Any) -> Any:
 def _gated_immediate(self: Any, *args: Any, **options: Any) -> Any:
     ga = _current_gate()
     label = command_label(args)
-    if ga is not None:
-        ga[0].arrive(ga[1], label)
+    _arrive(ga, label, [command_keys(args)])
     result = _orig_immediate(self, *args, **options)
     _after(ga, label, result)
     return result
@@ -171,9 +206,13 @@ def _gated_pipeline_execute(self: Any, raise_on_error: bool = True) -> Any:
     if not stack:
         return _orig_pipeline_execute(self, raise_on_error)
     label = _stack_label(stack)
-    if ga is not None:
-        ga[0].arrive(ga[1], label)
-    result = _orig_pipeline_execute(self, raise_on_error)
+    commands = [command_keys(e[0] if isinstance(e, tuple) and e and isinstance(e[0], tuple) else e.args) for e in stack]
+    detail = _arrive(ga, label, commands)
+    try:
+        result = _orig_pipeline_execute(self, raise_on_error)
+    except redis.exceptions.WatchError:
+        detail['rejected'] = True
+        raise
     _after(ga, label, result)
     return result
 
@@ -336,6 +375,7 @@ class Step:
     actor: str
     label: str
     events: list[tuple[str, str, str, Any]]
+    detail: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -446,13 +486,14 @@ def execute(
             preemptive = last is not None and last in enabled and chosen != last and mid[last]
             record.choices.append((enabled, chosen, preemptive))
             label = gate.waiting[chosen]
+            detail = gate.detail.get(chosen, {})
             gate.grant(chosen)
             events, gate.events = gate.events, []
             apply_events(events)
             # An actor is mid-operation once it has taken a step that did not end its operation.
             mid[chosen] = not any(a == chosen and kind == 'end' for a, kind, _, _ in events)
             record.schedule.append(chosen)
-            record.steps.append(Step(chosen, label, events))
+            record.steps.append(Step(chosen, label, events, detail))
             record.states.append(state(mid))
             last = chosen
     except GateTimeout as exc:

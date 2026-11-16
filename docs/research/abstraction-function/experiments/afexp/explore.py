@@ -104,6 +104,7 @@ def _merge(graph: dict[str, Any], record: harness.RunRecord, preemptions: int) -
                 'label': step.label,
                 'op': op,
                 'ended': ended,
+                'detail': step.detail,
             }
     graph['runs'].append(
         {

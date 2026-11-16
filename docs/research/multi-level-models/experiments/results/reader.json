@@ -1,0 +1,1153 @@
+{
+ "answers": {
+  "A--business--cancel.1": {
+   "Q1": "A",
+   "Q2": "C",
+   "Q3": "C",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--business--cancel.2": {
+   "Q1": "A",
+   "Q2": "B",
+   "Q3": "B",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--business--clean.1": {
+   "Q1": "C",
+   "Q2": "C",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--business--clean.2": {
+   "Q1": "C",
+   "Q2": "C",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--business--witness.1": {
+   "Q1": "C",
+   "Q2": "C",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--business--witness.2": {
+   "Q1": "C",
+   "Q2": "C",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--components--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "A--components--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "A--components--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--components--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--components--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "A--components--witness.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--services--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "A--services--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "A--services--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--services--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--services--witness.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--services--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "A--statements--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "A--statements--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "A--statements--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--statements--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--statements--witness.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--statements--witness.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "A--system--cancel.1": {
+   "Q1": "A",
+   "Q2": "C",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--system--cancel.2": {
+   "Q1": "A",
+   "Q2": "C",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--system--clean.1": {
+   "Q1": "C",
+   "Q2": "C",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--system--clean.2": {
+   "Q1": "C",
+   "Q2": "C",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--system--witness.1": {
+   "Q1": "C",
+   "Q2": "C",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "A--system--witness.2": {
+   "Q1": "C",
+   "Q2": "C",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "Aplus--business--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "C",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "Aplus--business--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "C",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "Aplus--business--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--business--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--business--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  },
+  "Aplus--business--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  },
+  "Aplus--components--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "Aplus--components--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "Aplus--components--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--components--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--components--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "Aplus--components--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "Aplus--services--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "Aplus--services--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "Aplus--services--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--services--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--services--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "Aplus--services--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "Aplus--statements--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "Aplus--statements--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "Aplus--statements--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--statements--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--statements--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "Aplus--statements--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "Aplus--system--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "Aplus--system--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "C",
+   "Q7": "E"
+  },
+  "Aplus--system--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--system--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "Aplus--system--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  },
+  "Aplus--system--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  },
+  "B--activation--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "B--activation--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "B--activation--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--activation--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--activation--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  },
+  "B--activation--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "B--effect--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "B--effect--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "B--effect--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--effect--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--effect--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "B--effect--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "B--goal--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "B--goal--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "C",
+   "Q7": "E"
+  },
+  "B--goal--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--goal--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--goal--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  },
+  "B--goal--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  },
+  "B--move--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "B--move--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "B--move--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--move--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--move--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "B--move--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "B",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "B--outcome--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "C",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "B--outcome--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "C",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "E"
+  },
+  "B--outcome--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--outcome--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "B--outcome--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  },
+  "B--outcome--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "C",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "A"
+  }
+ },
+ "keys": {
+  "cancel": {
+   "0": 0,
+   "1": 0,
+   "2": 0,
+   "3": 1,
+   "4": 1,
+   "5": 2,
+   "6": 3
+  },
+  "clean": {
+   "0": 2,
+   "1": 1,
+   "2": 0,
+   "3": 0,
+   "4": 1,
+   "5": 3,
+   "6": 3
+  },
+  "witness": {
+   "0": 2,
+   "1": 0,
+   "2": 0,
+   "3": 0,
+   "4": 0,
+   "5": 1,
+   "6": 0
+  }
+ },
+ "sizes": {
+  "A+|business|cancel": 4,
+  "A+|business|clean": 7,
+  "A+|business|witness": 7,
+  "A+|components|cancel": 36,
+  "A+|components|clean": 61,
+  "A+|components|witness": 65,
+  "A+|services|cancel": 24,
+  "A+|services|clean": 40,
+  "A+|services|witness": 43,
+  "A+|statements|cancel": 50,
+  "A+|statements|clean": 98,
+  "A+|statements|witness": 111,
+  "A+|system|cancel": 6,
+  "A+|system|clean": 9,
+  "A+|system|witness": 9,
+  "A|business|cancel": 4,
+  "A|business|clean": 7,
+  "A|business|witness": 7,
+  "A|components|cancel": 36,
+  "A|components|clean": 61,
+  "A|components|witness": 65,
+  "A|services|cancel": 24,
+  "A|services|clean": 40,
+  "A|services|witness": 43,
+  "A|statements|cancel": 50,
+  "A|statements|clean": 98,
+  "A|statements|witness": 111,
+  "A|system|cancel": 6,
+  "A|system|clean": 9,
+  "A|system|witness": 9,
+  "B|activation|cancel": 4,
+  "B|activation|clean": 6,
+  "B|activation|witness": 6,
+  "B|effect|cancel": 24,
+  "B|effect|clean": 40,
+  "B|effect|witness": 43,
+  "B|goal|cancel": 3,
+  "B|goal|clean": 4,
+  "B|goal|witness": 4,
+  "B|move|cancel": 9,
+  "B|move|clean": 14,
+  "B|move|witness": 15,
+  "B|outcome|cancel": 2,
+  "B|outcome|clean": 3,
+  "B|outcome|witness": 3
+ },
+ "summary": {
+  "A": {
+   "business": {
+    "developer": {
+     "cannot_tell": 16,
+     "right": 1,
+     "wrong": 1
+    },
+    "manager": {
+     "cannot_tell": 5,
+     "right": 6,
+     "wrong": 1
+    },
+    "product": {
+     "cannot_tell": 5,
+     "right": 6,
+     "wrong": 1
+    }
+   },
+   "components": {
+    "developer": {
+     "cannot_tell": 0,
+     "right": 16,
+     "wrong": 2
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 11,
+     "wrong": 1
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   },
+   "services": {
+    "developer": {
+     "cannot_tell": 0,
+     "right": 16,
+     "wrong": 2
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 11,
+     "wrong": 1
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   },
+   "statements": {
+    "developer": {
+     "cannot_tell": 0,
+     "right": 14,
+     "wrong": 4
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 10,
+     "wrong": 2
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   },
+   "system": {
+    "developer": {
+     "cannot_tell": 18,
+     "right": 0,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 6,
+     "right": 6,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 3,
+     "right": 9,
+     "wrong": 0
+    }
+   }
+  },
+  "A+": {
+   "business": {
+    "developer": {
+     "cannot_tell": 11,
+     "right": 7,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 3,
+     "right": 6,
+     "wrong": 3
+    }
+   },
+   "components": {
+    "developer": {
+     "cannot_tell": 0,
+     "right": 18,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   },
+   "services": {
+    "developer": {
+     "cannot_tell": 0,
+     "right": 18,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   },
+   "statements": {
+    "developer": {
+     "cannot_tell": 0,
+     "right": 18,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   },
+   "system": {
+    "developer": {
+     "cannot_tell": 9,
+     "right": 9,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   }
+  },
+  "B": {
+   "activation": {
+    "developer": {
+     "cannot_tell": 5,
+     "right": 13,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 10,
+     "wrong": 2
+    }
+   },
+   "effect": {
+    "developer": {
+     "cannot_tell": 0,
+     "right": 18,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   },
+   "goal": {
+    "developer": {
+     "cannot_tell": 9,
+     "right": 9,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    }
+   },
+   "move": {
+    "developer": {
+     "cannot_tell": 0,
+     "right": 18,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 0,
+     "right": 8,
+     "wrong": 4
+    }
+   },
+   "outcome": {
+    "developer": {
+     "cannot_tell": 12,
+     "right": 6,
+     "wrong": 0
+    },
+    "manager": {
+     "cannot_tell": 0,
+     "right": 12,
+     "wrong": 0
+    },
+    "product": {
+     "cannot_tell": 6,
+     "right": 6,
+     "wrong": 0
+    }
+   }
+  }
+ }
+}

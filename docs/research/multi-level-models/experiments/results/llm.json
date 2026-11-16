@@ -1,0 +1,550 @@
+{
+ "ladder": {
+  "cross_sample_best_match_rand": {
+   "mean": 0.747,
+   "min": 0.277
+  },
+  "cross_sample_step_name_jaccard": 0.01,
+  "identical_level_name_sets": 1,
+  "level_counts": [
+   3,
+   3,
+   4,
+   3,
+   4,
+   3
+  ],
+  "samples": {
+   "ladder-opus-1": {
+    "best_match_to_b": {
+     "activation": 0.553,
+     "goal": 1.0,
+     "move": 0.643
+    },
+    "fan_in": [
+     4.0,
+     1.83,
+     1.91
+    ],
+    "groups_per_level": [
+     3,
+     12,
+     22
+    ],
+    "invalid_levels": [],
+    "levels": [
+     "Business outcome",
+     "Job lifecycle",
+     "Redis transaction protocol"
+    ],
+    "nested_pairs": [
+     false,
+     true
+    ],
+    "step_names": {
+     "Business outcome": [
+      "Worker processes job j1 to completion and releases dependent j2 to the queue",
+      "Client submits job j2 to run after j1",
+      "Worker processes job j2 to completion"
+     ],
+     "Job lifecycle": [
+      "j2 enqueued with dependency on unfinished j1 -> j2 DEFERRED (in deferred registry, not in queue)",
+      "Worker w1 IDLE, listening on 'default'",
+      "j1 dequeued from 'default' (moved to intermediate queue)",
+      "j1 STARTED (execution x1 created, worker BUSY)",
+      "j1 executed",
+      "j1 FINISHED; dependent j2 DEFERRED -> QUEUED (first attempt retried after a conflict with the client)",
+      "Worker w1 back to IDLE, listening",
+      "j2 dequeued from 'default'",
+      "j2 STARTED (execution x2 created, worker BUSY)",
+      "j2 executed",
+      "j2 FINISHED (no dependents)",
+      "Worker w1 IDLE"
+     ],
+     "Redis transaction protocol": [
+      "c setup_dependencies: WATCH j2 deps and j1, read j1 (status started, not finished), EXEC: save j2 as deferred, ZADD deferred registry, SADD j1:dependents",
+      "c enqueue_job: SADD rq:queues; no RPUSH because j2 is deferred",
+      "w1 dequeue_job_and_maintain_ttl entry: set_state IDLE and worker heartbeat",
+      "w1 dequeue_any: LMOVE j1 to intermediate queue, refresh j1",
+      "w1 post-dequeue worker heartbeat",
+      "w1 prepare_execution: create execution x1, add to rq:executions:j1 and rq:wip:default, worker BUSY",
+      "w1 prepare_job_execution: set current job, job status STARTED, LREM from intermediate queue",
+      "w1 perform: PERSIST job key, run function, job heartbeat",
+      "w1 handle_job_success attempt 1 read phase: WATCH j1:dependents, SMEMBERS (empty)",
+      "w1 attempt 1 EXEC aborted by WatchError, because c's SADD j1:dependents (step 16) touched the watched key; cleanup_execution had already set worker.execution=None in Python",
+      "w1 handle_job_success attempt 2 read phase: WATCH j1:dependents, find j2, fetch j2, WATCH j1, check j2 dependencies, read j1 status",
+      "w1 attempt 2 EXEC: ZREM j2 from deferred registry, RPUSH j2, DEL j1:dependents, finish j1. DEL execution x1 and ZREM wip/executions are missing (worker.execution was None), so execution x1 leaks in rq:wip:default and the result has no execution_id",
+      "w1 execute_job end: set_state IDLE",
+      "w1 dequeue_job_and_maintain_ttl entry: set_state IDLE and worker heartbeat",
+      "w1 dequeue_any: LMOVE j2 to intermediate queue, refresh j2",
+      "w1 post-dequeue worker heartbeat",
+      "w1 prepare_execution: create execution x2, add to rq:executions:j2 and rq:wip:default, worker BUSY",
+      "w1 prepare_job_execution: set current job, job status STARTED, LREM from intermediate queue",
+      "w1 perform: PERSIST job key, run function, job heartbeat",
+      "w1 handle_job_success read phase: WATCH j2:dependents, SMEMBERS (empty)",
+      "w1 EXEC: finish j2 (status, result stream, finished registry, TTLs) and clean up execution x2",
+      "w1 execute_job end: set_state IDLE"
+     ]
+    }
+   },
+   "ladder-opus-2": {
+    "best_match_to_b": {
+     "activation": 0.553,
+     "goal": 1.0,
+     "move": 0.621
+    },
+    "fan_in": [
+     3.67,
+     2.27,
+     1.68
+    ],
+    "groups_per_level": [
+     3,
+     11,
+     25
+    ],
+    "invalid_levels": [],
+    "levels": [
+     "Outcome",
+     "Job lifecycle",
+     "rq operation"
+    ],
+    "nested_pairs": [
+     false,
+     true
+    ],
+    "step_names": {
+     "Job lifecycle": [
+      "w1 goes idle and picks up j1 from queue 'default'",
+      "j1 queued -> started (execution x1w1, w1 busy)",
+      "j1 runs",
+      "c enqueues j2 depending on j1; j1 not finished yet, so j2 becomes deferred",
+      "j1 finish attempt collides with j2 registering as dependent; finish rolled back",
+      "j1 started -> finished and j2 deferred -> queued, in one commit",
+      "w1 goes idle and picks up j2",
+      "j2 queued -> started (execution x2w1, w1 busy)",
+      "j2 runs",
+      "j2 started -> finished (no dependents)",
+      "w1 back to idle"
+     ],
+     "Outcome": [
+      "Client submits j2 to run after j1 finishes",
+      "Worker w1 processes j1 to completion and releases j2 (leaves a stale execution record for j1)",
+      "Worker w1 processes j2 to completion"
+     ],
+     "rq operation": [
+      "c Queue.setup_dependencies read phase: WATCH j2 dependencies + j1, fetch j1 (status started => defer)",
+      "c Queue.setup_dependencies EXEC: save j2 as deferred, ZADD deferred registry, SADD j1:dependents (invalidates w1's WATCH)",
+      "c Queue.enqueue_job: register queue in rq:queues; j2 deferred so no push",
+      "w1 dequeue_job_and_maintain_ttl: set_state IDLE",
+      "w1 heartbeat before dequeue",
+      "w1 Queue.dequeue_any: LMOVE j1 to intermediate queue, Job.fetch j1",
+      "w1 heartbeat after dequeue",
+      "w1 prepare_execution j1: create Execution x1w1, add to rq:wip:default and rq:executions:j1, worker BUSY",
+      "w1 prepare_job_execution j1: current job, heartbeat, status=started, LREM from intermediate queue",
+      "w1 Job.perform j1: PERSIST job key, job heartbeat",
+      "w1 handle_job_success j1 attempt 1 read phase: WATCH j1:dependents, SMEMBERS = empty",
+      "w1 handle_job_success j1 attempt 1 EXEC rejected (WatchError from step 16); cleanup_execution already cleared worker.execution in memory",
+      "w1 handle_job_success j1 attempt 2 read phase: WATCH dependents, SMEMBERS={j2}, fetch j2, dependencies_are_met (WATCH j1, read j2 deps, HGET j1 status)",
+      "w1 handle_job_success j1 attempt 2 EXEC: unregister j2 from deferred, j2 queued + RPUSH, DEL j1:dependents, j1 finished + result + TTLs; BUG: no DEL execution / ZREM wip / ZREM executions because worker.execution is None, so x1w1 stays in rq:wip:default until StartedJobRegistry.cleanup treats j1 as abandoned",
+      "w1 execute_job end: set_state IDLE",
+      "w1 dequeue_job_and_maintain_ttl: set_state IDLE",
+      "w1 heartbeat before dequeue",
+      "w1 Queue.dequeue_any: LMOVE j2 to intermediate queue, Job.fetch j2",
+      "w1 heartbeat after dequeue",
+      "w1 prepare_execution j2: create Execution x2w1, add to wip and executions registries, worker BUSY",
+      "w1 prepare_job_execution j2: current job, heartbeat, status=started, LREM from intermediate queue",
+      "w1 Job.perform j2: PERSIST job key, job heartbeat",
+      "w1 handle_job_success j2 read phase: WATCH j2:dependents, SMEMBERS = empty",
+      "w1 handle_job_success j2 EXEC: j2 finished + result + TTLs, full execution cleanup of x2w1",
+      "w1 execute_job end: set_state IDLE"
+     ]
+    }
+   },
+   "ladder-opus-3": {
+    "best_match_to_b": {
+     "activation": 0.803,
+     "goal": 0.913,
+     "move": 0.499
+    },
+    "fan_in": [
+     1.67,
+     2.2,
+     2.36,
+     1.62
+    ],
+    "groups_per_level": [
+     3,
+     5,
+     11,
+     26
+    ],
+    "invalid_levels": [],
+    "levels": [
+     "Outcome",
+     "Job lifecycle",
+     "Protocol phase",
+     "rq call"
+    ],
+    "nested_pairs": [
+     true,
+     true,
+     true
+    ],
+    "step_names": {
+     "Job lifecycle": [
+      "j2 created as deferred, waiting on j1 (j1 still started)",
+      "j1 queued -> started: w1 picks it up and runs it",
+      "j1 started -> finished and j2 deferred -> queued (first attempt conflicts with j2's enqueue, second commits)",
+      "j2 queued -> started: w1 picks it up and runs it",
+      "j2 started -> finished, w1 back to idle"
+     ],
+     "Outcome": [
+      "Client submits j2, to run after j1",
+      "Worker w1 runs j1 to completion and releases j2",
+      "Worker w1 runs j2 to completion"
+     ],
+     "Protocol phase": [
+      "c: enqueue j2 with dependency on j1 (WATCH, read j1 status, MULTI/EXEC deferred, register queue)",
+      "w1: go idle, heartbeat, dequeue j1 into intermediate queue",
+      "w1: start j1 (create execution x1w1, worker busy, status started, leave intermediate queue)",
+      "w1: execute j1",
+      "w1: complete j1, attempt 1 (no dependents seen; EXEC aborted by WATCH on j1:dependents)",
+      "w1: complete j1, attempt 2 (finds j2, checks dependencies, EXEC enqueues j2 + finishes j1; execution cleanup skipped, x1w1 left in wip)",
+      "w1: go idle, heartbeat, dequeue j2 into intermediate queue",
+      "w1: start j2 (create execution x2w1, worker busy, status started, leave intermediate queue)",
+      "w1: execute j2",
+      "w1: complete j2 (no dependents; EXEC commits finish + execution cleanup)",
+      "w1: go idle after j2"
+     ],
+     "rq call": [
+      "Queue.setup_dependencies for j2 (WATCH deps, Job.fetch_dependencies WATCH j1 + fetch_many, MULTI/EXEC save deferred + register dependency)",
+      "dequeue_job_and_maintain_ttl: set_state idle",
+      "BaseWorker.heartbeat (before dequeue j1)",
+      "Queue.dequeue_any j1: LMOVE + Job.fetch",
+      "BaseWorker.heartbeat (after dequeue j1)",
+      "prepare_execution j1: Execution.create x1w1 + set_state busy",
+      "prepare_job_execution j1: current job, heartbeat, status started, LREM intermediate",
+      "Job.perform j1 + job heartbeat",
+      "handle_job_success j1 try 1: WATCH dependents, enqueue_dependents reads empty set",
+      "Queue.enqueue_job j2: SADD rq:queues",
+      "handle_job_success j1 try 1: EXEC rejected (WatchError); cleanup_execution already cleared worker.execution",
+      "handle_job_success j1 try 2: WATCH dependents, enqueue_dependents reads {j2}",
+      "Job.fetch_many j2",
+      "Job.dependencies_are_met j2: WATCH j1, read deps, parent status (started, accepted)",
+      "handle_job_success j1 try 2: EXEC commits j2 enqueue, DEL dependents, j1 finished/result/TTL; no execution DEL/ZREM (x1w1 leaked)",
+      "execute_job end: set_state idle",
+      "dequeue_job_and_maintain_ttl: set_state idle",
+      "BaseWorker.heartbeat (before dequeue j2)",
+      "Queue.dequeue_any j2: LMOVE + Job.fetch",
+      "BaseWorker.heartbeat (after dequeue j2)",
+      "prepare_execution j2: Execution.create x2w1 + set_state busy",
+      "prepare_job_execution j2: current job, heartbeat, status started, LREM intermediate",
+      "Job.perform j2 + job heartbeat",
+      "handle_job_success j2: WATCH dependents, enqueue_dependents reads empty set",
+      "handle_job_success j2: EXEC commits finish, result, TTLs, cleanup_execution x2w1",
+      "execute_job end: set_state idle"
+     ]
+    }
+   },
+   "ladder-sonnet-1": {
+    "best_match_to_b": {
+     "activation": 0.542,
+     "goal": 0.913,
+     "move": 0.571
+    },
+    "fan_in": [
+     3.33,
+     1.4,
+     3.0
+    ],
+    "groups_per_level": [
+     3,
+     10,
+     14
+    ],
+    "invalid_levels": [],
+    "levels": [
+     "Business outcome",
+     "Job lifecycle",
+     "rq operation"
+    ],
+    "nested_pairs": [
+     true,
+     true
+    ],
+    "step_names": {
+     "Business outcome": [
+      "Job j2 submitted (depends on j1)",
+      "Job j1 processed and completed (also releases j2)",
+      "Job j2 processed and completed"
+     ],
+     "Job lifecycle": [
+      "j2 submitted as deferred on j1",
+      "j1 dequeued by worker",
+      "j1 started",
+      "j1 completion attempt rejected by concurrent j2 registration",
+      "j1 finished on retry, j2 released to queue",
+      "Worker idle after j1",
+      "j2 dequeued by worker",
+      "j2 started",
+      "j2 finished",
+      "Worker idle after j2"
+     ],
+     "rq operation": [
+      "Queue.enqueue_job j2 (WATCH, fetch dependencies, deferred registration transaction, register queue)",
+      "Worker dequeue j1 (idle state, heartbeats, LMOVE, load job)",
+      "prepare_execution j1 (Execution record, StartedJobRegistry, BUSY)",
+      "prepare_job_execution j1 (worker and job bookkeeping, remove from intermediate queue)",
+      "Run j1 (persist key, job heartbeat)",
+      "handle_job_success j1 attempt 1 (WATCH, read dependents, transaction rejected)",
+      "handle_job_success j1 attempt 2 (re-WATCH, check dependencies, enqueue j2, finish j1)",
+      "Worker back to idle after j1",
+      "Worker dequeue j2 (heartbeats, LMOVE, load job)",
+      "prepare_execution j2",
+      "prepare_job_execution j2",
+      "Run j2 (persist key, job heartbeat)",
+      "handle_job_success j2 (no dependents, finish and clean up)",
+      "Worker idle after j2"
+     ]
+    }
+   },
+   "ladder-sonnet-2": {
+    "best_match_to_b": {
+     "activation": 0.876,
+     "goal": 0.825,
+     "move": 0.416
+    },
+    "fan_in": [
+     2.5,
+     2.0,
+     0.7,
+     6.0
+    ],
+    "groups_per_level": [
+     2,
+     5,
+     10,
+     7
+    ],
+    "invalid_levels": [],
+    "levels": [
+     "Job outcomes",
+     "Job lifecycle",
+     "Worker and client phases",
+     "Redis mechanisms"
+    ],
+    "nested_pairs": [
+     true,
+     false,
+     false
+    ],
+    "step_names": {
+     "Job lifecycle": [
+      "j2 submitted and deferred behind j1",
+      "j1 picked up and started",
+      "j1 finished, j2 moved to queue",
+      "j2 picked up and started",
+      "j2 finished"
+     ],
+     "Job outcomes": [
+      "j1 runs and finishes, releasing j2",
+      "j2 submitted as dependent, then runs and finishes"
+     ],
+     "Redis mechanisms": [
+      "Worker state and heartbeat bookkeeping",
+      "Queue handoff via intermediate queue and job load",
+      "Execution registration and job start",
+      "Dependency registration by client (WATCH/MULTI)",
+      "j1 success commit attempt 1 (rejected by WATCH conflict)",
+      "j1 success commit retry (releases j2, commits)",
+      "j2 success commit"
+     ],
+     "Worker and client phases": [
+      "Client submits j2 with dependency on j1",
+      "Worker dequeues j1",
+      "Worker prepares j1 execution",
+      "Worker performs j1",
+      "Worker handles j1 success and enqueues dependents (with retry)",
+      "Worker goes idle and dequeues j2",
+      "Worker prepares j2 execution",
+      "Worker performs j2",
+      "Worker handles j2 success (no dependents)",
+      "Worker goes idle"
+     ]
+    }
+   },
+   "ladder-sonnet-3": {
+    "best_match_to_b": {
+     "activation": 0.772,
+     "goal": 0.913,
+     "move": 0.659
+    },
+    "fan_in": [
+     3.0,
+     1.89,
+     2.47
+    ],
+    "groups_per_level": [
+     3,
+     9,
+     17
+    ],
+    "invalid_levels": [],
+    "levels": [
+     "Business story",
+     "Job lifecycle",
+     "Protocol phases"
+    ],
+    "nested_pairs": [
+     true,
+     true
+    ],
+    "step_names": {
+     "Business story": [
+      "j2 submitted as a dependent of j1",
+      "j1 executed and finished, releasing j2",
+      "j2 executed and finished"
+     ],
+     "Job lifecycle": [
+      "j2 submitted and deferred behind j1",
+      "j1 picked up and started",
+      "j1 function runs",
+      "j1 finished, j2 released to queue (first commit rejected, retried)",
+      "worker idle after j1",
+      "j2 picked up and started",
+      "j2 function runs",
+      "j2 finished (no dependents)",
+      "worker idle after j2"
+     ],
+     "Protocol phases": [
+      "client WATCHes j2 dependencies key (start of setup_dependencies)",
+      "worker idle state and heartbeat before j1",
+      "worker dequeues j1 (LMOVE to intermediate queue, refresh job)",
+      "worker heartbeat before starting j1",
+      "j1 execution registered, worker marked busy, j1 set to started",
+      "j1 perform (PERSIST, job heartbeat)",
+      "j1 success handling attempt 1: WATCH dependents and read them (empty)",
+      "client registers j2 as deferred dependent of j1 (WATCH, fetch, register, add to queues)",
+      "j1 success transaction rejected (WatchError)",
+      "j1 success handling retry: re-WATCH, check j2 dependencies, enqueue j2, commit j1 finished",
+      "worker state changes to idle",
+      "worker heartbeat and dequeue j2",
+      "worker heartbeat before starting j2",
+      "j2 execution registered, worker marked busy, j2 set to started",
+      "j2 perform (PERSIST, job heartbeat)",
+      "j2 success handling: WATCH, no dependents, commit finished",
+      "worker state set to idle at end"
+     ]
+    }
+   }
+  }
+ },
+ "name_step": {
+  "levels": {
+   "activations": {
+    "barrier_breaks": 0,
+    "classes": 8,
+    "duplicate_names_per_sample": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "majority": {
+     "a:cancel:0": "cancel job",
+     "a:cleanup:0": "fail abandoned jobs",
+     "a:delete:0": "delete job",
+     "a:enqueue-dependent:0": "enqueue dependent job",
+     "a:enqueue:0": "enqueue job",
+     "a:requeue:0": "move failed job to queue",
+     "a:work:0": "pick up and start job",
+     "a:work:1": "finish job"
+    },
+    "names_given": 48,
+    "pairwise_exact": 0.208,
+    "pairwise_token_jaccard": 0.567
+   },
+   "goals": {
+    "barrier_breaks": 0,
+    "classes": 7,
+    "duplicate_names_per_sample": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "majority": {
+     "g:cancel": "cancel a job",
+     "g:cleanup": "fail abandoned jobs",
+     "g:delete": "delete a job",
+     "g:enqueue": "enqueue a job",
+     "g:enqueue-dependent": "enqueue a dependent job",
+     "g:requeue": "requeue a failed job",
+     "g:work": "run next job"
+    },
+    "names_given": 42,
+    "pairwise_exact": 0.371,
+    "pairwise_token_jaccard": 0.846
+   },
+   "moves": {
+    "barrier_breaks": 0,
+    "classes": 29,
+    "duplicate_names_per_sample": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "majority": {
+     "m:02365a": "record worker heartbeat",
+     "m:0fccaa": "finish job and release dependents",
+     "m:10aebe": "save job before requeue",
+     "m:183844": "queue dependent job",
+     "m:1cdb1c": "remove job from finished list",
+     "m:1ecc1d": "commit failure, requeue for retry",
+     "m:257f55": "add job to queue",
+     "m:30455a": "attempt success commit, rejected",
+     "m:34e4a3": "take job from queue",
+     "m:3f68d8": "remove all started executions",
+     "m:4ecdcc": "commit job success",
+     "m:509a00": "commit job as deferred",
+     "m:6ed7ed": "commit job failure",
+     "m:76056c": "cancel finished job",
+     "m:799b8b": "erase job record",
+     "m:819711": "fail abandoned started jobs",
+     "m:840bf6": "attempt deferral, rejected",
+     "m:85ae07": "register job execution",
+     "m:8e69df": "keep job while running",
+     "m:9a3f0c": "remove job from queue",
+     "m:a61c56": "remove job from failed list",
+     "m:b7706e": "mark job started",
+     "m:be2344": "cancel queued job",
+     "m:ca9dee": "commit success, enqueue dependents",
+     "m:d39693": "cancel started job",
+     "m:daa541": "prune expired executions before cancel",
+     "m:ec46fa": "unregister one job execution",
+     "m:f72349": "put failed job back",
+     "m:feef01": "prune expired executions before delete"
+    },
+    "names_given": 174,
+    "pairwise_exact": 0.223,
+    "pairwise_token_jaccard": 0.506
+   }
+  },
+  "samples": [
+   "name-opus-1",
+   "name-opus-2",
+   "name-opus-3",
+   "name-sonnet-1",
+   "name-sonnet-2",
+   "name-sonnet-3"
+  ]
+ }
+}

@@ -35,7 +35,7 @@ Research reports:
 - [Static analysis and LLM system models](docs/research/static-analysis-llm-system-models/report.md): who should do what: extractors, the LLM or checkers.
 - [Model interpreter semantics](docs/research/model-interpreter-semantics/report.md): how to run a model and find races.
 - [Abstraction levels](docs/research/abstraction-levels/report.md): how other fields relate levels of description and check them.
-- [Multi-level models](docs/research/multi-level-models/report.md): which levels a person needs, how steps of one level map to the level above, and what the LLM is asked; from research on how people perceive events and levels.
+- [Multi-level models](docs/research/multi-level-models/report.md): which levels a person needs, how steps of one level map to the level above, and what the LLM is asked; from research on how people perceive events and levels, with an experiment on rq comparing three ways to get the levels.
 
 ## Where to start in the specification
 

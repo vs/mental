@@ -1,0 +1,2085 @@
+{
+ "class_stability": {
+  "v2.0": {
+   "activation": 1.0,
+   "goal": 1.0,
+   "move": 0.463,
+   "move_by_function": 0.517,
+   "move_classes": 31
+  },
+  "v3.0": {
+   "activation": 1.0,
+   "goal": 1.0,
+   "move": 0.5,
+   "move_by_function": 0.864,
+   "move_classes": 28
+  }
+ },
+ "classes": {
+  "activation": [
+   "27b24a4e476e42f8",
+   "53b4320a36a3166f",
+   "7de96369eef44f83",
+   "ac06424c5c3895a0",
+   "c1b765cf4a01a93f",
+   "c516f53b819162e3",
+   "cd46b4b6418c8877",
+   "d1d32ce66324223a"
+  ],
+  "goal": [
+   "16b0b2625bb2cd1e",
+   "1f1fab3215ec8bac",
+   "50a82951acc7dc7c",
+   "57cb23ef23f0201f",
+   "60c5d6f2ef6068a5",
+   "ab4b79bd43c238d3",
+   "b265d4ae456342be"
+  ],
+  "move": [
+   "02365a4d3b122861",
+   "0fccaa9bd87f721a",
+   "10aebe58c89e139b",
+   "18384433fbdf2d07",
+   "1cdb1cc46195eea5",
+   "1ecc1dbbfff9bd31",
+   "257f55897c0dbb67",
+   "30455abecb8de33d",
+   "34e4a3b210334a30",
+   "3f68d8329bca5281",
+   "4ecdccac54f653e5",
+   "509a00909ba492c3",
+   "6ed7ed96f248aa13",
+   "76056c8c177bddd0",
+   "799b8b16ef9fa406",
+   "8197114e99e3de8d",
+   "840bf65cab8298bf",
+   "85ae07ac8792d0a2",
+   "8e69dfcd3faf518f",
+   "9a3f0c5328230178",
+   "a61c56e9da5e2ad0",
+   "b7706e9f39967d91",
+   "be23441e7702e32f",
+   "ca9deef979097d02",
+   "d396934fcc866067",
+   "daa54116d10d28bb",
+   "ec46faf99d8e1fba",
+   "f72349d5ccdc22e7",
+   "feef01f74104ce0c"
+  ]
+ },
+ "cut_lines": {
+  "cancel-vs-work": {
+   "in_band": 1.0,
+   "max": 4,
+   "mean": 2.94,
+   "median": 3,
+   "n": 341,
+   "ones": 0.0,
+   "q1": 2.0,
+   "q3": 3.0
+  },
+  "cleanup-vs-work": {
+   "in_band": 1.0,
+   "max": 4,
+   "mean": 2.81,
+   "median": 2.0,
+   "n": 54,
+   "ones": 0.0,
+   "q1": 2.0,
+   "q3": 4.0
+  },
+  "delete-vs-work": {
+   "in_band": 1.0,
+   "max": 4,
+   "mean": 2.3,
+   "median": 2,
+   "n": 139,
+   "ones": 0.0,
+   "q1": 2.0,
+   "q3": 2.0
+  },
+  "dependency": {
+   "in_band": 1.0,
+   "max": 6,
+   "mean": 6.0,
+   "median": 6.0,
+   "n": 20,
+   "ones": 0.0,
+   "q1": 6.0,
+   "q3": 6.0
+  }
+ },
+ "fan_in": {
+  "activation per goal": {
+   "in_band": 0.51,
+   "max": 2,
+   "mean": 1.51,
+   "median": 2,
+   "n": 4617,
+   "ones": 0.49,
+   "q1": 1.0,
+   "q3": 2.0
+  },
+  "effect per move": {
+   "in_band": 0.395,
+   "max": 10,
+   "mean": 2.01,
+   "median": 1.0,
+   "n": 15358,
+   "ones": 0.574,
+   "q1": 1.0,
+   "q3": 2.0
+  },
+  "goal per outcome": {
+   "in_band": 0.48,
+   "max": 3,
+   "mean": 1.56,
+   "median": 1.0,
+   "n": 2520,
+   "ones": 0.52,
+   "q1": 1.0,
+   "q3": 2.0
+  },
+  "move per activation": {
+   "in_band": 0.578,
+   "max": 4,
+   "mean": 2.2,
+   "median": 2.0,
+   "n": 6972,
+   "ones": 0.295,
+   "q1": 1.0,
+   "q3": 4.0
+  },
+  "status change per activation": {
+   "in_band": 0.03,
+   "max": 2,
+   "mean": 0.9,
+   "median": 1.0,
+   "n": 6972,
+   "ones": 0.842,
+   "q1": 1.0,
+   "q3": 1.0
+  },
+  "status change per goal": {
+   "in_band": 0.51,
+   "max": 3,
+   "mean": 1.36,
+   "median": 2,
+   "n": 4617,
+   "ones": 0.296,
+   "q1": 1.0,
+   "q3": 2.0
+  }
+ },
+ "goals_in_two_outcomes": 0.044,
+ "move_classes": {
+  "02365a4d3b122861": {
+   "class": [
+    "work",
+    "Job.heartbeat",
+    [
+     "rq:job:*"
+    ]
+   ],
+   "effects": [
+    "HSET rq:job:*"
+   ],
+   "stack": [
+    "BaseWorker.perform_job",
+    "BaseWorker.handle_execution_ended",
+    "Job.heartbeat"
+   ]
+  },
+  "0fccaa9bd87f721a": {
+   "class": [
+    "work",
+    "BaseWorker.handle_job_success",
+    [
+     "rq:deferred:*",
+     "rq:finished:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:queue:*",
+     "rq:results:*",
+     "rq:worker:*"
+    ]
+   ],
+   "effects": [
+    "WATCH rq:job:*:dependents",
+    "SMEMBERS rq:job:*:dependents",
+    "EXEC[HGETALL rq:job:*]",
+    "WATCH rq:job:*",
+    "SMEMBERS rq:job::*:dependencies",
+    "HGET rq:job:* status",
+    "EXEC[ZREM rq:deferred:*; ZREM rq:deferred:*; HSET rq:job:*; HSET rq:job:*; RPUSH rq:queue:*; DEL rq:job:*:dependents; HINCRBY rq:worker:*; HINCRBYFLOAT rq:worker:*; HSET rq:job:*; HSET rq:job:*; XADD rq:results:*; EXPIRE rq:results:*; ZADD rq:finished:*; EXPIRE rq:job:*; EXPIRE rq:job:*:dependents; EXPIRE rq:job::*:dependencies; HDEL rq:worker:*]"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.perform_job",
+    "BaseWorker.handle_job_success"
+   ]
+  },
+  "10aebe58c89e139b": {
+   "class": [
+    "requeue",
+    "Job.save",
+    [
+     "rq:job:*"
+    ]
+   ],
+   "effects": [
+    "HSET rq:job:*"
+   ],
+   "stack": [
+    "BaseRegistry.requeue",
+    "Job.save"
+   ]
+  },
+  "18384433fbdf2d07": {
+   "class": [
+    "enqueue-dependent",
+    "Queue._enqueue_async_job",
+    [
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   ],
+   "effects": [
+    "WATCH rq:job::*:dependencies",
+    "WATCH rq:job:*",
+    "EXEC[HGETALL rq:job:*]",
+    "EXEC[HSET rq:job:*; HSET rq:job:*; RPUSH rq:queue:*]"
+   ],
+   "stack": [
+    "Queue.enqueue_job",
+    "Queue._enqueue_job",
+    "Queue._enqueue_async_job"
+   ]
+  },
+  "1cdb1cc46195eea5": {
+   "class": [
+    "delete",
+    "BaseRegistry.remove",
+    [
+     "rq:finished:*"
+    ]
+   ],
+   "effects": [
+    "HGETALL rq:job:*",
+    "HGET rq:job:* status",
+    "ZREM rq:finished:*"
+   ],
+   "stack": [
+    "Job.delete",
+    "Job._remove_from_registries",
+    "BaseRegistry.remove"
+   ]
+  },
+  "1ecc1dbbfff9bd31": {
+   "class": [
+    "work",
+    "BaseWorker.handle_job_failure",
+    [
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:job:*",
+     "rq:queue:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   ],
+   "effects": [
+    "EXEC[HDEL rq:worker:*; DEL rq:execution:*:*; ZREM rq:wip:*; ZREM rq:executions:*; HINCRBY rq:worker:*; HINCRBYFLOAT rq:worker:*; HSET rq:job:*; HSET rq:job:*; RPUSH rq:queue:*]"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.perform_job",
+    "BaseWorker.handle_job_failure"
+   ]
+  },
+  "257f55897c0dbb67": {
+   "class": [
+    "enqueue",
+    "Queue._enqueue_async_job",
+    [
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   ],
+   "effects": [
+    "EXEC[HSET rq:job:*; HSET rq:job:*; RPUSH rq:queue:*]"
+   ],
+   "stack": [
+    "Queue.enqueue_job",
+    "Queue._enqueue_job",
+    "Queue._enqueue_async_job"
+   ]
+  },
+  "30455abecb8de33d": {
+   "class": [
+    "work",
+    "BaseWorker.handle_job_success",
+    "rejected"
+   ],
+   "effects": [
+    "WATCH rq:job:*:dependents",
+    "SMEMBERS rq:job:*:dependents",
+    "EXEC[HINCRBY rq:worker:*; HINCRBYFLOAT rq:worker:*; HSET rq:job:*; HSET rq:job:*; XADD rq:results:*; EXPIRE rq:results:*; ZADD rq:finished:*; EXPIRE rq:job:*; EXPIRE rq:job:*:dependents; EXPIRE rq:job::*:dependencies; HDEL rq:worker:*; DEL rq:execution:*:*; ZREM rq:wip:*; ZREM rq:executions:*]"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.perform_job",
+    "BaseWorker.handle_job_success"
+   ]
+  },
+  "34e4a3b210334a30": {
+   "class": [
+    "work",
+    "Queue.lmove",
+    [
+     "rq:queue:*",
+     "rq:queue:*:intermediate"
+    ]
+   ],
+   "effects": [
+    "LMOVE rq:queue:*"
+   ],
+   "stack": [
+    "BaseWorker.dequeue_job_and_maintain_ttl",
+    "Queue.dequeue_any",
+    "Queue.lmove"
+   ]
+  },
+  "3f68d8329bca5281": {
+   "class": [
+    "delete",
+    "StartedJobRegistry.remove_executions",
+    [
+     "rq:wip:*"
+    ]
+   ],
+   "effects": [
+    "ZRANGE rq:executions:*",
+    "HGETALL rq:execution:*:*",
+    "ZREM rq:wip:*"
+   ],
+   "stack": [
+    "Job.delete",
+    "Job._remove_from_registries",
+    "StartedJobRegistry.remove_executions"
+   ]
+  },
+  "4ecdccac54f653e5": {
+   "class": [
+    "work",
+    "BaseWorker.handle_job_success",
+    [
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:finished:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:results:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   ],
+   "effects": [
+    "WATCH rq:job:*:dependents",
+    "SMEMBERS rq:job:*:dependents",
+    "EXEC[HINCRBY rq:worker:*; HINCRBYFLOAT rq:worker:*; HSET rq:job:*; HSET rq:job:*; XADD rq:results:*; EXPIRE rq:results:*; ZADD rq:finished:*; EXPIRE rq:job:*; EXPIRE rq:job:*:dependents; EXPIRE rq:job::*:dependencies; HDEL rq:worker:*; DEL rq:execution:*:*; ZREM rq:wip:*; ZREM rq:executions:*]"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.perform_job",
+    "BaseWorker.handle_job_success"
+   ]
+  },
+  "509a00909ba492c3": {
+   "class": [
+    "enqueue-dependent",
+    "Queue.setup_dependencies",
+    [
+     "rq:deferred:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies"
+    ]
+   ],
+   "effects": [
+    "WATCH rq:job::*:dependencies",
+    "WATCH rq:job:*",
+    "EXEC[HGETALL rq:job:*]",
+    "EXEC[HSET rq:job:*; ZADD rq:deferred:*; SADD rq:job:*:dependents; SADD rq:job::*:dependencies; HSET rq:job:*]"
+   ],
+   "stack": [
+    "Queue.enqueue_call",
+    "Queue.enqueue_job",
+    "Queue.setup_dependencies"
+   ]
+  },
+  "6ed7ed96f248aa13": {
+   "class": [
+    "work",
+    "BaseWorker.handle_job_failure",
+    [
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:failed:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:results:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   ],
+   "effects": [
+    "EXEC[HSET rq:job:*; HDEL rq:worker:*; DEL rq:execution:*:*; ZREM rq:wip:*; ZREM rq:executions:*; HSET rq:job:*; EXPIRE rq:job:*; EXPIRE rq:job:*:dependents; EXPIRE rq:job::*:dependencies; ZADD rq:failed:*; XADD rq:results:*]"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.perform_job",
+    "BaseWorker.handle_job_failure"
+   ]
+  },
+  "76056c8c177bddd0": {
+   "class": [
+    "cancel",
+    "Job.cancel",
+    [
+     "rq:canceled:*",
+     "rq:finished:*",
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   ],
+   "effects": [
+    "HGETALL rq:job:*",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "EXEC[HSET rq:job:*; LREM rq:queue:*; ZREM rq:finished:*; ZADD rq:canceled:*]"
+   ],
+   "stack": [
+    "Job.cancel"
+   ]
+  },
+  "799b8b16ef9fa406": {
+   "class": [
+    "delete",
+    "Job.delete",
+    [
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies"
+    ]
+   ],
+   "effects": [
+    "ZRANGE rq:executions:*",
+    "DEL rq:job:*"
+   ],
+   "stack": [
+    "Job.delete"
+   ]
+  },
+  "8197114e99e3de8d": {
+   "class": [
+    "cleanup",
+    "StartedJobRegistry.cleanup",
+    [
+     "rq:failed:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:results:*",
+     "rq:wip:*"
+    ]
+   ],
+   "effects": [
+    "ZRANGEBYSCORE rq:wip:*",
+    "HGETALL rq:job:*",
+    "WATCH rq:job:*:dependents",
+    "SMEMBERS rq:job:*:dependents",
+    "EXEC[HSET rq:job:*; HSET rq:job:*; EXPIRE rq:job:*; EXPIRE rq:job:*:dependents; EXPIRE rq:job::*:dependencies; ZADD rq:failed:*; XADD rq:results:*; ZREMRANGEBYSCORE rq:wip:*]"
+   ],
+   "stack": [
+    "StartedJobRegistry.cleanup"
+   ]
+  },
+  "840bf65cab8298bf": {
+   "class": [
+    "enqueue-dependent",
+    "Queue.setup_dependencies",
+    "rejected"
+   ],
+   "effects": [
+    "WATCH rq:job::*:dependencies",
+    "WATCH rq:job:*",
+    "EXEC[HGETALL rq:job:*]",
+    "EXEC[HSET rq:job:*; ZADD rq:deferred:*; SADD rq:job:*:dependents; SADD rq:job::*:dependencies; HSET rq:job:*]"
+   ],
+   "stack": [
+    "Queue.enqueue_call",
+    "Queue.enqueue_job",
+    "Queue.setup_dependencies"
+   ]
+  },
+  "85ae07ac8792d0a2": {
+   "class": [
+    "work",
+    "prepare_execution",
+    [
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   ],
+   "effects": [
+    "HGETALL rq:job:*",
+    "EXEC[HSET rq:execution:*:*; EXPIRE rq:execution:*:*; ZADD rq:executions:*; EXPIRE rq:executions:*; ZADD rq:wip:*; HSET rq:worker:*]"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.prepare_execution",
+    "prepare_execution"
+   ]
+  },
+  "8e69dfcd3faf518f": {
+   "class": [
+    "work",
+    "Job.perform",
+    [
+     "rq:job:*"
+    ]
+   ],
+   "effects": [
+    "PERSIST rq:job:*"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.perform_job",
+    "Job.perform"
+   ]
+  },
+  "9a3f0c5328230178": {
+   "class": [
+    "delete",
+    "Queue.remove",
+    [
+     "rq:queue:*"
+    ]
+   ],
+   "effects": [
+    "HGETALL rq:job:*",
+    "LREM rq:queue:*"
+   ],
+   "stack": [
+    "Job.delete",
+    "Job._remove_from_registries",
+    "Queue.remove"
+   ]
+  },
+  "a61c56e9da5e2ad0": {
+   "class": [
+    "requeue",
+    "BaseRegistry.requeue",
+    [
+     "rq:failed:*"
+    ]
+   ],
+   "effects": [
+    "HGETALL rq:job:*",
+    "ZREM rq:failed:*"
+   ],
+   "stack": [
+    "BaseRegistry.requeue"
+   ]
+  },
+  "b7706e9f39967d91": {
+   "class": [
+    "work",
+    "BaseWorker.prepare_job_execution",
+    [
+     "rq:job:*",
+     "rq:queue:*:intermediate",
+     "rq:worker:*"
+    ]
+   ],
+   "effects": [
+    "EXEC[HSET rq:worker:*; HSET rq:worker:*; HSET rq:worker:*; EXPIRE rq:worker:*; HSET rq:job:*; HSET rq:job:*; LREM rq:queue:*:intermediate]"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.perform_job",
+    "BaseWorker.prepare_job_execution"
+   ]
+  },
+  "be23441e7702e32f": {
+   "class": [
+    "cancel",
+    "Job.cancel",
+    [
+     "rq:canceled:*",
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   ],
+   "effects": [
+    "HGETALL rq:job:*",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "EXEC[HSET rq:job:*; LREM rq:queue:*; ZADD rq:canceled:*]"
+   ],
+   "stack": [
+    "Job.cancel"
+   ]
+  },
+  "ca9deef979097d02": {
+   "class": [
+    "work",
+    "BaseWorker.handle_job_success",
+    [
+     "rq:deferred:*",
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:finished:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:queue:*",
+     "rq:results:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   ],
+   "effects": [
+    "WATCH rq:job:*:dependents",
+    "SMEMBERS rq:job:*:dependents",
+    "EXEC[HGETALL rq:job:*]",
+    "WATCH rq:job:*",
+    "SMEMBERS rq:job::*:dependencies",
+    "HGET rq:job:* status",
+    "EXEC[ZREM rq:deferred:*; ZREM rq:deferred:*; HSET rq:job:*; HSET rq:job:*; RPUSH rq:queue:*; DEL rq:job:*:dependents; HINCRBY rq:worker:*; HINCRBYFLOAT rq:worker:*; HSET rq:job:*; HSET rq:job:*; XADD rq:results:*; EXPIRE rq:results:*; ZADD rq:finished:*; EXPIRE rq:job:*; EXPIRE rq:job:*:dependents; EXPIRE rq:job::*:dependencies; HDEL rq:worker:*; DEL rq:execution:*:*; ZREM rq:wip:*; ZREM rq:executions:*]"
+   ],
+   "stack": [
+    "SimpleWorker.execute_job",
+    "BaseWorker.perform_job",
+    "BaseWorker.handle_job_success"
+   ]
+  },
+  "d396934fcc866067": {
+   "class": [
+    "cancel",
+    "Job.cancel",
+    [
+     "rq:canceled:*",
+     "rq:job:*",
+     "rq:queue:*",
+     "rq:wip:*"
+    ]
+   ],
+   "effects": [
+    "ZRANGE rq:executions:*",
+    "HGETALL rq:execution:*:*",
+    "EXEC[HSET rq:job:*; LREM rq:queue:*; ZREM rq:wip:*; ZADD rq:canceled:*]"
+   ],
+   "stack": [
+    "Job.cancel"
+   ]
+  },
+  "daa54116d10d28bb": {
+   "class": [
+    "cancel",
+    "ExecutionRegistry.cleanup",
+    [
+     "rq:executions:*"
+    ]
+   ],
+   "effects": [
+    "HGETALL rq:job:*",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "ZREMRANGEBYSCORE rq:executions:*"
+   ],
+   "stack": [
+    "ExecutionRegistry.get_executions",
+    "ExecutionRegistry.get_execution_ids",
+    "ExecutionRegistry.cleanup"
+   ]
+  },
+  "ec46faf99d8e1fba": {
+   "class": [
+    "delete",
+    "StartedJobRegistry.remove_execution",
+    [
+     "rq:wip:*"
+    ]
+   ],
+   "effects": [
+    "ZRANGE rq:executions:*",
+    "HGETALL rq:execution:*:*",
+    "ZREM rq:wip:*"
+   ],
+   "stack": [
+    "ExecutionRegistry.delete",
+    "Execution.delete",
+    "StartedJobRegistry.remove_execution"
+   ]
+  },
+  "f72349d5ccdc22e7": {
+   "class": [
+    "requeue",
+    "BaseRegistry.requeue",
+    [
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   ],
+   "effects": [
+    "EXEC[HSET rq:job:*; HSET rq:job:*; RPUSH rq:queue:*]"
+   ],
+   "stack": [
+    "BaseRegistry.requeue"
+   ]
+  },
+  "feef01f74104ce0c": {
+   "class": [
+    "delete",
+    "ExecutionRegistry.cleanup",
+    [
+     "rq:executions:*"
+    ]
+   ],
+   "effects": [
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "HGET rq:job:* status",
+    "ZREMRANGEBYSCORE rq:executions:*"
+   ],
+   "stack": [
+    "ExecutionRegistry.get_executions",
+    "ExecutionRegistry.get_execution_ids",
+    "ExecutionRegistry.cleanup"
+   ]
+  }
+ },
+ "placement": {
+  "cancel-vs-work": {
+   "a": {
+    "business": 214,
+    "services": 127
+   },
+   "b_structure": {
+    "activation": 204,
+    "move": 127,
+    "outcome": 10
+   },
+   "b_with_state": {
+    "goal": 41,
+    "outcome": 300
+   }
+  },
+  "cleanup-vs-work": {
+   "a": {
+    "business": 54
+   },
+   "b_structure": {
+    "outcome": 54
+   },
+   "b_with_state": {
+    "outcome": 54
+   }
+  },
+  "delete-vs-work": {
+   "a": {
+    "business": 139
+   },
+   "b_structure": {
+    "activation": 1,
+    "move": 138
+   },
+   "b_with_state": {
+    "goal": 13,
+    "outcome": 126
+   }
+  },
+  "dependency": {
+   "a": {
+    "services": 20
+   },
+   "b_structure": {
+    "move": 20
+   },
+   "b_with_state": {
+    "outcome": 20
+   }
+  },
+  "fail-retry": {
+   "a": {},
+   "b_structure": {},
+   "b_with_state": {}
+  },
+  "requeue-vs-work": {
+   "a": {},
+   "b_structure": {},
+   "b_with_state": {}
+  },
+  "two-workers": {
+   "a": {},
+   "b_structure": {},
+   "b_with_state": {}
+  },
+  "work-ok": {
+   "a": {},
+   "b_structure": {},
+   "b_with_state": {}
+  }
+ },
+ "runs": 2097,
+ "steps_per_run_a": {
+  "business": 3.03,
+  "components": 37.99,
+  "services": 25.69,
+  "statements": 53.89,
+  "system": 5.53
+ },
+ "steps_per_run_b": {
+  "activation": 3.32,
+  "effect (all)": 25.69,
+  "effect (on chain)": 14.71,
+  "goal": 2.2,
+  "move": 7.32,
+  "outcome": 1.2
+ },
+ "support_share": 0.428,
+ "witness": {
+  "activations": 5,
+  "effects": 42,
+  "goals": 3,
+  "listing": [
+   [
+    0,
+    "c",
+    [
+     [
+      "WATCH",
+      [
+       "rq:job::j2:dependencies"
+      ]
+     ]
+    ],
+    [
+     "Queue.enqueue_job",
+     "Queue.setup_dependencies"
+    ],
+    false,
+    true
+   ],
+   [
+    1,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.set_state"
+    ],
+    false,
+    false
+   ],
+   [
+    2,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    3,
+    "w1",
+    [
+     [
+      "EXPIRE",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    4,
+    "w1",
+    [
+     [
+      "LMOVE",
+      [
+       "rq:queue:default",
+       "rq:queue:default:intermediate"
+      ]
+     ]
+    ],
+    [
+     "Queue.dequeue_any",
+     "Queue.lmove"
+    ],
+    false,
+    true
+   ],
+   [
+    5,
+    "w1",
+    [
+     [
+      "HGETALL",
+      [
+       "rq:job:j1"
+      ]
+     ]
+    ],
+    [
+     "Job.fetch",
+     "Job.refresh"
+    ],
+    false,
+    true
+   ],
+   [
+    6,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    7,
+    "w1",
+    [
+     [
+      "EXPIRE",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    8,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:execution:j1:x1w1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:execution:j1:x1w1"
+      ]
+     ],
+     [
+      "ZADD",
+      [
+       "rq:executions:j1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:executions:j1"
+      ]
+     ],
+     [
+      "ZADD",
+      [
+       "rq:wip:default"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.prepare_execution",
+     "prepare_execution"
+    ],
+    false,
+    true
+   ],
+   [
+    9,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j1"
+      ]
+     ],
+     [
+      "LREM",
+      [
+       "rq:queue:default:intermediate"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "BaseWorker.prepare_job_execution"
+    ],
+    false,
+    true
+   ],
+   [
+    10,
+    "w1",
+    [
+     [
+      "PERSIST",
+      [
+       "rq:job:j1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "Job.perform"
+    ],
+    false,
+    true
+   ],
+   [
+    11,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:job:j1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.handle_execution_ended",
+     "Job.heartbeat"
+    ],
+    false,
+    true
+   ],
+   [
+    12,
+    "w1",
+    [
+     [
+      "WATCH",
+      [
+       "rq:job:j1:dependents"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "BaseWorker.handle_job_success"
+    ],
+    false,
+    true
+   ],
+   [
+    13,
+    "w1",
+    [
+     [
+      "SMEMBERS",
+      [
+       "rq:job:j1:dependents"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.handle_job_success",
+     "Queue.enqueue_dependents"
+    ],
+    false,
+    true
+   ],
+   [
+    14,
+    "c",
+    [
+     [
+      "WATCH",
+      [
+       "rq:job:j1"
+      ]
+     ]
+    ],
+    [
+     "Queue.setup_dependencies",
+     "Job.fetch_dependencies"
+    ],
+    false,
+    true
+   ],
+   [
+    15,
+    "c",
+    [
+     [
+      "HGETALL",
+      [
+       "rq:job:j1"
+      ]
+     ]
+    ],
+    [
+     "Job.fetch_dependencies",
+     "Job.fetch_many"
+    ],
+    false,
+    true
+   ],
+   [
+    16,
+    "c",
+    [
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ],
+     [
+      "ZADD",
+      [
+       "rq:deferred:default"
+      ]
+     ],
+     [
+      "SADD",
+      [
+       "rq:job:j1:dependents"
+      ]
+     ],
+     [
+      "SADD",
+      [
+       "rq:job::j2:dependencies"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ]
+    ],
+    [
+     "Queue.enqueue_job",
+     "Queue.setup_dependencies"
+    ],
+    false,
+    true
+   ],
+   [
+    17,
+    "c",
+    [
+     [
+      "SADD",
+      [
+       "rq:queues"
+      ]
+     ]
+    ],
+    [
+     "Queue.enqueue_call",
+     "Queue.enqueue_job"
+    ],
+    false,
+    false
+   ],
+   [
+    18,
+    "w1",
+    [
+     [
+      "HINCRBY",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HINCRBYFLOAT",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j1"
+      ]
+     ],
+     [
+      "XADD",
+      [
+       "rq:results:j1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:results:j1"
+      ]
+     ],
+     [
+      "ZADD",
+      [
+       "rq:finished:default"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job:j1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job:j1:dependents"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job::j1:dependencies"
+      ]
+     ],
+     [
+      "HDEL",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "DEL",
+      [
+       "rq:execution:j1:x1w1"
+      ]
+     ],
+     [
+      "ZREM",
+      [
+       "rq:wip:default"
+      ]
+     ],
+     [
+      "ZREM",
+      [
+       "rq:executions:j1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "BaseWorker.handle_job_success"
+    ],
+    true,
+    true
+   ],
+   [
+    19,
+    "w1",
+    [
+     [
+      "WATCH",
+      [
+       "rq:job:j1:dependents"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "BaseWorker.handle_job_success"
+    ],
+    false,
+    true
+   ],
+   [
+    20,
+    "w1",
+    [
+     [
+      "SMEMBERS",
+      [
+       "rq:job:j1:dependents"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.handle_job_success",
+     "Queue.enqueue_dependents"
+    ],
+    false,
+    true
+   ],
+   [
+    21,
+    "w1",
+    [
+     [
+      "HGETALL",
+      [
+       "rq:job:j2"
+      ]
+     ]
+    ],
+    [
+     "Queue.enqueue_dependents",
+     "Job.fetch_many"
+    ],
+    false,
+    true
+   ],
+   [
+    22,
+    "w1",
+    [
+     [
+      "WATCH",
+      [
+       "rq:job:j1"
+      ]
+     ]
+    ],
+    [
+     "Queue.enqueue_dependents",
+     "Job.dependencies_are_met"
+    ],
+    false,
+    true
+   ],
+   [
+    23,
+    "w1",
+    [
+     [
+      "SMEMBERS",
+      [
+       "rq:job::j2:dependencies"
+      ]
+     ]
+    ],
+    [
+     "Queue.enqueue_dependents",
+     "Job.dependencies_are_met"
+    ],
+    false,
+    true
+   ],
+   [
+    24,
+    "w1",
+    [
+     [
+      "HGET",
+      [
+       "rq:job:j1"
+      ]
+     ]
+    ],
+    [
+     "Job.dependencies_are_met",
+     "Job.get_status"
+    ],
+    false,
+    true
+   ],
+   [
+    25,
+    "w1",
+    [
+     [
+      "ZREM",
+      [
+       "rq:deferred:default"
+      ]
+     ],
+     [
+      "ZREM",
+      [
+       "rq:deferred:default"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ],
+     [
+      "RPUSH",
+      [
+       "rq:queue:default"
+      ]
+     ],
+     [
+      "DEL",
+      [
+       "rq:job:j1:dependents"
+      ]
+     ],
+     [
+      "HINCRBY",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HINCRBYFLOAT",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j1"
+      ]
+     ],
+     [
+      "XADD",
+      [
+       "rq:results:j1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:results:j1"
+      ]
+     ],
+     [
+      "ZADD",
+      [
+       "rq:finished:default"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job:j1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job:j1:dependents"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job::j1:dependencies"
+      ]
+     ],
+     [
+      "HDEL",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "BaseWorker.handle_job_success"
+    ],
+    false,
+    true
+   ],
+   [
+    26,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "SimpleWorker.execute_job",
+     "BaseWorker.set_state"
+    ],
+    false,
+    false
+   ],
+   [
+    27,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.set_state"
+    ],
+    false,
+    false
+   ],
+   [
+    28,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    29,
+    "w1",
+    [
+     [
+      "EXPIRE",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    30,
+    "w1",
+    [
+     [
+      "LMOVE",
+      [
+       "rq:queue:default",
+       "rq:queue:default:intermediate"
+      ]
+     ]
+    ],
+    [
+     "Queue.dequeue_any",
+     "Queue.lmove"
+    ],
+    false,
+    true
+   ],
+   [
+    31,
+    "w1",
+    [
+     [
+      "HGETALL",
+      [
+       "rq:job:j2"
+      ]
+     ]
+    ],
+    [
+     "Job.fetch",
+     "Job.refresh"
+    ],
+    false,
+    true
+   ],
+   [
+    32,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    33,
+    "w1",
+    [
+     [
+      "EXPIRE",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.dequeue_job_and_maintain_ttl",
+     "BaseWorker.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    34,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:execution:j2:x2w1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:execution:j2:x2w1"
+      ]
+     ],
+     [
+      "ZADD",
+      [
+       "rq:executions:j2"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:executions:j2"
+      ]
+     ],
+     [
+      "ZADD",
+      [
+       "rq:wip:default"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.prepare_execution",
+     "prepare_execution"
+    ],
+    false,
+    true
+   ],
+   [
+    35,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ],
+     [
+      "LREM",
+      [
+       "rq:queue:default:intermediate"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "BaseWorker.prepare_job_execution"
+    ],
+    false,
+    true
+   ],
+   [
+    36,
+    "w1",
+    [
+     [
+      "PERSIST",
+      [
+       "rq:job:j2"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "Job.perform"
+    ],
+    false,
+    true
+   ],
+   [
+    37,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.handle_execution_ended",
+     "Job.heartbeat"
+    ],
+    false,
+    false
+   ],
+   [
+    38,
+    "w1",
+    [
+     [
+      "WATCH",
+      [
+       "rq:job:j2:dependents"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "BaseWorker.handle_job_success"
+    ],
+    false,
+    true
+   ],
+   [
+    39,
+    "w1",
+    [
+     [
+      "SMEMBERS",
+      [
+       "rq:job:j2:dependents"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.handle_job_success",
+     "Queue.enqueue_dependents"
+    ],
+    false,
+    true
+   ],
+   [
+    40,
+    "w1",
+    [
+     [
+      "HINCRBY",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HINCRBYFLOAT",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ],
+     [
+      "HSET",
+      [
+       "rq:job:j2"
+      ]
+     ],
+     [
+      "XADD",
+      [
+       "rq:results:j2"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:results:j2"
+      ]
+     ],
+     [
+      "ZADD",
+      [
+       "rq:finished:default"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job:j2"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job:j2:dependents"
+      ]
+     ],
+     [
+      "EXPIRE",
+      [
+       "rq:job::j2:dependencies"
+      ]
+     ],
+     [
+      "HDEL",
+      [
+       "rq:worker:w1"
+      ]
+     ],
+     [
+      "DEL",
+      [
+       "rq:execution:j2:x2w1"
+      ]
+     ],
+     [
+      "ZREM",
+      [
+       "rq:wip:default"
+      ]
+     ],
+     [
+      "ZREM",
+      [
+       "rq:executions:j2"
+      ]
+     ]
+    ],
+    [
+     "BaseWorker.perform_job",
+     "BaseWorker.handle_job_success"
+    ],
+    false,
+    true
+   ],
+   [
+    41,
+    "w1",
+    [
+     [
+      "HSET",
+      [
+       "rq:worker:w1"
+      ]
+     ]
+    ],
+    [
+     "SimpleWorker.execute_job",
+     "BaseWorker.set_state"
+    ],
+    false,
+    false
+   ]
+  ],
+  "moves": 13,
+  "outcomes": 2,
+  "support": 14,
+  "support_steps": [
+   1,
+   2,
+   3,
+   6,
+   7,
+   17,
+   26,
+   27,
+   28,
+   29,
+   32,
+   33,
+   37,
+   41
+  ],
+  "tree": [
+   "GOAL c enqueue-dependent (5 effects, 1 support)",
+   "  ACTIVATION part 0 (5 effects)",
+   "    MOVE [0,14,15,16] Queue.setup_dependencies -> ['rq:deferred:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies']",
+   "GOAL w1 work (22 effects, 6 support)",
+   "  ACTIVATION part 0 (10 effects)",
+   "    MOVE [4] Queue.lmove -> ['rq:queue:*', 'rq:queue:*:intermediate']",
+   "    MOVE [5,8] prepare_execution -> ['rq:execution:*:*', 'rq:executions:*', 'rq:wip:*', 'rq:worker:*']",
+   "    MOVE [9] BaseWorker.prepare_job_execution -> ['rq:job:*', 'rq:queue:*:intermediate', 'rq:worker:*']",
+   "    MOVE [10] Job.perform -> ['rq:job:*']",
+   "  ACTIVATION part 1 (12 effects)",
+   "    MOVE [11] Job.heartbeat -> ['rq:job:*']",
+   "    MOVE [12,13,18] BaseWorker.handle_job_success -> rejected",
+   "    MOVE [19,20,21,22,23,24,25] BaseWorker.handle_job_success -> ['rq:deferred:*', 'rq:finished:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies', 'rq:queue:*', 'rq:results:*', 'rq:worker:*']",
+   "GOAL w1 work (15 effects, 7 support)",
+   "  ACTIVATION part 0 (10 effects)",
+   "    MOVE [30] Queue.lmove -> ['rq:queue:*', 'rq:queue:*:intermediate']",
+   "    MOVE [31,34] prepare_execution -> ['rq:execution:*:*', 'rq:executions:*', 'rq:wip:*', 'rq:worker:*']",
+   "    MOVE [35] BaseWorker.prepare_job_execution -> ['rq:job:*', 'rq:queue:*:intermediate', 'rq:worker:*']",
+   "    MOVE [36] Job.perform -> ['rq:job:*']",
+   "  ACTIVATION part 1 (5 effects)",
+   "    MOVE [38,39,40] BaseWorker.handle_job_success -> ['rq:execution:*:*', 'rq:executions:*', 'rq:finished:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies', 'rq:results:*', 'rq:wip:*', 'rq:worker:*']"
+  ]
+ }
+}

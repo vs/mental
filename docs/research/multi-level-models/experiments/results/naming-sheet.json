@@ -1,0 +1,1759 @@
+{
+ "activations": {
+  "a:cancel:0": {
+   "api_call": "cancel",
+   "moves": [
+    "m:76056c",
+    "m:be2344",
+    "m:d39693",
+    "m:daa541"
+   ],
+   "observable_changes": [
+    "['finished', ['finished'], '1'] -> ['canceled', ['canceled', 'finished'], '1']",
+    "['finished', ['finished'], '1'] -> ['canceled', ['canceled'], '1']",
+    "['queued', ['queue'], None] -> ['canceled', ['canceled'], None]",
+    "['queued', ['started'], None] -> ['canceled', ['canceled', 'started'], None]",
+    "['queued', [], None] -> ['canceled', ['canceled'], None]",
+    "['started', ['started'], None] -> ['canceled', ['canceled', 'started'], None]",
+    "['started', ['started'], None] -> ['canceled', ['canceled'], None]"
+   ],
+   "part": 0
+  },
+  "a:cleanup:0": {
+   "api_call": "cleanup",
+   "moves": [
+    "m:819711"
+   ],
+   "observable_changes": [
+    "['finished', ['finished'], '1'] -> ['failed', ['failed', 'finished'], '2']",
+    "['queued', ['started'], None] -> ['failed', ['failed'], '2']",
+    "['started', ['started'], None] -> ['failed', ['failed'], '2']"
+   ],
+   "part": 0
+  },
+  "a:delete:0": {
+   "api_call": "delete",
+   "moves": [
+    "m:1cdb1c",
+    "m:3f68d8",
+    "m:799b8b",
+    "m:9a3f0c",
+    "m:ec46fa",
+    "m:feef01"
+   ],
+   "observable_changes": [
+    "['finished', ['finished'], '1'] -> ['finished', [], '1']",
+    "['finished', ['finished'], '1'] -> ['gone', ['finished'], '1']",
+    "['finished', [], '1'] -> None",
+    "['queued', ['queue'], None] -> ['queued', [], None]",
+    "['queued', ['started'], None] -> ['queued', [], None]",
+    "['queued', [], None] -> None",
+    "['queued', [], None] -> ['gone', [], None]",
+    "['started', ['started'], None] -> ['gone', ['started'], None]"
+   ],
+   "part": 0
+  },
+  "a:enqueue-dependent:0": {
+   "api_call": "enqueue-dependent",
+   "moves": [
+    "m:183844",
+    "m:509a00",
+    "m:840bf6"
+   ],
+   "observable_changes": [
+    "None -> ['deferred', ['deferred'], None]",
+    "None -> ['queued', ['queue'], None]"
+   ],
+   "part": 0
+  },
+  "a:enqueue:0": {
+   "api_call": "enqueue",
+   "moves": [
+    "m:257f55"
+   ],
+   "observable_changes": [
+    "None -> ['queued', ['queue'], None]"
+   ],
+   "part": 0
+  },
+  "a:requeue:0": {
+   "api_call": "requeue",
+   "moves": [
+    "m:10aebe",
+    "m:a61c56",
+    "m:f72349"
+   ],
+   "observable_changes": [
+    "['failed', ['failed'], '2'] -> ['failed', [], '2']",
+    "['failed', [], '2'] -> ['queued', ['queue'], '2']"
+   ],
+   "part": 0
+  },
+  "a:work:0": {
+   "api_call": "work",
+   "moves": [
+    "m:34e4a3",
+    "m:85ae07",
+    "m:8e69df",
+    "m:b7706e"
+   ],
+   "observable_changes": [
+    "['canceled', ['canceled', 'started'], None] -> ['started', ['canceled', 'started'], None]",
+    "['canceled', ['canceled'], None] -> ['canceled', ['canceled', 'started'], None]",
+    "['failed', ['failed'], '2'] -> ['started', ['failed'], '2']",
+    "['gone', ['started'], None] -> ['started', ['started'], None]",
+    "['gone', [], None] -> ['gone', ['started'], None]",
+    "['gone', [], None] -> ['started', [], None]",
+    "['queued', ['queue'], '2'] -> ['queued', [], '2']",
+    "['queued', ['queue'], None] -> ['queued', [], None]"
+   ],
+   "part": 0
+  },
+  "a:work:1": {
+   "api_call": "work",
+   "moves": [
+    "m:02365a",
+    "m:0fccaa",
+    "m:1ecc1d",
+    "m:30455a",
+    "m:4ecdcc",
+    "m:6ed7ed",
+    "m:ca9dee"
+   ],
+   "observable_changes": [
+    "None -> ['finished', ['finished'], '1']",
+    "None -> [None, [], None]",
+    "['canceled', ['canceled', 'started'], None] -> ['finished', ['canceled', 'finished'], '1']",
+    "['canceled', ['canceled'], None] -> ['finished', ['canceled', 'finished'], '1']",
+    "['deferred', ['deferred'], None] -> ['queued', ['queue'], None]",
+    "['failed', ['failed'], '2'] -> ['finished', ['failed', 'finished'], '1']",
+    "['gone', ['started'], None] -> [None, ['started'], None]",
+    "['started', ['canceled', 'started'], None] -> ['finished', ['canceled', 'finished'], '1']"
+   ],
+   "part": 1
+  }
+ },
+ "goals": {
+  "g:cancel": {
+   "activations": [
+    "a:cancel:0"
+   ],
+   "api_call": "cancel",
+   "observable_changes": [
+    "['finished', ['finished'], '1'] -> ['canceled', ['canceled', 'finished'], '1']",
+    "['finished', ['finished'], '1'] -> ['canceled', ['canceled'], '1']",
+    "['queued', ['queue'], None] -> ['canceled', ['canceled'], None]",
+    "['queued', ['started'], None] -> ['canceled', ['canceled', 'started'], None]",
+    "['queued', [], None] -> ['canceled', ['canceled'], None]",
+    "['started', ['started'], None] -> ['canceled', ['canceled', 'started'], None]",
+    "['started', ['started'], None] -> ['canceled', ['canceled'], None]"
+   ],
+   "returns": [
+    "[\"exc\", \"ValueError\"]",
+    "[\"ok\", \"canceled\"]"
+   ]
+  },
+  "g:cleanup": {
+   "activations": [
+    "a:cleanup:0"
+   ],
+   "api_call": "cleanup",
+   "observable_changes": [
+    "['finished', ['finished'], '1'] -> ['failed', ['failed', 'finished'], '2']",
+    "['queued', ['started'], None] -> ['failed', ['failed'], '2']",
+    "['started', ['started'], None] -> ['failed', ['failed'], '2']"
+   ],
+   "returns": [
+    "[\"ok\", \"cleaned\"]"
+   ]
+  },
+  "g:delete": {
+   "activations": [
+    "a:delete:0"
+   ],
+   "api_call": "delete",
+   "observable_changes": [
+    "['finished', ['finished'], '1'] -> ['finished', [], '1']",
+    "['finished', ['finished'], '1'] -> ['gone', ['finished'], '1']",
+    "['finished', [], '1'] -> None",
+    "['queued', ['queue'], None] -> ['queued', [], None]",
+    "['queued', ['started'], None] -> ['queued', [], None]",
+    "['queued', [], None] -> None",
+    "['queued', [], None] -> ['gone', [], None]",
+    "['started', ['started'], None] -> ['gone', ['started'], None]"
+   ],
+   "returns": [
+    "[\"exc\", \"ValueError\"]",
+    "[\"ok\", \"deleted\"]"
+   ]
+  },
+  "g:enqueue": {
+   "activations": [
+    "a:enqueue:0"
+   ],
+   "api_call": "enqueue",
+   "observable_changes": [
+    "None -> ['queued', ['queue'], None]"
+   ],
+   "returns": [
+    "[\"ok\", \"j1\"]"
+   ]
+  },
+  "g:enqueue-dependent": {
+   "activations": [
+    "a:enqueue-dependent:0"
+   ],
+   "api_call": "enqueue-dependent",
+   "observable_changes": [
+    "None -> ['deferred', ['deferred'], None]",
+    "None -> ['queued', ['queue'], None]"
+   ],
+   "returns": [
+    "[\"ok\", \"j2\"]"
+   ]
+  },
+  "g:requeue": {
+   "activations": [
+    "a:requeue:0"
+   ],
+   "api_call": "requeue",
+   "observable_changes": [
+    "['failed', ['failed'], '2'] -> ['failed', [], '2']",
+    "['failed', [], '2'] -> ['queued', ['queue'], '2']"
+   ],
+   "returns": [
+    "[\"ok\", \"requeued\"]"
+   ]
+  },
+  "g:work": {
+   "activations": [
+    "a:work:0",
+    "a:work:1"
+   ],
+   "api_call": "work",
+   "observable_changes": [
+    "None -> ['finished', ['finished'], '1']",
+    "None -> [None, [], None]",
+    "['canceled', ['canceled', 'started'], None] -> ['finished', ['canceled', 'finished'], '1']",
+    "['canceled', ['canceled', 'started'], None] -> ['started', ['canceled', 'started'], None]",
+    "['canceled', ['canceled'], None] -> ['canceled', ['canceled', 'started'], None]",
+    "['canceled', ['canceled'], None] -> ['finished', ['canceled', 'finished'], '1']",
+    "['deferred', ['deferred'], None] -> ['queued', ['queue'], None]",
+    "['failed', ['failed'], '2'] -> ['finished', ['failed', 'finished'], '1']"
+   ],
+   "returns": [
+    "[\"ok\", \"idle\"]",
+    "[\"ok\", \"worked\"]"
+   ]
+  }
+ },
+ "moves": {
+  "m:02365a": {
+   "api_call": "work",
+   "commands": [
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ]
+   ],
+   "function": "Job.heartbeat",
+   "result": {
+    "writes_key_families": [
+     "rq:job:*"
+    ]
+   }
+  },
+  "m:0fccaa": {
+   "api_call": "work",
+   "commands": [
+    [
+     "WATCH",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "SMEMBERS",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "WATCH",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "SMEMBERS",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:deferred:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:deferred:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "RPUSH",
+     [
+      "rq:queue:*"
+     ]
+    ],
+    [
+     "DEL",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "HINCRBY",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HINCRBYFLOAT",
+     [
+      "rq:worker:*"
+     ]
+    ]
+   ],
+   "function": "BaseWorker.handle_job_success",
+   "result": {
+    "writes_key_families": [
+     "rq:deferred:*",
+     "rq:finished:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:queue:*",
+     "rq:results:*",
+     "rq:worker:*"
+    ]
+   }
+  },
+  "m:10aebe": {
+   "api_call": "requeue",
+   "commands": [
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ]
+   ],
+   "function": "Job.save",
+   "result": {
+    "writes_key_families": [
+     "rq:job:*"
+    ]
+   }
+  },
+  "m:183844": {
+   "api_call": "enqueue-dependent",
+   "commands": [
+    [
+     "WATCH",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "WATCH",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "RPUSH",
+     [
+      "rq:queue:*"
+     ]
+    ]
+   ],
+   "function": "Queue._enqueue_async_job",
+   "result": {
+    "writes_key_families": [
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   }
+  },
+  "m:1cdb1c": {
+   "api_call": "delete",
+   "commands": [
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:finished:*"
+     ]
+    ]
+   ],
+   "function": "BaseRegistry.remove",
+   "result": {
+    "writes_key_families": [
+     "rq:finished:*"
+    ]
+   }
+  },
+  "m:1ecc1d": {
+   "api_call": "work",
+   "commands": [
+    [
+     "HDEL",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "DEL",
+     [
+      "rq:execution:*:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:wip:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:executions:*"
+     ]
+    ],
+    [
+     "HINCRBY",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HINCRBYFLOAT",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "RPUSH",
+     [
+      "rq:queue:*"
+     ]
+    ]
+   ],
+   "function": "BaseWorker.handle_job_failure",
+   "result": {
+    "writes_key_families": [
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:job:*",
+     "rq:queue:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   }
+  },
+  "m:257f55": {
+   "api_call": "enqueue",
+   "commands": [
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "RPUSH",
+     [
+      "rq:queue:*"
+     ]
+    ]
+   ],
+   "function": "Queue._enqueue_async_job",
+   "result": {
+    "writes_key_families": [
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   }
+  },
+  "m:30455a": {
+   "api_call": "work",
+   "commands": [
+    [
+     "WATCH",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "SMEMBERS",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "HINCRBY",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HINCRBYFLOAT",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "XADD",
+     [
+      "rq:results:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:results:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:finished:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "HDEL",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "DEL",
+     [
+      "rq:execution:*:*"
+     ]
+    ]
+   ],
+   "function": "BaseWorker.handle_job_success",
+   "result": "transaction rejected, nothing written"
+  },
+  "m:34e4a3": {
+   "api_call": "work",
+   "commands": [
+    [
+     "LMOVE",
+     [
+      "rq:queue:*",
+      "rq:queue:*:intermediate"
+     ]
+    ]
+   ],
+   "function": "Queue.lmove",
+   "result": {
+    "writes_key_families": [
+     "rq:queue:*",
+     "rq:queue:*:intermediate"
+    ]
+   }
+  },
+  "m:3f68d8": {
+   "api_call": "delete",
+   "commands": [
+    [
+     "ZRANGE",
+     [
+      "rq:executions:*"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:execution:*:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:wip:*"
+     ]
+    ]
+   ],
+   "function": "StartedJobRegistry.remove_executions",
+   "result": {
+    "writes_key_families": [
+     "rq:wip:*"
+    ]
+   }
+  },
+  "m:4ecdcc": {
+   "api_call": "work",
+   "commands": [
+    [
+     "WATCH",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "SMEMBERS",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "HINCRBY",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HINCRBYFLOAT",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "XADD",
+     [
+      "rq:results:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:results:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:finished:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "HDEL",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "DEL",
+     [
+      "rq:execution:*:*"
+     ]
+    ]
+   ],
+   "function": "BaseWorker.handle_job_success",
+   "result": {
+    "writes_key_families": [
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:finished:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:results:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   }
+  },
+  "m:509a00": {
+   "api_call": "enqueue-dependent",
+   "commands": [
+    [
+     "WATCH",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "WATCH",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:deferred:*"
+     ]
+    ],
+    [
+     "SADD",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "SADD",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ]
+   ],
+   "function": "Queue.setup_dependencies",
+   "result": {
+    "writes_key_families": [
+     "rq:deferred:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies"
+    ]
+   }
+  },
+  "m:6ed7ed": {
+   "api_call": "work",
+   "commands": [
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HDEL",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "DEL",
+     [
+      "rq:execution:*:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:wip:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:executions:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:failed:*"
+     ]
+    ],
+    [
+     "XADD",
+     [
+      "rq:results:*"
+     ]
+    ]
+   ],
+   "function": "BaseWorker.handle_job_failure",
+   "result": {
+    "writes_key_families": [
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:failed:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:results:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   }
+  },
+  "m:76056c": {
+   "api_call": "cancel",
+   "commands": [
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "LREM",
+     [
+      "rq:queue:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:finished:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:canceled:*"
+     ]
+    ]
+   ],
+   "function": "Job.cancel",
+   "result": {
+    "writes_key_families": [
+     "rq:canceled:*",
+     "rq:finished:*",
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   }
+  },
+  "m:799b8b": {
+   "api_call": "delete",
+   "commands": [
+    [
+     "ZRANGE",
+     [
+      "rq:executions:*"
+     ]
+    ],
+    [
+     "DEL",
+     [
+      "rq:job:*",
+      "rq:job:*:dependents",
+      "rq:job::*:dependencies"
+     ]
+    ]
+   ],
+   "function": "Job.delete",
+   "result": {
+    "writes_key_families": [
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies"
+    ]
+   }
+  },
+  "m:819711": {
+   "api_call": "cleanup",
+   "commands": [
+    [
+     "ZRANGEBYSCORE",
+     [
+      "rq:wip:*"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "WATCH",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "SMEMBERS",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:failed:*"
+     ]
+    ],
+    [
+     "XADD",
+     [
+      "rq:results:*"
+     ]
+    ],
+    [
+     "ZREMRANGEBYSCORE",
+     [
+      "rq:wip:*"
+     ]
+    ]
+   ],
+   "function": "StartedJobRegistry.cleanup",
+   "result": {
+    "writes_key_families": [
+     "rq:failed:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:results:*",
+     "rq:wip:*"
+    ]
+   }
+  },
+  "m:840bf6": {
+   "api_call": "enqueue-dependent",
+   "commands": [
+    [
+     "WATCH",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "WATCH",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:deferred:*"
+     ]
+    ],
+    [
+     "SADD",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "SADD",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ]
+   ],
+   "function": "Queue.setup_dependencies",
+   "result": "transaction rejected, nothing written"
+  },
+  "m:85ae07": {
+   "api_call": "work",
+   "commands": [
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:execution:*:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:execution:*:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:executions:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:executions:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:wip:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:worker:*"
+     ]
+    ]
+   ],
+   "function": "prepare_execution",
+   "result": {
+    "writes_key_families": [
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   }
+  },
+  "m:8e69df": {
+   "api_call": "work",
+   "commands": [
+    [
+     "PERSIST",
+     [
+      "rq:job:*"
+     ]
+    ]
+   ],
+   "function": "Job.perform",
+   "result": {
+    "writes_key_families": [
+     "rq:job:*"
+    ]
+   }
+  },
+  "m:9a3f0c": {
+   "api_call": "delete",
+   "commands": [
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "LREM",
+     [
+      "rq:queue:*"
+     ]
+    ]
+   ],
+   "function": "Queue.remove",
+   "result": {
+    "writes_key_families": [
+     "rq:queue:*"
+    ]
+   }
+  },
+  "m:a61c56": {
+   "api_call": "requeue",
+   "commands": [
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:failed:*"
+     ]
+    ]
+   ],
+   "function": "BaseRegistry.requeue",
+   "result": {
+    "writes_key_families": [
+     "rq:failed:*"
+    ]
+   }
+  },
+  "m:b7706e": {
+   "api_call": "work",
+   "commands": [
+    [
+     "HSET",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "EXPIRE",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "LREM",
+     [
+      "rq:queue:*:intermediate"
+     ]
+    ]
+   ],
+   "function": "BaseWorker.prepare_job_execution",
+   "result": {
+    "writes_key_families": [
+     "rq:job:*",
+     "rq:queue:*:intermediate",
+     "rq:worker:*"
+    ]
+   }
+  },
+  "m:be2344": {
+   "api_call": "cancel",
+   "commands": [
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "LREM",
+     [
+      "rq:queue:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:canceled:*"
+     ]
+    ]
+   ],
+   "function": "Job.cancel",
+   "result": {
+    "writes_key_families": [
+     "rq:canceled:*",
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   }
+  },
+  "m:ca9dee": {
+   "api_call": "work",
+   "commands": [
+    [
+     "WATCH",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "SMEMBERS",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "WATCH",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "SMEMBERS",
+     [
+      "rq:job::*:dependencies"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:deferred:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:deferred:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "RPUSH",
+     [
+      "rq:queue:*"
+     ]
+    ],
+    [
+     "DEL",
+     [
+      "rq:job:*:dependents"
+     ]
+    ],
+    [
+     "HINCRBY",
+     [
+      "rq:worker:*"
+     ]
+    ],
+    [
+     "HINCRBYFLOAT",
+     [
+      "rq:worker:*"
+     ]
+    ]
+   ],
+   "function": "BaseWorker.handle_job_success",
+   "result": {
+    "writes_key_families": [
+     "rq:deferred:*",
+     "rq:execution:*:*",
+     "rq:executions:*",
+     "rq:finished:*",
+     "rq:job:*",
+     "rq:job:*:dependents",
+     "rq:job::*:dependencies",
+     "rq:queue:*",
+     "rq:results:*",
+     "rq:wip:*",
+     "rq:worker:*"
+    ]
+   }
+  },
+  "m:d39693": {
+   "api_call": "cancel",
+   "commands": [
+    [
+     "ZRANGE",
+     [
+      "rq:executions:*"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:execution:*:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "LREM",
+     [
+      "rq:queue:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:wip:*"
+     ]
+    ],
+    [
+     "ZADD",
+     [
+      "rq:canceled:*"
+     ]
+    ]
+   ],
+   "function": "Job.cancel",
+   "result": {
+    "writes_key_families": [
+     "rq:canceled:*",
+     "rq:job:*",
+     "rq:queue:*",
+     "rq:wip:*"
+    ]
+   }
+  },
+  "m:daa541": {
+   "api_call": "cancel",
+   "commands": [
+    [
+     "HGETALL",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "ZREMRANGEBYSCORE",
+     [
+      "rq:executions:*"
+     ]
+    ]
+   ],
+   "function": "ExecutionRegistry.cleanup",
+   "result": {
+    "writes_key_families": [
+     "rq:executions:*"
+    ]
+   }
+  },
+  "m:ec46fa": {
+   "api_call": "delete",
+   "commands": [
+    [
+     "ZRANGE",
+     [
+      "rq:executions:*"
+     ]
+    ],
+    [
+     "HGETALL",
+     [
+      "rq:execution:*:*"
+     ]
+    ],
+    [
+     "ZREM",
+     [
+      "rq:wip:*"
+     ]
+    ]
+   ],
+   "function": "StartedJobRegistry.remove_execution",
+   "result": {
+    "writes_key_families": [
+     "rq:wip:*"
+    ]
+   }
+  },
+  "m:f72349": {
+   "api_call": "requeue",
+   "commands": [
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HSET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "RPUSH",
+     [
+      "rq:queue:*"
+     ]
+    ]
+   ],
+   "function": "BaseRegistry.requeue",
+   "result": {
+    "writes_key_families": [
+     "rq:job:*",
+     "rq:queue:*"
+    ]
+   }
+  },
+  "m:feef01": {
+   "api_call": "delete",
+   "commands": [
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "HGET",
+     [
+      "rq:job:*"
+     ]
+    ],
+    [
+     "ZREMRANGEBYSCORE",
+     [
+      "rq:executions:*"
+     ]
+    ]
+   ],
+   "function": "ExecutionRegistry.cleanup",
+   "result": {
+    "writes_key_families": [
+     "rq:executions:*"
+    ]
+   }
+  }
+ }
+}
