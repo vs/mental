@@ -32,6 +32,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-16 (link gi
 | APQC Process Classification Framework | Business work in five nested levels: category, process group, process, activity, task. |
 | ArchiMate and ISO 42010 | Business, application and technology layers; a viewpoint names its stakeholders and the concerns it frames. |
 | C4 model | Four zoom levels (context, container, component, code), each for a different audience. |
+| Lipton's reduction | A run of statements shaped right-movers, at most one non-mover, left-movers can be treated as one atomic action without changing what is reachable. |
 
 **What LLMs do with levels**
 
@@ -75,6 +76,8 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-16 (link gi
 **Process frameworks.** APQC's framework decomposes work into category, process group, process, activity and task; elements are mutually exclusive and collectively exhaustive, and their order does not imply execution order [S](https://www.apqc.org/sites/default/files/files/PCF%20Collateral/Understanding%20the%20PCF%20Elements%20%20-%20FINAL.pdf).
 
 **Architecture frameworks.** ArchiMate's viewpoints follow ISO/IEC 42010: a viewpoint frames named concerns for named stakeholders and fixes the layers it uses (business, application, technology) [S](https://pubs.opengroup.org/architecture/archimate31-doc/chap14.html). The C4 model gives four zoom levels, each "suitable for different audiences" (vendor guides; we found no empirical study of its use) [S](https://icepanel.io/blog/what-is-the-c4-model). Hollnagel's distinction between work-as-imagined and work-as-done [K].
+
+**Atomic moves.** Lipton (1975): a statement is a right mover if it commutes to the right of any step of another thread and a left mover if it commutes to the left; a sequence of right movers, at most one non-mover, then left movers can be reduced to one atomic action [K] ([CACM 18(12)](https://doi.org/10.1145/361227.361234)). Flanagan and Qadeer (PLDI 2003) infer mover types and check block atomicity statically [K] ([paper](https://doi.org/10.1145/781131.781169)). This is the basis of the move verdict proposed in section 5.3 of the report, added after the experiment.
 
 ## LLMs and levels
 

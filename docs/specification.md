@@ -1159,6 +1159,7 @@ Designs that exist in outline. None is part of version one.
 **The compiler**
 - Whether the default component split (packages, then call-graph clusters, then LLM naming) matches how developers see their project. This is the weakest part of the design.
 - Whether LLMs reliably tell a mechanism from an ordinary local decision, and which ones do.
+- How a move is identified when several moves close inside one function. In report-jobs, `generate_report` closes three moves at `s.commit()`, so the call and closing function that identify moves stably on rq do not tell them apart ([multi-level models](research/multi-level-models/report.md#10-what-is-evidence-and-what-is-inference)).
 - How reliable a business level is when the project has no docs.
 - Which coding agents report the LLM they run reliably enough for the call ledger.
 - How much answer quality differs between an exploring agent, a bare API call and a local model, per role.
@@ -1167,6 +1168,7 @@ Designs that exist in outline. None is part of version one.
 - Which step kinds may safely be reordered during search is unproven for this rule set. Version one therefore does not reorder (8.4); the question returns only if partial-order reduction is added.
 - Database isolation levels: a transaction under READ COMMITTED does not make a group of steps atomic. Our trial suggests the answer belongs in the database pack's own lower level (F-Z4).
 - Search speed and state counts for realistic models are unmeasured.
+- Whether a computed verdict on each move (atomic, guarded or non-atomic, by Lipton's reduction over its effects) is a good enough pointer to where search should look for races ([multi-level models, 5.3](research/multi-level-models/report.md#53-from-runs-to-the-model-step-classes)).
 - Replaying a schedule across model versions has no precedent and may confuse when IDs change.
 
 **The debugger and viewer**

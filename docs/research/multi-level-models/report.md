@@ -45,6 +45,7 @@ The design in sections 4 to 7 is an inference from the sources. Section 8 report
 | LLM event abstraction | An LLM can label a given group of events. Labelling, not grouping, is the safe task. |
 | Mental's rq experiment | LLM-written functions were too fine and their names unstable (overlap 0.54). Keep structure mechanical. |
 | Mental's seven-level trial | Each problem has a level where it can be named; switching the whole view between levels was not a design. |
+| Lipton's reduction | Right movers, at most one non-mover, left movers make one atomic action. Gives each move a verdict: atomic, guarded or non-atomic. |
 
 ## 2. The problem, on one run
 
@@ -187,6 +188,8 @@ Closing rules cut a *run* into a tree of steps, like the span tree of a distribu
 Each lower step class names the upper step class it belongs to, or is marked as support (section 5.6). That is the step map, stored in the model. A step class can have several possible expansions (a commit that succeeds at once, or after a retry); these are its cases at the upper level.
 
 Two lower steps of different upper steps can interleave in time. The mapping is therefore by identity, never by position (F-Z1), and an upper level's order of steps is a partial order (F-Z7).
+
+**A verdict on each move (proposed, not run).** The closing rule decides where a move ends; it does not say whether the move is safe. Lipton's reduction gives that from the move's own effects: a move whose reads and write can be reordered into one atomic block is **atomic**; one whose write is conditional on what it read, inside the store (`UPDATE … WHERE status = 'PENDING'`, a Redis `WATCH`), is **guarded**; one that reads, decides in the program and then writes unconditionally is **non-atomic**. The verdict is computed from footprints and pack rules, is stored with the move class, and is what the degree of interest (5.7) counts as "a non-atomic group". On report-jobs the claim in `generate_report` (`tasks.py:28-32`: read the row, test `PENDING`, write `RUNNING`) is one move with the verdict non-atomic, which is where the duplicate-claim bug lives. Whether the verdict is a useful pointer for the interpreter's search has not been measured.
 
 ### 5.4 Admission: why each level exists
 
@@ -338,7 +341,7 @@ Eight task types. Each has a small input, a typed answer and a check, and each i
 |---|---|---|---|
 | **subjects** | candidate entities with their lifecycles; glossary; documentation extracts | which candidates are subjects, with a term for each | the entity has identity and a lifecycle; the term is anchored in code or docs |
 | **actors** | external ports and triggers; documented procedures | a role term for each | anchored to a route, command, schedule or document |
-| **name-step** | one step class: its children's names, its actor, its subject, the change in observables, the level's vocabulary | a verb-and-object name and one sentence "so that …" | only the level's words (barrier); two classes with different results get different names; agreement across samples |
+| **name-step** | one step class: its children's names, its actor, its subject, the change in observables, the level's vocabulary | a verb-and-object name and one sentence "so that …" | only the level's words (barrier); two classes with different results get different names; agreement across samples; **name truth**: every noun of the name maps to something the step writes, sends or decides, and every claim it makes (a backoff, a retry count, an owner) matches the effects |
 | **why-link** | a step class and its computed parent | the sentence that says how it serves the parent | mentions the parent's subject or goal terms; the link itself is computed, not chosen |
 | **stages** | a subject's lifecycle states and the goals that move it | named stages, each a set of states | the stages partition the states; each is contiguous in every explored run |
 | **charter** | an admitted level, its steps' names, its computed admission results | readers and question, in the project's words | fields complete; a person may edit |
@@ -353,6 +356,8 @@ What the LLM is not asked, and why:
 - **To write a trace or a number.** Traces come from the interpreter. Aggregates such as "deliveries: 2" are counts of lower steps (F-Z6) and are computed.
 
 **The prompt for `name-step`, in outline.** "This is one kind of step at the *goal* level of this system. A goal step is one actor getting one thing done. Actor: *worker*. Subject: *job*. Before: status `queued`, listed in the queue. After: status `finished`, listed as finished, one result. It consists of: *take the job*, *complete the job*. The level above calls the surrounding step: *job done*. Words you may use: (glossary terms of this level). Give a name of at most four words, verb first, and one sentence beginning 'so that'." The answer "run the job, so that its result is available to the client" passes; "execute perform_job and update Redis" fails the barrier check.
+
+**The name-truth check** was added after the experiment (8.4), where the one wrong name, *record worker heartbeat* for a write of the job's heartbeat, passed every vocabulary check. It compares the name's nouns and claims with the step's footprint: *worker* is not the key the step writes, so the name fails. On report-jobs it would reject *retry with backoff* for `generate_report`'s fixed 30-second delay. Nouns are matched through the glossary's anchors, so the check is mechanical; it has not been run.
 
 ## 7. What a person sees
 
@@ -441,7 +446,7 @@ Six samples (3 Opus, 3 Sonnet) each named all 29 move classes, 8 activation clas
 - **The barrier holds.** No name at any level used a Redis command, key or storage word, and no sample gave two classes the same name.
 - **Wording is not stable.** Two samples pick the identical name for a goal about one time in three, and for a move one time in five. Goal names share most of their words ("enqueue a job", "enqueue job"); move names share half. The plan's pass mark, agreement well above the 0.54 of free-form names, is met for goals and not for moves.
 - **Consequence.** A name must be generated once and stored with its step class, never regenerated on rebuild. Because step classes are identified from code (8.7), the stored name stays attached. The majority names read well: goals are *enqueue a job*, *run next job*, *cancel a job*, *requeue a failed job*; the two activations of a worker are *pick up and start job* and *record job outcome*; the two moves of the bug are *attempt success commit, rejected* and *finish job and release dependents*.
-- **One wrong name.** The majority called a write of the job's heartbeat *record worker heartbeat*. Names are checked for vocabulary, not for truth; a check of a name against what its step writes is missing.
+- **One wrong name.** The majority called a write of the job's heartbeat *record worker heartbeat*. Names are checked for vocabulary, not for truth; a check of a name against what its step writes is missing. It is now proposed in section 6 (name truth).
 
 ### 8.5 Design C: what a free-form LLM ladder looks like
 
@@ -538,7 +543,7 @@ Recommendations for the owner to decide. Nothing has been changed.
 | 5.1 The ladder | six fixed levels on one ladder, with a physical side | levels on the purpose axis only, instantiated from seven kinds; *system*, *services*, *components* become positions of space zoom |
 | 5.2 The `level` record | vocabulary, below, pattern, abstraction, step map, invariants, actors | add the charter: `kind`, `readers`, `question`, `step_is`, `closes_when`, `hides`, `why`, `how`, `admission` |
 | 5.2 `step_map` | which lower steps make up each upper step | computed by the closing rule; stored as step classes; lower steps are *part of*, or *support for*, an upper step |
-| 5.3 Checks | pair, barrier, coverage, invariants | add the admission tests; coverage counts support steps as covered |
+| 5.3 Checks | pair, barrier, coverage, invariants | add the admission tests and the name-truth check; coverage counts support steps as covered |
 | 6.3 Vocabulary | terms with anchors and levels | add subjects and roles as kinds of term |
 | 6.5 LLM roles | vocabulary, port-behavior, lifecycle, mechanism, business, repair | replace *business* by the task types of section 6 |
 | 9 Debugger and viewer | zoom, focus, lens | a view shows a cut; the default lens is degree of interest; four moves per step; home level per role |
@@ -563,6 +568,7 @@ Recommendations for the owner to decide. Nothing has been changed.
 - **The top of the ladder.** Outcome, stage and goal need subjects with lifecycles. A system that is mostly computation, such as a compiler, has few; its upper levels may have to come from its own domain ladder, through project-specific levels.
 - **Closing rules need a good lower model.** They read waits, replies, atomic groups and observables. Errors in extraction move the boundaries.
 - **The hand-built example.** The implemented rules reproduced it at goal and activation level and differed at the move level (5.8).
+- **Moves inside one function.** The stable move identity of 8.7 (the call and the closing function) works on rq because rq's moves tend to close at function edges. In report-jobs, `generate_report` closes four to six moves inside one function body: the claim, the failure or release, and the completion all close at `s.commit()`, so the call and closing function name three different moves alike. One candidate is the port plus the anchor statement that closes the move plus its order in the function; it is untested, and the first target needs an answer before step classes can be stored.
 - **People.** Whether the result is easier for a person was not measured. It is the experiment that matters most, and the hardest to run without a budget.
 
 ## 11. Sources
