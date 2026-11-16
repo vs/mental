@@ -7,6 +7,8 @@
 >
 > The design recommended at the end of this report is replaced by the [resolution specification](../../resolution.md).
 
+> **Reopened (2026-11-16).** This report treats SCIP as a source of a symbol format to borrow, not of answers. The owner has reopened that: reading a SCIP index that CI or the agent produced, as a source of resolved references, is now experiment E6 of the [resolution specification](../../resolution.md#e6-indexes-against-the-own-resolver), with the division of labor between the extractor and an index in its [section 6.6](../../resolution.md#66-indexes-scip-and-other-tools-answers).
+
 ## Per-product summary
 
 IDEs and language servers:
