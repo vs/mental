@@ -36,6 +36,7 @@ Research reports:
 - [Model interpreter semantics](docs/research/model-interpreter-semantics/report.md): how to run a model and find races.
 - [Abstraction levels](docs/research/abstraction-levels/report.md): how other fields relate levels of description and check them.
 - [Multi-level models](docs/research/multi-level-models/report.md): which levels a person needs, how steps of one level map to the level above, and what the LLM is asked; from research on how people perceive events and levels, with an experiment on rq comparing three ways to get the levels, and a [step-by-step walkthrough](docs/research/multi-level-models/ladder-walkthrough.md) of one run.
+- [Levels in other domains](docs/research/levels-in-other-domains/report.md): how business processes, mathematics, hardware, science, military command, teaching, music and maps build multi-level models, what they agree on, and nine proposals for Mental.
 
 ## Where to start in the specification
 
