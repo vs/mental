@@ -49,6 +49,7 @@ Research reports:
 | What is a model made of? | [4. The model](docs/specification.md#4-the-model) |
 | How does one system look at different heights? | [5. Levels and refinement](docs/specification.md#5-levels-and-refinement) |
 | How does source code become a model? | [6. `mentalc`](docs/specification.md#6-mentalc-building-the-model) |
+| How does `mentalc` learn how a project is built and deployed? | [6.10 The build model first](docs/specification.md#610-the-build-model-first) |
 | How are libraries modeled? | [7. Packs](docs/specification.md#7-packs) |
 | How is the model run, and how are bugs found? | [8. `mentalvm`](docs/specification.md#8-mentalvm-running-the-model) |
 | Can Mental prove there are no bugs? | [8.11 Properties, verdicts and proof](docs/specification.md#811-properties-verdicts-and-proof) |

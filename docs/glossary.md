@@ -188,6 +188,16 @@ The summary must agree with the full graph; a check enforces it.
 
 **Link, load, close.** *Link* connects required ports to provided ports and fills slots. *Load* creates instances from infrastructure files. *Close* adds actors, drivers and stubs so the model can run on its own.
 
+**Build model.** A small model of how a project is built, made before anything else (like Maven's `pom.xml`): its build units, the artifacts they become, the launches that start them, the dependencies between units and the configuration they read. *Example:* report-jobs has one build unit `app` under `src/`, one image, and three launches of it: `api`, `worker` and `beat`. In version one it is made by plain readers of build files (spec 6.10).
+
+**Build unit.** One part of a project that is built on its own: a `pyproject.toml` project, a uv workspace member, a directory a Dockerfile builds. Not to be confused with a *component*, which is a box inside a service.
+
+**Launch.** One way an artifact is started: a command, a working directory, an environment. One image can have several launches; in report-jobs, one image is started as `uvicorn app.api:app`, as a Celery worker and as Celery beat.
+
+**Build-tool model.** *Later.* A pack for the build layer: a model of one build tool at one version (compose, uv, pip), with its concepts and the rules that turn build files into a build model. Written by an LLM from the tool's documentation, and accepted only after it agrees with the real tool's own output on a corpus.
+
+**Deployment space.** *Under test.* The ways the same build can be deployed: which services run, how many instances of each, which configuration values are set. A *deployment configuration* picks one of each, and `mentalvm` can run any configuration.
+
 **Driver and stub.** A driver is a generated actor that can send any input class to a port open to the outside. A stub is a generated stand-in that answers a required port leading outside the model with any of its declared outcomes.
 
 **Diagnostic.** One reported item from a build: a failed check, a gap, an assumption made, a finding.

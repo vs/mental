@@ -549,7 +549,7 @@ Every command has a `--json` form, which prints the model's own JSON (diagnostic
 
 | # | Phase | Reads | Writes | LLM |
 |---|---|---|---|---|
-| 1 | **Detect** | manifests, file types, lockfiles | the domain (always software for now), languages, frameworks, the ladder strategy to use (from the config) | no |
+| 1 | **Build model** | manifests, file types, lockfiles, Dockerfiles, compose output | the domain (always software for now), languages, frameworks, the ladder strategy to use (from the config); build units, artifacts, launches, dependencies and configuration inputs (6.10) | no |
 | 2 | **Extract** | source and infrastructure files | the skeleton and the obligations (6.2.1) | no |
 | 3 | **Resolve packs** | lockfiles, container images | `packs.lock`; pack summaries for later phases | no |
 | 4 | **Vocabulary** | docs, identifiers, schema | `term` records (6.3) | yes |
@@ -563,6 +563,8 @@ Every command has a `--json` form, which prints the model's own JSON (diagnostic
 | 12 | **Check** | the whole model | diagnostics; a failed check sends a repair back to the phase that produced the record | no |
 
 After phase 12 the model is written. Phase 11 comes after Close because its checks need a model that can run.
+
+Phase 1 builds a small model of how the project is built before any code is read ([6.10](#610-the-build-model-first)). **Under test:** deployment as a space of configurations instead of a single setup ([6.10.4](#6104-deployment-as-a-space-to-explore)).
 
 #### 6.2.1 Extract, in detail
 
@@ -737,6 +739,109 @@ These are the acceptance facts for the compiler (F-S11):
 | `requeue_stuck` can overwrite `DONE` with `PENDING` | race | atomicity check |
 | Two requests with the same idempotency key: one gets a 500 | unhandled outcome | composition check |
 | A `PENDING` row with no task in flight is never picked up | stranded state | machine check |
+
+### 6.10 The build model first
+
+**Status: Decided (2026-11-17):** the build model is the first phase, and in version one it is built by plain readers of build files. **Experiment:** the deployment space (6.10.4).
+
+`mentalc` builds a small model of how the project is built before it reads a line of code: the **build model**, the way Maven's `pom.xml` describes a Maven project. What a project consists of depends on its language, its build tools and its domain, so this is settled first, and every later phase stands on it.
+
+| Stage | Question | Produces | Phases |
+|---|---|---|---|
+| 1. **Build model** | What parts does the project have, and how does each one become something that runs? | build units, artifacts, launches, dependencies, configuration inputs | 1 |
+| 2. **Unit models** | What does each part do? | extract, resolve, compile, run for each build unit | 2 to 8 |
+| 3. **Deployment** | Which instances run, how many, with which configuration, wired to what? | instances; under test, a **deployment space** (6.10.4) | 9 |
+| 4. **The whole solution** | Who uses it, and through which ports? | actors, drivers and stubs | 10 |
+
+#### 6.10.1 What the build model holds
+
+| Record (names provisional) | Says |
+|---|---|
+| **build unit** | one part that is built on its own: a `pyproject.toml` project, a uv workspace member, a directory a Dockerfile builds. It has source roots, a Python version, declared dependencies with their pins, and the environment its references resolve against |
+| **artifact** | what a build unit becomes: an image, a wheel |
+| **launch** | one way an artifact is started: the command, the working directory, the environment. One image can have several launches |
+| **unit dependency** | one build unit uses another: a path dependency, a workspace dependency, a shared directory copied into two images |
+| **configuration input** | a value the code reads from outside: an environment variable, a settings file |
+
+The spec already uses "component" for a box inside a service (Group, phase 5). So the build model says **build unit** for a part that is built on its own.
+
+*In report-jobs:*
+
+| | Build model of report-jobs |
+|---|---|
+| build unit `app` | source root `src/`, from the compose build context `.` together with the command `uvicorn app.api:app`; pins from `src/requirements.lock`; **Python version unknown:** no `requires-python`, no `.python-version`, and the image's base is not stated (the type-checker experiment picked 3.12 by hand) |
+| artifact | one image built from `src/` (`build: .`); **gap:** `src/` has no Dockerfile, so how the image is built is unknown |
+| launches of that image | `api`: `uvicorn app.api:app` on port 8000; `worker`: `celery -A app.tasks worker --concurrency 1`; `beat`: `celery -A app.tasks beat` |
+| images from outside | `redis:7.4`, `postgres:16` |
+| configuration inputs | `DATABASE_URL`, `CELERY_BROKER_URL`, `REPORTS_BUCKET` (set in the compose file); `WEBHOOK_URL` (read by the code, set nowhere) |
+
+**What the later phases take from it:**
+- **Reference resolution:** each build unit's import roots, Python version and environment, which is exactly the setup a type checker needs. A build unit with no environment stops the build in phase 1, naming the command that makes one.
+- **Extract:** which files belong to which build unit, and the entry points the launches name (`app.api:app`, `app.tasks`).
+- **Group:** services are launches. In report-jobs, one image gives three services.
+- **Load:** the instances of each launch, with their configuration.
+
+#### 6.10.2 How it is built: plain readers
+
+In version one the build model comes from small readers, one per file format, chosen by language and build tool, plus the output of the one tool `mentalc` already runs. There is no model of the build tool itself, and nothing runs in `mentalvm`.
+
+| Input | Read by | Yields |
+|---|---|---|
+| `pyproject.toml` | a TOML reader | build units, `requires-python`, declared dependencies, uv workspace members, path dependencies |
+| lockfiles: `requirements*.lock` and `.txt`, `uv.lock`, `pylock.toml` | the lockfile readers of [resolution](resolution.md#62-rung-1-declared-pins) | pins |
+| `.python-version` | a one-line reader | the Python version |
+| Dockerfiles | a reader for `FROM`, `WORKDIR`, `COPY`, `ENV`, `CMD` and `ENTRYPOINT` | the artifact, its base image (and from it the Python version), the working directory, the default launch |
+| compose files | `docker compose config`, as currently written | launches (command, environment, replicas), build contexts, images from outside, configuration inputs that are set |
+
+Rules:
+- **Every record is anchored** to the file and line it comes from, so "why is this a build unit?" always has an answer.
+- **What a reader cannot read is reported, never skipped.** `setup.py`, a Dockerfile's `RUN` lines and Makefile targets are code. The build model lists them as build steps it did not read.
+- **Gaps surface in phase 1,** before any LLM call: an artifact with no Dockerfile, a build unit with no Python version or no environment. Whether a gap fails the build follows the gate of [resolution](resolution.md#9-the-gate-when-a-build-fails).
+- **Configuration inputs are completed by Extract.** Variables the code reads are matched against the ones the build files set. One that is read but set nowhere, such as `WEBHOOK_URL`, is a diagnostic.
+- **Readers belong to an ecosystem.** A new language or build tool adds readers. The first set covers the version-one stack (11.2).
+
+A model of each build tool, written by an LLM from the tool's documentation and run by `mentalvm` on the build files, was considered and is deferred to later versions (section 12). Plain readers come first, so that work moves on to the code.
+
+#### 6.10.3 What changes in the pipeline
+
+- Phase 1 is **Build model** (6.2). The import roots and pins of [resolution](resolution.md#6-where-resolution-evidence-comes-from) are found in it.
+- Group takes services from launches, and Load takes instances and their configuration from launches.
+- The realization chain (section 12) starts in version one in a small form: build unit → artifact → launch → instance.
+- `mentaldbg` can show the build model as the first view of a project.
+
+#### 6.10.4 Deployment as a space to explore
+
+**Status: Experiment.**
+
+The same build can be deployed in many ways. Under test: Load produces a **deployment space** instead of one deployment. Its dimensions come from the build model and the infrastructure files:
+- **which services run:** compose profiles, services that can be left out;
+- **how many instances of each:** `replicas`, a worker's concurrency;
+- **configuration that changes behavior:** `WEBHOOK_URL` set or unset, `task_acks_late`;
+- **which version runs where:** a rollout, the realization chain of section 12.
+
+A **deployment configuration** picks one value per dimension, and `mentalvm` runs any configuration. Each dimension is a variation point (8.8). After that comes stage 4: actors, drivers and stubs attach to the ports the chosen configuration exposes.
+
+*In report-jobs:*
+- With one worker at concurrency 1, two workers can no longer claim the same report at once. That needs two activations at the same time.
+- With `beat` left out, `requeue_stuck` runs only when an operator runs the `requeue` command. Its overwrite race becomes rarer, and stranded rows wait for the operator.
+- With `WEBHOOK_URL` set, the webhook call and its failure outcomes appear.
+
+#### 6.10.5 Checks and experiments
+
+**Acceptance.** On report-jobs, the build model lists:
+- one build unit;
+- one image with three launches;
+- two images from outside;
+- three gaps: the missing Dockerfile, the unknown Python version, and `WEBHOOK_URL` set nowhere.
+
+On full-stack-fastapi-template, Mealie, Redash and rq, its launches and pins agree with `docker compose config --format json` and `uv export --frozen`.
+
+| # | Question | Done when | Needs |
+|---|---|---|---|
+| **B1** | Does the build model set up reference resolution correctly? | on the five projects of the [type-checker experiment](research/type-checkers-as-libraries/report.md#experiment-pyrefly-against-ty-on-five-projects), type checkers set up from the build model (roots, Python version and environment for each build unit) give the same results as that experiment's hand setup | milestone 2 |
+| **B2** | Is the deployment space useful? | on report-jobs, each finding of 6.9 appears in exactly the configurations where it should (the claim race only with two activations at once), and a search over configurations finds them without being told which ones | milestone 4 |
+
+**Decide:** after B2, whether the deployment space replaces the single deployment.
 
 ## 7. Packs
 
@@ -1231,7 +1336,7 @@ Each milestone ends with something that can be checked on report-jobs.
 | # | Milestone | Done when |
 |---|---|---|
 | 1 | **The record format.** Schemas for the core records, a validator, and the report-jobs model written by hand as the reference | the validator accepts the reference model and rejects seeded errors |
-| 2 | **Extract.** Phases 1 to 3 for the first stack, with hand-written packs | the skeleton and obligations match the reference: 6 entry points, 2 state variables, every branch listed |
+| 2 | **Extract.** Phases 1 to 3 for the first stack, with hand-written packs | the build model passes its acceptance (6.10.5); the skeleton and obligations match the reference: 6 entry points, 2 state variables, every branch listed |
 | 3 | **Compile.** Phases 6 and 12 with the task protocol, the `agent` and `api` backends, the first six checks, repairs and the call ledger | every port has a summary behavior that passes coverage and guard algebra |
 | 4 | **Make it run.** Phases 8 to 10, and a minimal `mentalvm`: step function, concrete runs, bounded search, the machine and atomicity checks | the search finds the duplicate-claim race unprompted, minimizes it, and the four findings of 6.9 are reported |
 | 5 | **Fix loop.** Incremental rebuild and replay with verdicts | after the fix, the race schedule replays without the violation and a fresh search within the same bounds is clean |
@@ -1259,6 +1364,7 @@ Designs that exist in outline. None is part of version one.
 | **Several repositories** | each repository compiles alone; a workspace links their open ports by exact keys (a route, a task name) into one model | the single-repository build |
 | **A domain ladder per project** | besides the fixed ladder, levels discovered from the project's own concepts. For a Git implementation: porcelain (commit, branch) over plumbing (blob, tree, ref) over storage (loose objects, packfiles, lock files). Packs carry their own ladders too: SQL over MVCC over pages for Postgres. Domain levels form a branch structure, not one line (F-Z5) | levels working on the fixed ladder |
 | **Observed traces** | align logs and tracing data with model steps; each step becomes confirmed, contradicted or a surprise; drive the interpreter from a real execution | a working interpreter |
+| **Build-tool models** | a model of each build tool at each version (compose, uv, pip), with its concepts and the rules that turn build files into a build model. An LLM writes it from the tool's documentation, `mentalvm` runs it on the build files, and it is accepted after it agrees with the real tool's output on a corpus. For tools written in a language Mental reads (pip, setuptools), the model could instead be compiled from the tool's source | the build model from plain readers (6.10); a record format for exact values |
 | **The realization chain** | model how a commit becomes what runs (build, artifact, deployment, process, runtime, OS, CPU); each link is `attested` by evidence such as an image digest, or `assumed`. Version skew during a rollout becomes a variation point | several repositories; evidence readers |
 
 ![Left: the realization chain from source commit through build, artifact, deployment, process, runtime and OS to the CPU, each link marked inferred, attested, assumed or modeled by a pack. Right: a rollout where the API and one worker run the new commit and the other worker the old one, which drops a field the new API sends.](images/realization-chain.png)
@@ -1283,6 +1389,10 @@ Designs that exist in outline. None is part of version one.
 - How reliable a business level is when the project has no docs.
 - Which coding agents report the LLM they run reliably enough for the call ledger.
 - How much answer quality differs between an exploring agent, a bare API call and a local model, per role.
+
+**The build model** (6.10)
+- What the build model should say about build steps that are code (`setup.py`, a Dockerfile's `RUN` lines, Makefiles, shell scripts), beyond listing them as unread.
+- When the cost of readers for more build tools (Poetry, PDM, Hatch, Kubernetes manifests, Helm) argues for build-tool models (section 12).
 
 **The interpreter**
 - Which step kinds may safely be reordered during search is unproven for this rule set. Version one therefore does not reorder (8.4); the question returns only if partial-order reduction is added.
