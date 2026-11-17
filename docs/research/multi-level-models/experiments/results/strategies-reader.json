@@ -1,0 +1,230 @@
+{
+ "answers": {
+  "atomic-group--move--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "D"
+  },
+  "atomic-group--move--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "atomic-group--move--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "atomic-group--move--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "atomic-group--move--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "atomic-group--move--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "every-write--move--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "E",
+   "Q7": "D"
+  },
+  "every-write--move--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "C",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "every-write--move--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "C",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "every-write--move--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "every-write--move--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "every-write--move--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "write-run--move--cancel.1": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "write-run--move--cancel.2": {
+   "Q1": "A",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "B",
+   "Q5": "B",
+   "Q6": "C",
+   "Q7": "D"
+  },
+  "write-run--move--clean.1": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "write-run--move--clean.2": {
+   "Q1": "C",
+   "Q2": "B",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "B",
+   "Q6": "D",
+   "Q7": "D"
+  },
+  "write-run--move--witness.1": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  },
+  "write-run--move--witness.2": {
+   "Q1": "C",
+   "Q2": "A",
+   "Q3": "A",
+   "Q4": "A",
+   "Q5": "A",
+   "Q6": "B",
+   "Q7": "A"
+  }
+ },
+ "sizes": {
+  "atomic-group|move|cancel": 9,
+  "atomic-group|move|clean": 14,
+  "atomic-group|move|witness": 15,
+  "every-write|move|cancel": 9,
+  "every-write|move|clean": 14,
+  "every-write|move|witness": 15,
+  "write-run|move|cancel": 7,
+  "write-run|move|clean": 10,
+  "write-run|move|witness": 11
+ },
+ "summary": {
+  "atomic-group": {
+   "developer": {
+    "cannot_tell": 4,
+    "right": 14,
+    "wrong": 0
+   },
+   "manager": {
+    "cannot_tell": 0,
+    "right": 12,
+    "wrong": 0
+   },
+   "product": {
+    "cannot_tell": 0,
+    "right": 12,
+    "wrong": 0
+   }
+  },
+  "every-write": {
+   "developer": {
+    "cannot_tell": 4,
+    "right": 14,
+    "wrong": 0
+   },
+   "manager": {
+    "cannot_tell": 0,
+    "right": 12,
+    "wrong": 0
+   },
+   "product": {
+    "cannot_tell": 0,
+    "right": 12,
+    "wrong": 0
+   }
+  },
+  "write-run": {
+   "developer": {
+    "cannot_tell": 0,
+    "right": 18,
+    "wrong": 0
+   },
+   "manager": {
+    "cannot_tell": 0,
+    "right": 12,
+    "wrong": 0
+   },
+   "product": {
+    "cannot_tell": 0,
+    "right": 12,
+    "wrong": 0
+   }
+  }
+ }
+}

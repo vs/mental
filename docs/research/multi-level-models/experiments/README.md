@@ -14,7 +14,11 @@ Research code behind section 8 of the [report](../report.md). It reuses the harn
 | `results/llm.json` | Naming stability and free-form ladders (E2, design C) |
 | `results/reader.json` | Reader test (E3), with every answer |
 | `results/naming-sheet.json`, `prompt-name.md`, `witness.txt`, `b-partitions.json` | Inputs given to the LLM, and design B's cut of the witness |
-| `results/llm-answers/` | The twelve raw answers |
+| `results/llm-answers/` | The raw answers: twelve of the first experiment, six `name-head-*` of L3 |
+| `mlexp/strategies.py` | Experiments L2 to L5 of the [ladder strategies](../../../ladder-strategies.md#8-experiments): move rules, naming from the head, object-centric outcomes, merge tests |
+| `results/strategies.json` | L2, L4 and L5 |
+| `results/strategies-naming.json`, `naming-sheet-head.json` | L3: the sheet with heads, agreement and name-truth failures for both naming variants |
+| `results/strategies-reader.json` | L2's stand-in reader at the move level under each move rule, with every answer |
 
 ## Reproduce
 
@@ -34,11 +38,26 @@ $PY -I mlexp/reader.py prompts graphs/v2.12 results reader
 $PY -I mlexp/reader.py score reader results
 ```
 
+For the ladder strategy experiments (2026-11-17):
+
+```sh
+$PY -I mlexp/strategies.py structure graphs/v2.12 results graphs/v3.0 graphs/v2.0      # L2, L4, L5
+$PY -I mlexp/strategies.py name-prompt graphs/v2.12 src/rq-v2.12 l3
+# run l3/prompt-name-head.md through `claude -p --output-format json` (flags as above), 3 samples each
+# for opus and sonnet, into l3/answers/name-head-<model>-<n>.json
+$PY -I mlexp/strategies.py name-score l3 results/llm-answers results                    # L3
+$PY -I mlexp/strategies.py reader-prompts graphs/v2.12 l2reader
+# run every l2reader/*.md through `claude -p --model sonnet` twice, into l2reader/answers/<name>.<n>.json
+$PY -I mlexp/strategies.py reader-score l2reader results
+```
+
+`levels.build` and `analyze.analyse` take the options `move_close` and `outcomes`; their defaults give the results of the first experiment byte for byte.
+
 The level analysis is deterministic. The LLM parts are not; the answers used are kept.
 
 ## Shortcuts
 
-- A move closes at every write. Closing at the end of an atomic group is the alternative, not tried.
+- A move closes at every write by default. The alternatives `atomic-group` and `write-run` are options since L2. The harness records every pipeline as `EXEC[…]`, transactional or not, so `atomic-group` ends an optimistic transaction at the first pipeline that writes.
 - An outside effect is detected through the job-body counter of the harness; in Mental it would be a send on an external port.
 - Design A is one reading of the specification's ladder onto a library with one store; its *mechanisms* level is not implemented.
 - The reader is an LLM. It tests whether an answer is present at a level, not whether a person finds it.

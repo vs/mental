@@ -128,9 +128,9 @@ Each option has a default, the setting used on rq, so that every experiment chan
 
 | Option | Values | Default | Practice | Experiment |
 |---|---|---|---|---|
-| **O1 `move_close`** | `every-write`: a move closes after each on-chain write; `atomic-group`: after the evidence of atomicity ends (transaction, lock, conditional update); `prefer`: build both and keep the one whose upper level is more deterministic and more stable across versions | `every-write` | P4 | L2 |
+| **O1 `move_close`** | `every-write`: a move closes after each on-chain write; `atomic-group`: after the evidence of atomicity ends (transaction, lock, conditional update); `write-run`: as `every-write`, but a write followed directly by another write to the same key, with nothing read in between, does not close the move; `prefer`: build the others and keep the one whose move classes are most stable across versions, ties broken by how well a class predicts its observable change | `every-write` | P4 | L2 |
 | **O2 `naming`** | `children`: the LLM gets the children's names; `head`: it also gets the head effect, the one that changes the level's observable or closes the step, and name truth is checked against it | `children` | P5 | L3 |
-| **O3 `outcomes`** | `partition`: each goal under one outcome, overlaps reported; `object-centric`: each goal lists every subject it changes and appears under each, marked shared | `partition` | P7 | L4 |
+| **O3 `outcomes`** | `partition`: each goal under one outcome (the subject it changes first), overlaps reported; `object-centric`: each goal lists every subject it changes and appears under each, marked shared | `object-centric` (what the rq experiment ran) | P7 | L4 |
 | **O4 `merge_test`** | `band`: merge below 2 and split above 7 lower steps per step (the original A3); `single-child`: merge when about four in five upper steps have one lower step (the revised A3); `span-overlap`: merge when two adjacent levels' step lengths overlap heavily | `single-child` | P8, P9 | L5 |
 | **O5 `top_vocabulary`** | `glossary`: the project glossary only; `framework:<name>`: outcome and stage names prefer the terms of a process framework the organisation uses (APQC, SCOR, its own), mapped to glossary terms | `glossary` | P10 | L6 |
 | **O6 `kinds`** | the subset of the seven kinds to try as candidates, and project-specific kinds proposed as a charter plus a closing rule | all seven | P8 | L1 |
@@ -283,11 +283,46 @@ Option O1. On rq the rules closed "mark started" as two moves; the hand grouping
 
 **Decide by:** M3, M4 (developer questions), M5 (move-class stability across rq versions, where 0.50 and 0.86 were measured), M7. `prefer` wins only if its choice beats both fixed rules on at least one subject and loses on none.
 
+**Result on rq (2026-11-17; [`strategies.json`](research/multi-level-models/experiments/results/strategies.json), key `L2`).** All 2,097 runs, three rules, the same observables. M7 was measured by a proxy: how often a move class makes the same kind of observable change (*purity*).
+
+| | `every-write` | `atomic-group` | `write-run` |
+|---|---|---|---|
+| Moves per run | 7.32 | 7.32 | **5.01** |
+| Moves with one effect | 57% | 57% | 36% |
+| Move classes | 29 | 29 | 26 |
+| Causes named at move / activation (of 554) | 285 / 205 | 285 / 205 | 285 / 205 |
+| Longest explaining cut | 6 lines | 6 | 6 |
+| Move classes shared with rq 3.0 / 2.0 (call and closing function) | 0.86 / 0.52 | 0.86 / 0.52 | 0.85 / **0.61** |
+| Purity: instances with their class's usual change | 0.935 | 0.935 | 0.910 |
+| Stand-in reader, developer questions at the move level (3 runs, 2 samples) | 14 of 18, 4 "cannot tell" | 14 of 18, 4 "cannot tell" | **18 of 18** |
+| Lines read (witness, cancel, clean) | 15, 9, 14 | 15, 9, 14 | 11, 7, 10 |
+
+- **`atomic-group` is the same as `every-write` on rq.** No on-chain write happens inside an open optimistic transaction except its commit. The job's heartbeat that the first experiment saw as a move of its own comes *before* the WATCH. The rule needs report-jobs, where `generate_report` writes inside a Postgres transaction, to be tested at all.
+- **`write-run` is coarser and loses nothing measured.** It merges "record the execution", "mark started" and the `PERSIST` into one move, coarser than the hand grouping (three moves). Every cause stays at the same level, the explaining cut is as short, and the stand-in reader answered every developer question from fewer lines. The four "cannot tell" answers under the other two rules were all one question ("was any commit rejected and retried?") on runs with no rejection. Stability against the older release rose (0.52 to 0.61) and purity fell a little (0.935 to 0.910).
+- **`prefer` chooses `write-run`** (mean stability 0.73 against 0.69, outside the tie margin of 0.02).
+- **Not decided.** `prefer`'s choice beats the fixed rules on rq, but the rule asks for "at least one subject and loses on none", and rq is one subject. **Proposal:** make `write-run` the working default of `closing-rules`, and repeat L2 on report-jobs, where `atomic-group` can differ. The reader here used mechanical move names (closing function and what it writes), so that only the cut differed between rules; the first experiment's reader used LLM names.
+
 ### L3. Naming from the head
 
 Option O2. Move names agreed exactly in 22% of sample pairs and shared 0.51 of their words. The one wrong name, *record worker heartbeat*, passed every vocabulary check.
 
 **Decide by:** M5 and M6 for moves and activations, with the same six samples (three Opus, three Sonnet). `head` is adopted if move agreement rises clearly and name truth failures do not rise.
+
+**Result on rq (2026-11-17; [`strategies-naming.json`](research/multi-level-models/experiments/results/strategies-naming.json)).** Six new samples (three Opus 5.5, three Sonnet 5.5) on the same 44 step classes, with each move's head (what its closing effect writes, in plain words, and the observable change) and each activation's head move, and the instruction that every thing a move's name mentions must be something its head writes. They are compared with the six samples of the first experiment. Cost $1.45.
+
+| | `children` (first experiment) | `head` |
+|---|---|---|
+| Moves: identical names / shared words, between two samples | 22% / 0.51 | 22% / 0.56 |
+| Activations: identical / shared words | 21% / 0.57 | **6% / 0.37** |
+| Goals: identical / shared words | 37% / 0.85 | 34% / 0.80 |
+| Move names failing name truth, check as written before the run | 20 of 174 (11.5%) | **6 of 174 (3.4%)** |
+| Move names failing name truth, revised check | 5 of 174, among them all three *record worker heartbeat* | **0** |
+| Storage words in any name | 0 | 0 |
+
+- **The head makes names true, not stable.** The known wrong name is gone, and the failures fell by about three quarters. Agreement on moves did not rise "clearly": exact matches stayed at 22% and shared words rose from 0.51 to 0.56.
+- **Activation names got worse.** Given a head move, the samples named activations after what that move does ("Cancel job across its lists", "Mark job canceled") instead of after the call. Agreement fell from 21% to 6%.
+- **The name-truth check as first written was too strict.** Of its 20 failures on the first experiment's names, 15 were not wrong names. "Cancel" named the call a step belongs to; rq's started-jobs list does list executions; a dependent job is the job written. The revision exempts a word that names the step's own call and lets a list stand for what it lists. It was fitted to those failures, so its 0 on the new samples is weaker evidence than the drop from 20 to 6 under the original check.
+- **Decision by the stated rule: `head` is not adopted** for stability. **Proposal:** use the head for moves only, as a truth aid. Keep `children` for activations and goals. Keep "generate once, store with the step class" as the answer to instability (it already was). Run the revised name-truth check on report-jobs before relying on it.
 
 ### L4. Overlapping outcomes
 
@@ -295,11 +330,39 @@ Option O3. 4.4% of rq goals change two jobs.
 
 **Decide by:** M3 (does the symptom stay at the top two levels), M4 (manager and product questions on runs with a shared goal), M8. Also check whether divergence marks a wrong subject choice on the multi-service subject.
 
+**Result on rq (2026-11-17; `strategies.json`, key `L4`).** 2,520 outcomes in 2,097 runs.
+
+| | `object-centric` | `partition` |
+|---|---|---|
+| Goals under two outcomes | 4.4% | 0% |
+| Outcomes that miss a change made to their own subject | **0%** | **8.0%** |
+| Outcomes whose last change is not the subject's true final state | 0% | 0% |
+| Symptoms at outcome / goal (of 554) | 500 / 54 | 500 / 54 |
+| Causes at move / activation / outcome | 285 / 205 / 64 | 285 / 205 / 64 |
+
+- **Partition hides changes.** In 8% of outcomes a goal filed under another job changed this job: completing `j1` releases `j2`, and under partition `j2`'s outcome does not show it. Placement is the same both ways, so object-centric costs nothing that was measured.
+- **Adopted for rq: `object-centric`** (M3 equal, M8 decides). M4 was not run, because the outcome rendering states the final state of every job, which answers the manager's questions under either rule. Divergence needs the multi-service subject.
+
 ### L5. Which merge test
 
 Option O4. The band failed on rq; `single-child` was fitted to the same data.
 
-**Decide by:** on the corpus, which pairs of levels each test merges, and whether a merged level would have named a finding (test A4 of the multi-level report). The test that never merges a level that names something, and merges the levels that restate a neighbour, wins. On rq, both `single-child` and `span-overlap` should merge stage into activation and exchange into goal.
+**Decide by:** on the corpus, which pairs of levels each test merges, and whether a merged level would have named a finding (test A4 of the multi-level report). The test that never merges a level that names something, and merges the levels that restate a neighbour, wins. On rq, both `single-child` and `span-overlap` should merge stage into goal and exchange into goal.
+
+**Result on rq (2026-11-17; `strategies.json`, key `L5`).** All seven kinds were built as candidates: stage as consecutive goals up to a change of the job's status; exchange as the API call with its answer. Thresholds were fixed before the run: band below 2; single-child at 80%; span overlap at 0.5, measured as the overlap of the two levels' distributions of step length in scheduler steps.
+
+| Pair (upper / lower) | Lower steps per upper step (mean) | Upper steps with one lower step | Length overlap | band | single-child | span-overlap | Anomalies named only at the level dropped |
+|---|---|---|---|---|---|---|---|
+| outcome / stage | 1.56 | 52% | 0.70 | merge | — | merge | 2 (stage) |
+| stage / goal | 1.00 | 99.9% | 0.91 | merge | merge | merge | 2 (stage) |
+| goal / exchange | 1.00 | 100% | 1.00 | merge | merge | merge | 0 (exchange) |
+| exchange / activation | 1.51 | 49% | 0.48 | — | — | — | 0 |
+| activation / move | 2.20 | 30% | 0.42 | — | — | — | 204 (activation) |
+| move / effect | 2.01 | 57% | 0.57 | merge | — | merge | **285 (move)** |
+
+- **`single-child` passes.** It merges exactly the two candidates the hand analysis expected (stage into goal, exchange into goal) and keeps activation and move. The stage it drops names one anomalous run of 554: a delete overlapping a work call, whose work left the job's status unchanged. The symptom and the cause of that run are each first visible at stage, which is why it counts twice.
+- **`band` and `span-overlap` fail.** Both would merge move into effect, losing the level that names 285 causes, and outcome into stage. Span overlap fails for a plain reason: most moves are one effect long, so the two length distributions coincide. Jaques's test assumes levels whose steps differ in duration, and a level can be needed because of *what* it groups, not how long it lasts.
+- **Decided for rq: `single-child`**; `span-overlap` *Measured*, not chosen. `band` was already rejected. Repeat on the multi-service subject, where stage and exchange are expected to be admitted.
 
 ### L6. Words at the top
 
@@ -319,7 +382,7 @@ P13 to P17: the two-up frame, epitome and zoom back out, the status map, the run
 
 ## 9. The plan
 
-1. **Now, in the research harness.** L2, L3, L4 and L5 on rq reuse `mlexp/levels.py`, the naming sheet and the reader harness of the [multi-level experiments](research/multi-level-models/experiments/README.md). Only L3 costs LLM calls: six naming samples, about $2 at the earlier prices. Results are recorded as findings.
+1. **Now, in the research harness.** L2, L3, L4 and L5 on rq reuse `mlexp/levels.py`, the naming sheet and the reader harness of the [multi-level experiments](research/multi-level-models/experiments/README.md). **Done 2026-11-17** (`mlexp/strategies.py`; $1.65 of LLM calls). Results are under each experiment above and in [findings, section L](findings.md#l-ladder-strategies-on-rq).
 2. **When phase 11 is built.** Implement `fixed` and `closing-rules` with every option of 5.2, and `ladder build`, `list`, `use` and `compare`. The golden report-jobs build (C24) covers one ladder per strategy, with answers from the `replay` backend. Run L7 on rq and report-jobs.
 3. **When `mentalvm` explores.** `mentalvm ladder eval` replaces the research harness for M1 to M3 and M7.
 4. **With the extended corpus.** L1 and L6, on the three subjects of 7.2 still to choose.

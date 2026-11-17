@@ -105,8 +105,17 @@ def mark_chain(effects: list[dict[str, Any]]) -> None:
             later_chain.add(who)
 
 
-def build(graph: dict[str, Any], run: dict[str, Any]) -> dict[str, Any]:
-    """The step tree of one run under design B, and the step lists of design A."""
+MOVE_CLOSE = ('every-write', 'atomic-group', 'write-run')
+OUTCOMES = ('object-centric', 'partition')
+
+
+def build(graph: dict[str, Any], run: dict[str, Any], move_close: str = 'every-write', outcomes: str = 'object-centric') -> dict[str, Any]:
+    """The step tree of one run under design B, and the step lists of design A.
+
+    The defaults are the rules of the first experiment. The options are those of
+    docs/ladder-strategies.md 5.2: O1 `move_close` and O3 `outcomes`.
+    """
+    assert move_close in MOVE_CLOSE and outcomes in OUTCOMES
     effects = effects_of(graph, run)
     mark_chain(effects)
     activations: list[dict[str, Any]] = []
@@ -137,13 +146,26 @@ def build(graph: dict[str, Any], run: dict[str, Any]) -> dict[str, Any]:
     for act in activations:
         current: list[dict[str, Any]] = []
         act['moves'] = []
-        for e in act['effects']:
-            if not e['chain']:
-                continue
+        watching = False
+        on_chain = [e for e in act['effects'] if e['chain']]
+        for n, e in enumerate(on_chain):
             current.append(e)
-            if e['writes'] or e['rejected']:
+            if any(name == 'WATCH' for name, _ in e['commands']):
+                watching = True
+            closes = bool(e['writes'] or e['rejected'])
+            if move_close == 'atomic-group' and watching:
+                # An optimistic transaction is one move: it ends at its commit attempt,
+                # accepted or rejected. Writes made meanwhile outside it join it.
+                closes = e['rejected'] or (bool(e['writes']) and e['label'].startswith('EXEC['))
+            if move_close == 'write-run' and closes and not e['rejected'] and n + 1 < len(on_chain):
+                # Consecutive writes to the same key, with nothing read in between, are one move.
+                nxt = on_chain[n + 1]
+                if nxt['writes'] and not nxt['reads'] and not nxt['rejected'] and set(nxt['writes']) & set(e['writes']):
+                    closes = False
+            if closes:
                 act['moves'].append({'effects': current, 'activation': act})
                 current = []
+                watching = False
         if current:
             if act['moves']:
                 act['moves'][-1]['effects'].extend(current)
@@ -163,8 +185,15 @@ def build(graph: dict[str, Any], run: dict[str, Any]) -> dict[str, Any]:
         goal['class'] = [goal['api']]
         goal['ref_change'] = [c for e in goal['effects'] for c in e['ref_change']]
     subjects = sorted({c[0] for g in goals for c in g['ref_change']})
-    outcomes = [{'subject': j, 'goals': [g for g in goals if any(c[0] == j for c in g['ref_change'])]} for j in subjects]
-    return {'effects': effects, 'moves': moves, 'activations': activations, 'goals': goals, 'outcomes': outcomes, 'ladder_a': ladder_a(effects)}
+    if outcomes == 'object-centric':
+        # A goal is listed under every subject it changes.
+        tops = [{'subject': j, 'goals': [g for g in goals if any(c[0] == j for c in g['ref_change'])]} for j in subjects]
+    else:
+        # Each goal belongs to one outcome: the subject it changes first.
+        for g in goals:
+            g['primary'] = next((c[0] for e in g['effects'] for c in e['ref_change']), None)
+        tops = [{'subject': j, 'goals': [g for g in goals if g.get('primary') == j]} for j in subjects]
+    return {'effects': effects, 'moves': moves, 'activations': activations, 'goals': goals, 'outcomes': tops, 'ladder_a': ladder_a(effects)}
 
 
 def ladder_a(effects: list[dict[str, Any]]) -> dict[str, list[Any]]:

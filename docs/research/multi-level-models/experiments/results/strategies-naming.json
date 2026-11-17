@@ -1,0 +1,413 @@
+{
+ "children": {
+  "failure_share": 0.115,
+  "failures": [
+   {
+    "head": "writes: a queue, the job's record",
+    "move": "m:183844",
+    "name": "Enqueue dependent with met dependency",
+    "sample": "name-opus-1",
+    "words": [
+     "\\bdependents?\\b|\\bdependencies\\b"
+    ]
+   },
+   {
+    "head": "writes: the started-jobs list",
+    "move": "m:3f68d8",
+    "name": "Unregister all job executions",
+    "sample": "name-opus-1",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's executions",
+    "move": "m:daa541",
+    "name": "Prune expired executions before cancel",
+    "sample": "name-opus-1",
+    "words": [
+     "\\bcancel(?:ed|led)?\\b"
+    ]
+   },
+   {
+    "head": "writes: the started-jobs list",
+    "move": "m:ec46fa",
+    "name": "Unregister one job execution",
+    "sample": "name-opus-1",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   },
+   {
+    "head": "writes: a queue, a worker's record, the deferred-jobs list, the dependencies of a job, the dependents of a job, the finished-jobs list, the job's record, the job's results",
+    "move": "m:0fccaa",
+    "name": "Commit success, execution already gone",
+    "sample": "name-opus-2",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   },
+   {
+    "head": "writes: the started-jobs list",
+    "move": "m:3f68d8",
+    "name": "Remove all started executions",
+    "sample": "name-opus-2",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's executions",
+    "move": "m:daa541",
+    "name": "Prune expired executions before cancel",
+    "sample": "name-opus-2",
+    "words": [
+     "\\bcancel(?:ed|led)?\\b"
+    ]
+   },
+   {
+    "head": "writes: the started-jobs list",
+    "move": "m:ec46fa",
+    "name": "Remove one started execution",
+    "sample": "name-opus-2",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   },
+   {
+    "head": "writes: the started-jobs list",
+    "move": "m:3f68d8",
+    "name": "Drop all executions from started",
+    "sample": "name-opus-3",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's executions",
+    "move": "m:daa541",
+    "name": "Prune expired executions for cancel",
+    "sample": "name-opus-3",
+    "words": [
+     "\\bcancel(?:ed|led)?\\b"
+    ]
+   },
+   {
+    "head": "writes: the started-jobs list",
+    "move": "m:ec46fa",
+    "name": "Drop one execution from started",
+    "sample": "name-opus-3",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's record",
+    "move": "m:02365a",
+    "name": "Record worker heartbeat",
+    "sample": "name-sonnet-1",
+    "words": [
+     "\\bworkers?\\b"
+    ]
+   },
+   {
+    "head": "writes: a queue, the job's record",
+    "move": "m:183844",
+    "name": "Queue dependent job",
+    "sample": "name-sonnet-1",
+    "words": [
+     "\\bdependents?\\b|\\bdependencies\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's record",
+    "move": "m:02365a",
+    "name": "Record worker heartbeat",
+    "sample": "name-sonnet-2",
+    "words": [
+     "\\bworkers?\\b"
+    ]
+   },
+   {
+    "head": "writes: a queue, the job's record",
+    "move": "m:183844",
+    "name": "Queue dependent job",
+    "sample": "name-sonnet-2",
+    "words": [
+     "\\bdependents?\\b|\\bdependencies\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's record",
+    "move": "m:02365a",
+    "name": "Record worker heartbeat",
+    "sample": "name-sonnet-3",
+    "words": [
+     "\\bworkers?\\b"
+    ]
+   },
+   {
+    "head": "writes: a queue, the job's record",
+    "move": "m:183844",
+    "name": "Queue job with ready dependencies",
+    "sample": "name-sonnet-3",
+    "words": [
+     "\\bdependents?\\b|\\bdependencies\\b"
+    ]
+   },
+   {
+    "head": "writes: the started-jobs list",
+    "move": "m:3f68d8",
+    "name": "Remove executions from started list",
+    "sample": "name-sonnet-3",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's executions",
+    "move": "m:daa541",
+    "name": "Clear stale executions on cancel",
+    "sample": "name-sonnet-3",
+    "words": [
+     "\\bcancel(?:ed|led)?\\b"
+    ]
+   },
+   {
+    "head": "writes: the started-jobs list",
+    "move": "m:ec46fa",
+    "name": "Remove execution from started list",
+    "sample": "name-sonnet-3",
+    "words": [
+     "\\bexecutions?\\b"
+    ]
+   }
+  ],
+  "levels": {
+   "activations": {
+    "classes": 8,
+    "pairwise_exact": 0.208,
+    "pairwise_token_jaccard": 0.567
+   },
+   "goals": {
+    "classes": 7,
+    "pairwise_exact": 0.371,
+    "pairwise_token_jaccard": 0.846
+   },
+   "moves": {
+    "classes": 29,
+    "pairwise_exact": 0.223,
+    "pairwise_token_jaccard": 0.506
+   }
+  },
+  "majority_failures": [
+   {
+    "move": "m:183844",
+    "name": "queue dependent job"
+   },
+   {
+    "move": "m:3f68d8",
+    "name": "remove executions from started list"
+   },
+   {
+    "move": "m:daa541",
+    "name": "prune expired executions before cancel"
+   },
+   {
+    "move": "m:ec46fa",
+    "name": "drop one execution from started"
+   }
+  ],
+  "majority_moves": {
+   "m:02365a": "record job heartbeat",
+   "m:0fccaa": "finish job and release dependents",
+   "m:10aebe": "save job before requeue",
+   "m:183844": "queue dependent job",
+   "m:1cdb1c": "remove job from finished list",
+   "m:1ecc1d": "commit failure, requeue for retry",
+   "m:257f55": "add job to queue",
+   "m:30455a": "attempt success commit, rejected",
+   "m:34e4a3": "claim next queued job",
+   "m:3f68d8": "remove executions from started list",
+   "m:4ecdcc": "commit job success",
+   "m:509a00": "defer dependent job",
+   "m:6ed7ed": "record job failure",
+   "m:76056c": "cancel finished job",
+   "m:799b8b": "erase job record",
+   "m:819711": "fail abandoned started jobs",
+   "m:840bf6": "attempt deferral, rejected",
+   "m:85ae07": "register job execution",
+   "m:8e69df": "keep job while running",
+   "m:9a3f0c": "remove job from queue",
+   "m:a61c56": "remove job from failed list",
+   "m:b7706e": "mark job started",
+   "m:be2344": "cancel queued job",
+   "m:ca9dee": "commit success, enqueue dependents",
+   "m:d39693": "cancel started job",
+   "m:daa541": "prune expired executions before cancel",
+   "m:ec46fa": "drop one execution from started",
+   "m:f72349": "push job back to queue",
+   "m:feef01": "prune expired executions before delete"
+  },
+  "move_names_given": 174,
+  "name_truth_failures": 20,
+  "name_truth_failures_revised": 5,
+  "revised_failures": [
+   [
+    "name-opus-2",
+    "Commit success, execution already gone"
+   ],
+   [
+    "name-sonnet-1",
+    "Record worker heartbeat"
+   ],
+   [
+    "name-sonnet-2",
+    "Record worker heartbeat"
+   ],
+   [
+    "name-sonnet-3",
+    "Record worker heartbeat"
+   ],
+   [
+    "name-sonnet-3",
+    "Queue job with ready dependencies"
+   ]
+  ],
+  "samples": [
+   "name-opus-1",
+   "name-opus-2",
+   "name-opus-3",
+   "name-sonnet-1",
+   "name-sonnet-2",
+   "name-sonnet-3"
+  ],
+  "storage_words": 0
+ },
+ "head": {
+  "failure_share": 0.034,
+  "failures": [
+   {
+    "head": "writes: the job's executions",
+    "move": "m:daa541",
+    "name": "Prune expired executions on cancel",
+    "sample": "name-head-opus-1",
+    "words": [
+     "\\bcancel(?:ed|led)?\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's executions",
+    "move": "m:daa541",
+    "name": "Prune expired executions before cancel",
+    "sample": "name-head-opus-2",
+    "words": [
+     "\\bcancel(?:ed|led)?\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's executions",
+    "move": "m:daa541",
+    "name": "Prune executions before cancel",
+    "sample": "name-head-sonnet-1",
+    "words": [
+     "\\bcancel(?:ed|led)?\\b"
+    ]
+   },
+   {
+    "head": "writes: a queue, the job's record",
+    "move": "m:183844",
+    "name": "Queue dependent job",
+    "sample": "name-head-sonnet-2",
+    "words": [
+     "\\bdependents?\\b|\\bdependencies\\b"
+    ]
+   },
+   {
+    "head": "writes: a queue, the job's record",
+    "move": "m:183844",
+    "name": "Queue ready dependent job",
+    "sample": "name-head-sonnet-3",
+    "words": [
+     "\\bdependents?\\b|\\bdependencies\\b"
+    ]
+   },
+   {
+    "head": "writes: the job's executions",
+    "move": "m:daa541",
+    "name": "Prune executions before cancel",
+    "sample": "name-head-sonnet-3",
+    "words": [
+     "\\bcancel(?:ed|led)?\\b"
+    ]
+   }
+  ],
+  "levels": {
+   "activations": {
+    "classes": 8,
+    "pairwise_exact": 0.058,
+    "pairwise_token_jaccard": 0.369
+   },
+   "goals": {
+    "classes": 7,
+    "pairwise_exact": 0.343,
+    "pairwise_token_jaccard": 0.796
+   },
+   "moves": {
+    "classes": 29,
+    "pairwise_exact": 0.216,
+    "pairwise_token_jaccard": 0.564
+   }
+  },
+  "majority_failures": [
+   {
+    "move": "m:daa541",
+    "name": "prune executions before cancel"
+   }
+  ],
+  "majority_moves": {
+   "m:02365a": "record job heartbeat",
+   "m:0fccaa": "finish job, enqueue dependents",
+   "m:10aebe": "save job record",
+   "m:183844": "queue job with commit check",
+   "m:1cdb1c": "remove job from finished list",
+   "m:1ecc1d": "requeue job for retry",
+   "m:257f55": "queue new job",
+   "m:30455a": "attempt success commit, rejected",
+   "m:34e4a3": "claim next queue entry",
+   "m:3f68d8": "remove all started-list entries",
+   "m:4ecdcc": "finish execution and store result",
+   "m:509a00": "defer job behind its dependency",
+   "m:6ed7ed": "mark job failed",
+   "m:76056c": "cancel finished job",
+   "m:799b8b": "delete job record",
+   "m:819711": "fail abandoned started job",
+   "m:840bf6": "attempt deferral commit, rejected",
+   "m:85ae07": "open execution in started list",
+   "m:8e69df": "keep job record from expiring",
+   "m:9a3f0c": "remove entry from queue",
+   "m:a61c56": "remove job from failed list",
+   "m:b7706e": "mark job started",
+   "m:be2344": "cancel queued job",
+   "m:ca9dee": "finish execution, enqueue dependents",
+   "m:d39693": "cancel started job",
+   "m:daa541": "prune executions before cancel",
+   "m:ec46fa": "remove one started-list entry",
+   "m:f72349": "put job back on queue",
+   "m:feef01": "prune executions before delete"
+  },
+  "move_names_given": 174,
+  "name_truth_failures": 6,
+  "name_truth_failures_revised": 0,
+  "revised_failures": [],
+  "samples": [
+   "name-head-opus-1",
+   "name-head-opus-2",
+   "name-head-opus-3",
+   "name-head-sonnet-1",
+   "name-head-sonnet-2",
+   "name-head-sonnet-3"
+  ],
+  "storage_words": 0
+ }
+}

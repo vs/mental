@@ -108,7 +108,8 @@ def goal_sig(goal: dict[str, Any]) -> str:
     return digest([goal['class'], [act_sig(a) for a in goal['activations']]])
 
 
-def analyse(graph_dir: pathlib.Path) -> dict[str, Any]:
+def analyse(graph_dir: pathlib.Path, **options: str) -> dict[str, Any]:
+    """`options` are passed to levels.build (the strategy options O1 and O3)."""
     seq, conc = evaluate.load(graph_dir, 0), evaluate.load(graph_dir, 2)
     ref_seq, ref_conc = evaluate.node_alpha(afs.reference, seq), evaluate.node_alpha(afs.reference, conc)
     labels, _ = evaluate.oracle_labels(ref_seq, ref_conc, seq, conc)
@@ -124,7 +125,7 @@ def analyse(graph_dir: pathlib.Path) -> dict[str, Any]:
     trees: dict[str, list[dict[str, Any]]] = {}
     for name in scenarios.ALL:
         graph = conc[name]
-        built = [levels.build(graph, run) for run in graph['runs']]
+        built = [levels.build(graph, run, **options) for run in graph['runs']]
         trees[name] = built
         clean_b = {(lv, st): set() for lv in B_LEVELS for st in (False, True)}
         clean_a: dict[str, set[str]] = {lv: set() for lv in A_LEVELS}
@@ -189,6 +190,7 @@ def analyse(graph_dir: pathlib.Path) -> dict[str, Any]:
         'classes': {k: sorted(v) for k, v in classes.items()},
         'move_classes': class_examples['move'],
         '_trees': trees,
+        '_fan': fan,
         '_labels': labels,
     }
 

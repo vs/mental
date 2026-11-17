@@ -1,0 +1,478 @@
+{
+ "L2": {
+  "atomic-group": {
+   "cause_placement": {
+    "activation": 205,
+    "move": 285,
+    "outcome": 64
+   },
+   "effects_per_move": {
+    "max": 10,
+    "mean": 2.008,
+    "median": 1.0,
+    "n": 15358,
+    "ones": 0.574
+   },
+   "explaining_cut": {
+    "cancel-vs-work": {
+     "max": 4,
+     "median": 3
+    },
+    "cleanup-vs-work": {
+     "max": 4,
+     "median": 2.0
+    },
+    "delete-vs-work": {
+     "max": 4,
+     "median": 2
+    },
+    "dependency": {
+     "max": 6,
+     "median": 6.0
+    }
+   },
+   "explaining_cut_max": 6,
+   "move_classes": 29,
+   "moves_per_activation": {
+    "max": 4,
+    "mean": 2.203,
+    "median": 2.0,
+    "n": 6972,
+    "ones": 0.295
+   },
+   "moves_per_run": 7.32,
+   "purity": {
+    "classes_with_one_change_kind": 0.69,
+    "instances_matching_class_majority": 0.935
+   },
+   "stability": {
+    "v2.0": {
+     "move_by_function": 0.517,
+     "move_full": 0.463
+    },
+    "v3.0": {
+     "move_by_function": 0.864,
+     "move_full": 0.5
+    }
+   },
+   "symptom_placement": {
+    "goal": 54,
+    "outcome": 500
+   },
+   "witness_moves": 13,
+   "witness_tree": [
+    "GOAL c enqueue-dependent (5 effects, 1 support)",
+    "  ACTIVATION part 0 (5 effects)",
+    "    MOVE [0,14,15,16] Queue.setup_dependencies -> ['rq:deferred:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies']",
+    "GOAL w1 work (22 effects, 6 support)",
+    "  ACTIVATION part 0 (10 effects)",
+    "    MOVE [4] Queue.lmove -> ['rq:queue:*', 'rq:queue:*:intermediate']",
+    "    MOVE [5,8] prepare_execution -> ['rq:execution:*:*', 'rq:executions:*', 'rq:wip:*', 'rq:worker:*']",
+    "    MOVE [9] BaseWorker.prepare_job_execution -> ['rq:job:*', 'rq:queue:*:intermediate', 'rq:worker:*']",
+    "    MOVE [10] Job.perform -> ['rq:job:*']",
+    "  ACTIVATION part 1 (12 effects)",
+    "    MOVE [11] Job.heartbeat -> ['rq:job:*']",
+    "    MOVE [12,13,18] BaseWorker.handle_job_success -> rejected",
+    "    MOVE [19,20,21,22,23,24,25] BaseWorker.handle_job_success -> ['rq:deferred:*', 'rq:finished:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies', 'rq:queue:*', 'rq:results:*', 'rq:worker:*']",
+    "GOAL w1 work (15 effects, 7 support)",
+    "  ACTIVATION part 0 (10 effects)",
+    "    MOVE [30] Queue.lmove -> ['rq:queue:*', 'rq:queue:*:intermediate']",
+    "    MOVE [31,34] prepare_execution -> ['rq:execution:*:*', 'rq:executions:*', 'rq:wip:*', 'rq:worker:*']",
+    "    MOVE [35] BaseWorker.prepare_job_execution -> ['rq:job:*', 'rq:queue:*:intermediate', 'rq:worker:*']",
+    "    MOVE [36] Job.perform -> ['rq:job:*']",
+    "  ACTIVATION part 1 (5 effects)",
+    "    MOVE [38,39,40] BaseWorker.handle_job_success -> ['rq:execution:*:*', 'rq:executions:*', 'rq:finished:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies', 'rq:results:*', 'rq:wip:*', 'rq:worker:*']"
+   ]
+  },
+  "every-write": {
+   "cause_placement": {
+    "activation": 205,
+    "move": 285,
+    "outcome": 64
+   },
+   "effects_per_move": {
+    "max": 10,
+    "mean": 2.008,
+    "median": 1.0,
+    "n": 15358,
+    "ones": 0.574
+   },
+   "explaining_cut": {
+    "cancel-vs-work": {
+     "max": 4,
+     "median": 3
+    },
+    "cleanup-vs-work": {
+     "max": 4,
+     "median": 2.0
+    },
+    "delete-vs-work": {
+     "max": 4,
+     "median": 2
+    },
+    "dependency": {
+     "max": 6,
+     "median": 6.0
+    }
+   },
+   "explaining_cut_max": 6,
+   "move_classes": 29,
+   "moves_per_activation": {
+    "max": 4,
+    "mean": 2.203,
+    "median": 2.0,
+    "n": 6972,
+    "ones": 0.295
+   },
+   "moves_per_run": 7.32,
+   "purity": {
+    "classes_with_one_change_kind": 0.69,
+    "instances_matching_class_majority": 0.935
+   },
+   "stability": {
+    "v2.0": {
+     "move_by_function": 0.517,
+     "move_full": 0.463
+    },
+    "v3.0": {
+     "move_by_function": 0.864,
+     "move_full": 0.5
+    }
+   },
+   "symptom_placement": {
+    "goal": 54,
+    "outcome": 500
+   },
+   "witness_moves": 13,
+   "witness_tree": [
+    "GOAL c enqueue-dependent (5 effects, 1 support)",
+    "  ACTIVATION part 0 (5 effects)",
+    "    MOVE [0,14,15,16] Queue.setup_dependencies -> ['rq:deferred:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies']",
+    "GOAL w1 work (22 effects, 6 support)",
+    "  ACTIVATION part 0 (10 effects)",
+    "    MOVE [4] Queue.lmove -> ['rq:queue:*', 'rq:queue:*:intermediate']",
+    "    MOVE [5,8] prepare_execution -> ['rq:execution:*:*', 'rq:executions:*', 'rq:wip:*', 'rq:worker:*']",
+    "    MOVE [9] BaseWorker.prepare_job_execution -> ['rq:job:*', 'rq:queue:*:intermediate', 'rq:worker:*']",
+    "    MOVE [10] Job.perform -> ['rq:job:*']",
+    "  ACTIVATION part 1 (12 effects)",
+    "    MOVE [11] Job.heartbeat -> ['rq:job:*']",
+    "    MOVE [12,13,18] BaseWorker.handle_job_success -> rejected",
+    "    MOVE [19,20,21,22,23,24,25] BaseWorker.handle_job_success -> ['rq:deferred:*', 'rq:finished:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies', 'rq:queue:*', 'rq:results:*', 'rq:worker:*']",
+    "GOAL w1 work (15 effects, 7 support)",
+    "  ACTIVATION part 0 (10 effects)",
+    "    MOVE [30] Queue.lmove -> ['rq:queue:*', 'rq:queue:*:intermediate']",
+    "    MOVE [31,34] prepare_execution -> ['rq:execution:*:*', 'rq:executions:*', 'rq:wip:*', 'rq:worker:*']",
+    "    MOVE [35] BaseWorker.prepare_job_execution -> ['rq:job:*', 'rq:queue:*:intermediate', 'rq:worker:*']",
+    "    MOVE [36] Job.perform -> ['rq:job:*']",
+    "  ACTIVATION part 1 (5 effects)",
+    "    MOVE [38,39,40] BaseWorker.handle_job_success -> ['rq:execution:*:*', 'rq:executions:*', 'rq:finished:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies', 'rq:results:*', 'rq:wip:*', 'rq:worker:*']"
+   ]
+  },
+  "prefer": {
+   "chosen": "write-run",
+   "scores": {
+    "atomic-group": {
+     "purity": 0.935,
+     "stability_by_function": 0.691
+    },
+    "every-write": {
+     "purity": 0.935,
+     "stability_by_function": 0.691
+    },
+    "write-run": {
+     "purity": 0.91,
+     "stability_by_function": 0.73
+    }
+   }
+  },
+  "write-run": {
+   "cause_placement": {
+    "activation": 205,
+    "move": 285,
+    "outcome": 64
+   },
+   "effects_per_move": {
+    "max": 10,
+    "mean": 2.937,
+    "median": 3,
+    "n": 10499,
+    "ones": 0.363
+   },
+   "explaining_cut": {
+    "cancel-vs-work": {
+     "max": 4,
+     "median": 3
+    },
+    "cleanup-vs-work": {
+     "max": 4,
+     "median": 2.0
+    },
+    "delete-vs-work": {
+     "max": 4,
+     "median": 2
+    },
+    "dependency": {
+     "max": 6,
+     "median": 6.0
+    }
+   },
+   "explaining_cut_max": 6,
+   "move_classes": 26,
+   "moves_per_activation": {
+    "max": 4,
+    "mean": 1.506,
+    "median": 2.0,
+    "n": 6972,
+    "ones": 0.314
+   },
+   "moves_per_run": 5.01,
+   "purity": {
+    "classes_with_one_change_kind": 0.692,
+    "instances_matching_class_majority": 0.91
+   },
+   "stability": {
+    "v2.0": {
+     "move_by_function": 0.609,
+     "move_full": 0.514
+    },
+    "v3.0": {
+     "move_by_function": 0.85,
+     "move_full": 0.559
+    }
+   },
+   "symptom_placement": {
+    "goal": 54,
+    "outcome": 500
+   },
+   "witness_moves": 9,
+   "witness_tree": [
+    "GOAL c enqueue-dependent (5 effects, 1 support)",
+    "  ACTIVATION part 0 (5 effects)",
+    "    MOVE [0,14,15,16] Queue.setup_dependencies -> ['rq:deferred:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies']",
+    "GOAL w1 work (22 effects, 6 support)",
+    "  ACTIVATION part 0 (10 effects)",
+    "    MOVE [4] Queue.lmove -> ['rq:queue:*', 'rq:queue:*:intermediate']",
+    "    MOVE [5,8,9,10] Job.perform -> ['rq:execution:*:*', 'rq:executions:*', 'rq:job:*', 'rq:queue:*:intermediate', 'rq:wip:*', 'rq:worker:*']",
+    "  ACTIVATION part 1 (12 effects)",
+    "    MOVE [11] Job.heartbeat -> ['rq:job:*']",
+    "    MOVE [12,13,18] BaseWorker.handle_job_success -> rejected",
+    "    MOVE [19,20,21,22,23,24,25] BaseWorker.handle_job_success -> ['rq:deferred:*', 'rq:finished:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies', 'rq:queue:*', 'rq:results:*', 'rq:worker:*']",
+    "GOAL w1 work (15 effects, 7 support)",
+    "  ACTIVATION part 0 (10 effects)",
+    "    MOVE [30] Queue.lmove -> ['rq:queue:*', 'rq:queue:*:intermediate']",
+    "    MOVE [31,34,35,36] Job.perform -> ['rq:execution:*:*', 'rq:executions:*', 'rq:job:*', 'rq:queue:*:intermediate', 'rq:wip:*', 'rq:worker:*']",
+    "  ACTIVATION part 1 (5 effects)",
+    "    MOVE [38,39,40] BaseWorker.handle_job_success -> ['rq:execution:*:*', 'rq:executions:*', 'rq:finished:*', 'rq:job:*', 'rq:job:*:dependents', 'rq:job::*:dependencies', 'rq:results:*', 'rq:wip:*', 'rq:worker:*']"
+   ]
+  }
+ },
+ "L4": {
+  "object-centric": {
+   "cause_placement": {
+    "activation": 205,
+    "move": 285,
+    "outcome": 64
+   },
+   "goals_under_two_outcomes": 0.044,
+   "outcomes": 2520,
+   "outcomes_missing_a_change_to_their_subject": 0.0,
+   "outcomes_whose_final_state_is_wrong": 0.0,
+   "symptom_placement": {
+    "goal": 54,
+    "outcome": 500
+   }
+  },
+  "partition": {
+   "cause_placement": {
+    "activation": 205,
+    "move": 285,
+    "outcome": 64
+   },
+   "goals_under_two_outcomes": 0.0,
+   "outcomes": 2520,
+   "outcomes_missing_a_change_to_their_subject": 0.08,
+   "outcomes_whose_final_state_is_wrong": 0.0,
+   "symptom_placement": {
+    "goal": 54,
+    "outcome": 500
+   }
+  }
+ },
+ "L5": {
+  "named_at": {
+   "cause": {
+    "activation": 204,
+    "move": 285,
+    "outcome": 64,
+    "stage": 1
+   },
+   "symptom": {
+    "goal": 53,
+    "outcome": 500,
+    "stage": 1
+   }
+  },
+  "pairs": {
+   "activation/move": {
+    "anomalies_named_only_at_dropped_level": 204,
+    "fan_in": {
+     "max": 4,
+     "mean": 2.203,
+     "median": 2.0,
+     "n": 6972,
+     "ones": 0.295
+    },
+    "merge": {
+     "band": false,
+     "single-child": false,
+     "span-overlap": false
+    },
+    "span_overlap": 0.423,
+    "split_hint_band": false,
+    "would_drop": "activation"
+   },
+   "exchange/activation": {
+    "anomalies_named_only_at_dropped_level": 0,
+    "fan_in": {
+     "max": 2,
+     "mean": 1.51,
+     "median": 2,
+     "n": 4617,
+     "ones": 0.49
+    },
+    "merge": {
+     "band": false,
+     "single-child": false,
+     "span-overlap": false
+    },
+    "span_overlap": 0.482,
+    "split_hint_band": false,
+    "would_drop": "exchange"
+   },
+   "goal/exchange": {
+    "anomalies_named_only_at_dropped_level": 0,
+    "fan_in": {
+     "max": 1,
+     "mean": 1.0,
+     "median": 1,
+     "n": 4617,
+     "ones": 1.0
+    },
+    "merge": {
+     "band": true,
+     "single-child": true,
+     "span-overlap": true
+    },
+    "span_overlap": 1.0,
+    "split_hint_band": false,
+    "would_drop": "exchange"
+   },
+   "move/effect": {
+    "anomalies_named_only_at_dropped_level": 285,
+    "fan_in": {
+     "max": 10,
+     "mean": 2.008,
+     "median": 1.0,
+     "n": 15358,
+     "ones": 0.574
+    },
+    "merge": {
+     "band": true,
+     "single-child": false,
+     "span-overlap": true
+    },
+    "span_overlap": 0.574,
+    "split_hint_band": false,
+    "would_drop": "move"
+   },
+   "outcome/stage": {
+    "anomalies_named_only_at_dropped_level": 2,
+    "fan_in": {
+     "max": 3,
+     "mean": 1.559,
+     "median": 1.0,
+     "n": 2520,
+     "ones": 0.521
+    },
+    "merge": {
+     "band": true,
+     "single-child": false,
+     "span-overlap": true
+    },
+    "span_overlap": 0.703,
+    "split_hint_band": false,
+    "would_drop": "stage"
+   },
+   "stage/goal": {
+    "anomalies_named_only_at_dropped_level": 2,
+    "fan_in": {
+     "max": 2,
+     "mean": 1.001,
+     "median": 1,
+     "n": 3929,
+     "ones": 0.999
+    },
+    "merge": {
+     "band": true,
+     "single-child": true,
+     "span-overlap": true
+    },
+    "span_overlap": 0.908,
+    "split_hint_band": false,
+    "would_drop": "stage"
+   }
+  },
+  "span_median": {
+   "activation": 7.0,
+   "effect": 1.0,
+   "exchange": 14,
+   "goal": 14,
+   "move": 1.0,
+   "outcome": 17.0,
+   "stage": 15
+  },
+  "verdict": {
+   "band": {
+    "drops_a_level_that_names_an_anomaly": [
+     "outcome/stage",
+     "stage/goal",
+     "move/effect"
+    ],
+    "merges": [
+     "outcome/stage",
+     "stage/goal",
+     "goal/exchange",
+     "move/effect"
+    ],
+    "merges_exchange": true,
+    "merges_stage": true
+   },
+   "single-child": {
+    "drops_a_level_that_names_an_anomaly": [
+     "stage/goal"
+    ],
+    "merges": [
+     "stage/goal",
+     "goal/exchange"
+    ],
+    "merges_exchange": true,
+    "merges_stage": true
+   },
+   "span-overlap": {
+    "drops_a_level_that_names_an_anomaly": [
+     "outcome/stage",
+     "stage/goal",
+     "move/effect"
+    ],
+    "merges": [
+     "outcome/stage",
+     "stage/goal",
+     "goal/exchange",
+     "move/effect"
+    ],
+    "merges_exchange": true,
+    "merges_stage": true
+   }
+  }
+ }
+}

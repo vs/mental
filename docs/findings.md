@@ -1,10 +1,10 @@
 # Findings
 
-Facts established so far, from two hand-made trials, four research surveys and a few checks of outside facts. The [specification](specification.md) cites them by number.
+Facts established so far, from two hand-made trials, the ladder-strategy experiments on rq, four research surveys and a few checks of outside facts. The [specification](specification.md) cites them by number.
 
 Nothing here comes from running Mental: no tool exists yet. The trials were done by hand, by writing out what the tools should produce. Their working files are not kept in the repository.
 
-**Contents:** [S: the hand-compiled model](#s-the-hand-compiled-model-of-report-jobs) · [Z: one run at seven levels](#z-one-run-at-seven-levels) · [R: research](#r-research) · [U: unresolved references](#u-unresolved-references-and-dependencies) · [X: outside facts](#x-outside-facts-checked)
+**Contents:** [S: the hand-compiled model](#s-the-hand-compiled-model-of-report-jobs) · [Z: one run at seven levels](#z-one-run-at-seven-levels) · [R: research](#r-research) · [L: ladder strategies on rq](#l-ladder-strategies-on-rq) · [U: unresolved references](#u-unresolved-references-and-dependencies) · [X: outside facts](#x-outside-facts-checked)
 
 ## S. The hand-compiled model of report-jobs
 
@@ -80,6 +80,19 @@ Three surveys of published work. Full reports: [static analysis and LLM system m
 | **F-R6** | No production tool for Python, TypeScript or Go produces function summaries split by path condition; none infers state machines from undeclared status fields; none links services across repositories. | These parts must be built; they cannot be bought. |
 | **F-R7** | LLMs asked to write an upper level tend to pass checks by making that level permissive. Countermeasures: require every case to be witnessed by a lower run, mutate lower runs and require some mutants to fail, and reject levels that restate the level below. | Planned guards for the level checks. |
 | **F-R8** | Other projects already have an LLM propose an abstraction that a tool checks. None has an LLM propose a named ladder of several levels, each with vocabulary, state mapping and behavior, derived from source and checked by an interpreter. | This is where Mental is new. |
+
+## L. Ladder strategies on rq
+
+**What was done.** Experiments L2 to L5 of the [ladder strategies](ladder-strategies.md#8-experiments), on 2026-11-17, in the research harness of the [multi-level experiments](research/multi-level-models/experiments/README.md). The subject was rq 2.12, with 2.0 and 3.0 for stability: 2,097 explored runs, 554 of them anomalous. Each experiment changes one option of the strategy `closing-rules` and keeps the rest as in the first experiment, whose numbers the code reproduces exactly. LLM calls: six naming samples and 18 stand-in reader calls, $1.65.
+
+| # | Finding | Consequence for the design |
+|---|---|---|
+| **F-L1** | Closing a move at the end of an optimistic transaction gives the same moves as closing at every write: no on-chain write falls inside an open transaction except its commit. | The `atomic-group` rule is untested until a subject writes inside a transaction (report-jobs). |
+| **F-L2** | Joining consecutive writes to the same key into one move (`write-run`) cut moves per run from 7.3 to 5.0 and kept every cause at its level and every explaining cut at most 6 lines. Stability against rq 2.0 rose from 0.52 to 0.61. The stand-in reader answered all 18 developer questions from 7 to 11 lines, against 14 of 18 from 9 to 15. It is coarser than the hand grouping. | `write-run` is the proposed working default for moves, pending report-jobs. |
+| **F-L3** | Giving the namer each move's head effect cut name-truth failures from 20 to 6 of 174 move names, and removed *record worker heartbeat*, but did not raise agreement (22% identical either way). Activation names agreed less (21% to 6%), because they followed the head move instead of the call. | Use the head for move names as a truth aid, not for stability; names are generated once and stored. |
+| **F-L4** | A name-truth check by nouns and written key families flagged 20 of 174 earlier move names, of which 15 were right: words naming the step's own call, and lists that hold what the name mentions. | The check needs the glossary's knowledge of what a thing contains, and must exempt the call's own words. |
+| **F-L5** | Filing each goal under one outcome hides, in 8% of outcomes, a change made to that outcome's own job. Listing a goal under every job it changes costs nothing in where symptoms and causes show. | Outcomes are object-centric. |
+| **F-L6** | Of three merge tests, only "merge when four in five upper steps have one lower step" merges the levels that restate a neighbour (stage and exchange into goal) and keeps every level that names causes. The band and the step-length overlap test would both merge move into effect, losing the level that names 285 of 554 causes, because most moves are one effect long. | Merge test `single-child`; step length alone does not separate levels. |
 
 ## U. Unresolved references and dependencies
 
