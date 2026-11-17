@@ -40,6 +40,7 @@ Research reports:
 - [Levels in other domains](docs/research/levels-in-other-domains/report.md): how business processes, mathematics, hardware, science, military command, teaching, music and maps build multi-level models, what they agree on, and nine proposals for Mental.
 - [Verification and proof](docs/research/verification-and-proof/report.md): what TLA+, Ivy, Kani, SLAM, Specula and others can prove, how they tie a result to real code, and when a result about Mental's model may be called a proof.
 - [Type checkers as libraries](docs/research/type-checkers-as-libraries/report.md): which Python type checker can give the most resolved references without LLM calls, and how to use each one as a library, with an experiment comparing Pyrefly and ty on five projects.
+- [Type checkers and builds](docs/research/type-checkers-and-builds/report.md): how Pyright, mypy, ty, Pyrefly, rust-analyzer, gopls, TypeScript, clangd and JVM tools learn a project's units, roots and environments from its build, and what that means for the build model.
 
 ## Where to start in the specification
 
