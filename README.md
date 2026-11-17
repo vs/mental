@@ -29,6 +29,7 @@ Products built on the tools are called Mental: Mental for Claude Code, Mental fo
 | [Specification](docs/specification.md) | The first design, built up from first principles: the model, the levels, each tool, version one and what comes later | you want the whole design |
 | [Glossary](docs/glossary.md) | Every term with one precise definition and examples, including what a *port* is and why it is called that | a word is unclear |
 | [Findings](docs/findings.md) | Facts from our two hand-made trials, the research and checks of outside facts | you want the evidence behind a decision |
+| [Ladder strategies](docs/ladder-strategies.md) | Proposal: how `mentalc` builds the level ladder in interchangeable ways, the building practices collected from research, and the experiments that compare the strategies | you want to know how levels are made or tested |
 | [`examples/report-jobs`](examples/report-jobs/) | The sample system used in every example, and the first target | you want to see the code being modeled |
 
 Research reports:

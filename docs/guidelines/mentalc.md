@@ -27,7 +27,9 @@ mentalc/
     repo.rs           RepoSnapshot: reads files, runs `docker compose config`       [edge: fs, process]
     build.rs          the pipeline: one function, phases in spec order
     phase/            detect.rs vocabulary.rs group.rs compile.rs mechanisms.rs
-                      link.rs load.rs close.rs levels.rs  (each a pure function; LLM phases have plan and apply)
+                      link.rs load.rs close.rs  (each a pure function; LLM phases have plan and apply)
+    phase/levels/     mod.rs (enum Strategy, plan and apply dispatch) fixed.rs rules.rs llm.rs documented.rs
+                      (one ladder strategy per file, each plan and apply; see docs/ladder-strategies.md)
     task.rs           Task, RenderedTask, next_task and accept (the build state machine)
     answer.rs         answer types (deny_unknown_fields) and schema derivation
     prompt.rs         embedded templates, rendering, prompts.lock check

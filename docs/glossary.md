@@ -130,7 +130,11 @@ The summary must agree with the full graph; a check enforces it.
 
 ## Levels
 
-**Level.** A complete way of describing the system at one height, with its own entities, its own steps and its own words. One step at a level stands for several steps at the level below. Version one uses these levels, from the top: *business*, *system*, *services*, *components*, *mechanisms*, *statements*.
+**Level.** A complete way of describing the system at one height, with its own entities, its own steps and its own words. One step at a level stands for several steps at the level below. Which levels a model has is decided by its ladder strategy. The first design's fixed ladder (strategy `fixed`) uses these levels, from the top: *business*, *system*, *services*, *components*, *mechanisms*, *statements*. The strategy `closing-rules` builds levels from seven kinds: *outcome*, *stage*, *goal*, *exchange*, *activation*, *move*, *effect*.
+
+**Ladder.** The levels of one model, with their charters, step classes and step maps, as built by one ladder strategy. A model has one active ladder; others can be stored beside it for comparison.
+
+**Ladder strategy.** A way of building the ladder: which levels exist, where their steps end, how steps map upward and how they are named. It is a setting of `mentalc`, like the LLM backend, and every strategy is judged by the same checks. *Example:* `closing-rules[naming=head]`. See [ladder strategies](ladder-strategies.md).
 
 **Vocabulary.** The entities, state and step kinds that may be mentioned at one level. *Example:* at the business level, "report", "requested", "delivered"; at the mechanism level, "claim", "holder", "retry".
 

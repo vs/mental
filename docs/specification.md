@@ -438,7 +438,7 @@ Node kinds: `read`, `write`, `send`, `call`, `reply`, `branch`, `loop`, `lock`, 
 
 ## 5. Levels and refinement
 
-**Status: the ladder is Decided; the `level` record and its checks are Proposed.**
+**Status: the ladder below is one ladder strategy, `fixed`, among several under test (Experiment, see [ladder strategies](ladder-strategies.md)); the `level` record and its checks are Proposed.** `mentalc` builds the ladder with a configured strategy. The strategies, their options and the experiments that compare them are in that document.
 
 ### 5.1 The ladder of version one
 
@@ -468,6 +468,8 @@ A level is a record with these parts (from the survey of how other fields relate
 | `step_map` | which lower steps make up each upper step; which lower steps are invisible | the pair check |
 | `invariants` | properties in this level's words | bounded search |
 | `actors` | for people and outside systems: what they *may* do | used by the interpreter |
+
+Proposed with the ladder strategies (2026-11-17): every `level` record also carries `strategy` (the ID of the strategy that built it), `kind`, `charter` (readers, question, what a step is, what it hides, its why and how neighbours) and `admission` (computed admission results). Step classes are records of their own ([ladder strategies, 6.4](ladder-strategies.md#64-records)).
 
 **Two operations build every level:**
 1. **Group:** draw a box around things that exist (functions into a component, processes into a service). Cheap and mostly mechanical.
@@ -521,6 +523,8 @@ This is the current focus of the project: **building the model from one reposito
 | `mentalc init` | writes a config file and adds `.mental/` to `.gitignore` |
 | `mentalc build` | runs the pipeline; `--full` also compiles every full-detail behavior |
 | `mentalc build --unit <id>` | compiles one deeper part on demand (used when zooming) |
+| `mentalc build --ladder <strategy>` | builds with that ladder strategy as the active one ([ladder strategies](ladder-strategies.md)) |
+| `mentalc ladder build`, `list`, `use`, `compare` | builds another ladder beside the active one, lists the stored ladders, makes one active, compares them ([ladder strategies, 6.1](ladder-strategies.md#61-configuration-and-commands)) |
 | `mentalc check` | re-runs the checks on an existing model without calling an LLM |
 | `mentalc diff <a> <b>` | compares two models at the level of behavior |
 | `mentalc rebuild --role <role> --with <llm>` | recompiles what one LLM role produced, with another LLM (6.6) |
@@ -544,7 +548,7 @@ Every command has a `--json` form, which prints the model's own JSON (diagnostic
 
 | # | Phase | Reads | Writes | LLM |
 |---|---|---|---|---|
-| 1 | **Detect** | manifests, file types, lockfiles | the domain (always software for now), languages, frameworks, the level ladder to use | no |
+| 1 | **Detect** | manifests, file types, lockfiles | the domain (always software for now), languages, frameworks, the ladder strategy to use (from the config) | no |
 | 2 | **Extract** | source and infrastructure files | the skeleton and the obligations (6.2.1) | no |
 | 3 | **Resolve packs** | lockfiles, container images | `packs.lock`; pack summaries for later phases | no |
 | 4 | **Vocabulary** | docs, identifiers, schema | `term` records (6.3) | yes |
@@ -554,7 +558,7 @@ Every command has a `--json` form, which prints the model's own JSON (diagnostic
 | 8 | **Link** | call sites, config values | wires between ports; slots filled; pack predicates bound by config | no |
 | 9 | **Load** | infrastructure files | instances with their config | no |
 | 10 | **Close** | ports nothing connects to | actors, drivers and stubs, so the model runs on its own | no |
-| 11 | **Levels** | everything below | the system level (mechanical) and the business level: abstraction, step map, invariants (section 5) | for business |
+| 11 | **Levels** | everything below | one ladder per configured strategy: levels with charters, step classes, the step map, invariants (section 5; [ladder strategies](ladder-strategies.md)) | for names, charters and stages; `fixed` for business |
 | 12 | **Check** | the whole model | diagnostics; a failed check sends a repair back to the phase that produced the record | no |
 
 After phase 12 the model is written. Phase 11 comes after Close because its checks need a model that can run.
@@ -687,7 +691,7 @@ Every LLM call, failed calls and repairs included, appends one complete line to 
 
 `known_by` is `configured`, `harness` or `self-reported`. `repair_of` is omitted when the call is not a repair.
 
-**Roles:** `vocabulary`, `component-grouping`, `port-behavior`, `lifecycle`, `mechanism`, `business`, `repair`, `scenario-binding`.
+**Roles:** `vocabulary`, `component-grouping`, `port-behavior`, `lifecycle`, `mechanism`, `business`, `repair`, `scenario-binding`; for ladder strategies also `subjects`, `actors`, `name-step`, `why-link`, `stages`, `charter`, `intent-invariants`, `ladder-propose`, `process-from-docs` ([ladder strategies, 6.5](ladder-strategies.md#65-llm-roles)).
 
 **`known_by`** records how the LLM's identity is known: `configured` (set explicitly), `harness` (reported by the agent's software) or `self-reported` (stated by the LLM itself, the weakest).
 
@@ -1178,7 +1182,8 @@ Designs that exist in outline. None is part of version one.
 
 **Levels**
 - How business steps that are done by people or by physical processes are checked.
-- When an extra level should be inserted because one is too crowded, and how the user approves it.
+- When an extra level should be inserted because one is too crowded, and how the user approves it. Which merge test to use is experiment L5 of the [ladder strategies](ladder-strategies.md#l5-which-merge-test).
+- Which ladder strategy, and which options, should be the default ([ladder strategies, 8](ladder-strategies.md#8-experiments)).
 
 ---
 
@@ -1186,4 +1191,5 @@ Designs that exist in outline. None is part of version one.
 
 - [Glossary](glossary.md): every term used here.
 - [Findings](findings.md): the facts cited as F-numbers.
-- Research reports: [static analysis and LLM system models](research/static-analysis-llm-system-models/report.md), [model interpreter semantics](research/model-interpreter-semantics/report.md), [abstraction levels](research/abstraction-levels/report.md).
+- Research reports: [static analysis and LLM system models](research/static-analysis-llm-system-models/report.md), [model interpreter semantics](research/model-interpreter-semantics/report.md), [abstraction levels](research/abstraction-levels/report.md), [multi-level models](research/multi-level-models/report.md), [levels in other domains](research/levels-in-other-domains/report.md).
+- [Ladder strategies](ladder-strategies.md): how `mentalc` builds the level ladder in interchangeable ways, and the experiments that compare them.
