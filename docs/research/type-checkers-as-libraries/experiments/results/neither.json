@@ -1,0 +1,31 @@
+{
+ "report-jobs": {
+  "neither": 8,
+  "other (library return, module global, call result)": 4,
+  "self/cls attribute chain": 4
+ },
+ "fastapi-template": {
+  "neither": 0
+ },
+ "mealie": {
+  "neither": 261,
+  "other (library return, module global, call result)": 204,
+  "unannotated parameter": 41,
+  "chain from an unannotated parameter": 9,
+  "self/cls attribute chain": 7
+ },
+ "redash": {
+  "neither": 2380,
+  "other (library return, module global, call result)": 1172,
+  "unannotated parameter": 718,
+  "self/cls attribute chain": 405,
+  "chain from an unannotated parameter": 85
+ },
+ "rq": {
+  "neither": 231,
+  "unannotated parameter": 128,
+  "other (library return, module global, call result)": 85,
+  "self/cls attribute chain": 12,
+  "chain from an unannotated parameter": 6
+ }
+}

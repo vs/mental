@@ -1,0 +1,227 @@
+{
+ "report-jobs": {
+  "counts": {
+   "call": {
+    "agree": 67,
+    "ty only": 2,
+    "neither": 5,
+    "overlap": 1,
+    "disagree": 2
+   },
+   "decorator": {
+    "agree": 7
+   },
+   "receiver": {
+    "agree": 85,
+    "no pyrefly record": 4,
+    "neither": 8,
+    "ty only": 4
+   },
+   "class bases": {
+    "agree": 2,
+    "neither": 2
+   },
+   "write receiver": {
+    "ty only": 5,
+    "pyrefly only": 2,
+    "agree": 1
+   }
+  },
+  "pyrefly_unresolved_reasons": {
+   "UnexpectedPyreflyTarget": 5,
+   "Never at a write receiver (ty: a class)": 5,
+   "Never at a receiver (ty: a class)": 4,
+   "EmptyPyreflyCallTarget": 1,
+   "UnresolvedMagicDunderAttrDueToNoBase": 1
+  },
+  "timings": {
+   "pyrefly_ms": 1820,
+   "ty_ms": 899
+  }
+ },
+ "fastapi-template": {
+  "counts": {
+   "receiver": {
+    "agree": 448,
+    "no pyrefly record": 13
+   },
+   "call": {
+    "agree": 442,
+    "ty only": 3,
+    "overlap": 3,
+    "no pyrefly record": 1
+   },
+   "decorator": {
+    "agree": 27
+   },
+   "class bases": {
+    "agree": 21
+   },
+   "write receiver": {
+    "agree": 3
+   }
+  },
+  "pyrefly_unresolved_reasons": {
+   "no entry": 1
+  },
+  "timings": {
+   "pyrefly_ms": 2070,
+   "ty_ms": 374
+  }
+ },
+ "mealie": {
+  "counts": {
+   "receiver": {
+    "agree": 15820,
+    "neither": 257,
+    "overlap": 53,
+    "pyrefly only": 959,
+    "no pyrefly record": 281,
+    "disagree": 53,
+    "ty only": 5
+   },
+   "call": {
+    "overlap": 123,
+    "agree": 13316,
+    "ty only": 75,
+    "pyrefly only": 426,
+    "disagree": 56,
+    "neither": 191,
+    "no pyrefly record": 64
+   },
+   "class bases": {
+    "agree": 656,
+    "ty only": 4,
+    "disagree": 4
+   },
+   "write receiver": {
+    "agree": 626,
+    "pyrefly only": 17,
+    "neither": 4,
+    "disagree": 1,
+    "overlap": 3,
+    "ty only": 1
+   },
+   "decorator": {
+    "agree": 571,
+    "ty only": 1
+   }
+  },
+  "pyrefly_unresolved_reasons": {
+   "UnexpectedPyreflyTarget": 171,
+   "no entry": 64,
+   "UnexpectedCalleeExpression": 35,
+   "Never at a receiver": 14,
+   "EmptyPyreflyCallTarget": 9,
+   "UnexpectedDefiningClass": 2,
+   "UnknownClassField": 2,
+   "UnresolvedMagicDunderAttr": 2,
+   "Never at a write receiver": 2
+  },
+  "timings": {
+   "pyrefly_ms": 7070,
+   "ty_ms": 3141
+  }
+ },
+ "redash": {
+  "counts": {
+   "call": {
+    "agree": 5502,
+    "neither": 1648,
+    "pyrefly only": 468,
+    "ty only": 58,
+    "disagree": 7,
+    "overlap": 22
+   },
+   "receiver": {
+    "agree": 6443,
+    "neither": 2332,
+    "pyrefly only": 581,
+    "disagree": 6,
+    "ty only": 5,
+    "overlap": 17,
+    "no pyrefly record": 5
+   },
+   "write receiver": {
+    "agree": 172,
+    "neither": 48,
+    "disagree": 1,
+    "pyrefly only": 1,
+    "overlap": 2
+   },
+   "class bases": {
+    "agree": 227,
+    "disagree": 2,
+    "ty only": 1
+   },
+   "decorator": {
+    "agree": 226,
+    "neither": 4,
+    "ty only": 11
+   }
+  },
+  "pyrefly_unresolved_reasons": {
+   "UnexpectedPyreflyTarget": 1634,
+   "UnresolvedMagicDunderAttr": 40,
+   "UnexpectedCalleeExpression": 9,
+   "EmptyPyreflyCallTarget": 4,
+   "UnexpectedDefiningClass": 3,
+   "Never at a receiver": 2,
+   "Never at a receiver (ty: a class)": 1
+  },
+  "timings": {
+   "pyrefly_ms": 2240,
+   "ty_ms": 1429
+  }
+ },
+ "rq": {
+  "counts": {
+   "call": {
+    "agree": 2611,
+    "neither": 124,
+    "overlap": 39,
+    "pyrefly only": 55,
+    "ty only": 14,
+    "no pyrefly record": 2
+   },
+   "receiver": {
+    "agree": 3881,
+    "neither": 228,
+    "pyrefly only": 66,
+    "no pyrefly record": 10,
+    "overlap": 43,
+    "disagree": 7,
+    "ty only": 11
+   },
+   "write receiver": {
+    "agree": 531,
+    "neither": 3,
+    "pyrefly only": 2,
+    "ty only": 1
+   },
+   "decorator": {
+    "agree": 81
+   },
+   "class bases": {
+    "agree": 43,
+    "pyrefly only": 1,
+    "disagree": 2,
+    "ty only": 1
+   }
+  },
+  "pyrefly_unresolved_reasons": {
+   "UnexpectedPyreflyTarget": 128,
+   "Never at a receiver (ty: a class)": 8,
+   "UnresolvedMagicDunderAttr": 4,
+   "EmptyPyreflyCallTarget": 4,
+   "no entry": 2,
+   "UnexpectedDefiningClass": 1,
+   "UnexpectedCalleeExpression": 1,
+   "Never at a write receiver (ty: a class)": 1
+  },
+  "timings": {
+   "pyrefly_ms": 685,
+   "ty_ms": 542
+  }
+ }
+}

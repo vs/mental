@@ -1,0 +1,22 @@
+{
+ "report-jobs": {
+  "pyrefly_ms": 1820,
+  "ty_ms": 899
+ },
+ "fastapi-template": {
+  "pyrefly_ms": 2070,
+  "ty_ms": 374
+ },
+ "mealie": {
+  "pyrefly_ms": 7070,
+  "ty_ms": 3141
+ },
+ "redash": {
+  "pyrefly_ms": 2240,
+  "ty_ms": 1429
+ },
+ "rq": {
+  "pyrefly_ms": 685,
+  "ty_ms": 542
+ }
+}

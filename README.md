@@ -39,6 +39,7 @@ Research reports:
 - [Multi-level models](docs/research/multi-level-models/report.md): which levels a person needs, how steps of one level map to the level above, and what the LLM is asked; from research on how people perceive events and levels, with an experiment on rq comparing three ways to get the levels, and a [step-by-step walkthrough](docs/research/multi-level-models/ladder-walkthrough.md) of one run.
 - [Levels in other domains](docs/research/levels-in-other-domains/report.md): how business processes, mathematics, hardware, science, military command, teaching, music and maps build multi-level models, what they agree on, and nine proposals for Mental.
 - [Verification and proof](docs/research/verification-and-proof/report.md): what TLA+, Ivy, Kani, SLAM, Specula and others can prove, how they tie a result to real code, and when a result about Mental's model may be called a proof.
+- [Type checkers as libraries](docs/research/type-checkers-as-libraries/report.md): which Python type checker can give the most resolved references without LLM calls, and how to use each one as a library, with an experiment comparing Pyrefly and ty on five projects.
 
 ## Where to start in the specification
 
