@@ -68,7 +68,7 @@ Nothing here comes from running Mental: no tool exists yet. The trials were done
 
 ## R. Research
 
-Three surveys of published work. Full reports: [static analysis and LLM system models](research/static-analysis-llm-system-models/report.md), [model interpreter semantics](research/model-interpreter-semantics/report.md), [abstraction levels](research/abstraction-levels/report.md). The figures come from published studies, mostly on LLMs of 2023 to 2025.
+Three surveys of published work. Full reports: [static analysis and LLM system models](research/static-analysis-llm-system-models/report.md), [model interpreter semantics](research/model-interpreter-semantics/report.md), [abstraction levels](research/abstraction-levels/report.md), [verification and proof](research/verification-and-proof/report.md). The figures come from published studies, mostly on LLMs of 2023 to 2025.
 
 | # | Finding | Consequence for the design |
 |---|---|---|
@@ -80,6 +80,9 @@ Three surveys of published work. Full reports: [static analysis and LLM system m
 | **F-R6** | No production tool for Python, TypeScript or Go produces function summaries split by path condition; none infers state machines from undeclared status fields; none links services across repositories. | These parts must be built; they cannot be bought. |
 | **F-R7** | LLMs asked to write an upper level tend to pass checks by making that level permissive. Countermeasures: require every case to be witnessed by a lower run, mutate lower runs and require some mutants to fail, and reject levels that restate the level below. | Planned guards for the level checks. |
 | **F-R8** | Other projects already have an LLM propose an abstraction that a tool checks. None has an LLM propose a named ladder of several levels, each with vocabulary, state mapping and behavior, derived from source and checked by an interpreter. | This is where Mental is new. |
+| **F-R9** | No tool proves that code has no bugs; each proves a stated property of a model under stated conditions, and says which. TLC holds for its chosen constants; unbounded results (TLAPS, Ivy) need an inductive invariant, usually written by a person. Kani: "Verification results are sound only if all unwinding assertions pass", it checks sequential code only, and its library models are assumptions. ([verification and proof](research/verification-and-proof/report.md)) | Every "holds" verdict states its extent and basis; pack rules are listed as assumptions (8.11). |
+| **F-R10** | LLM-written TLA+ of 11 real systems (SysMoBench, May 2026) parses almost always but conforms to traces of the code only about 46% of the time and satisfies the invariants about 41%. It errs in both directions: extra states (a set union where the code overwrites an old vote) and missing states (two code steps fused into one guard). | An LLM-written record cannot be the basis of a proof; atomicity must come from evidence in the code (8.7, 8.11). |
+| **F-R11** | Bridges from a spec to code give evidence, not proof. TLA+ trace validation accepts a trace if some behavior of the spec explains it; on CCF it found six bugs, and its authors say high-level specs alone "would not provide any guarantees about the production code itself". Specula, an LLM agent that writes TLA+ from code, claims no false positives because it reproduces every violation in the code (of 89 bugs reported, 68 confirmed), and claims no soundness. | Witnesses carry a reproduction label; conformance is evidence of faithfulness (8.11). |
 
 ## L. Ladder strategies on rq
 
