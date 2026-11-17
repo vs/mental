@@ -19,6 +19,8 @@ Research code behind section 8 of the [report](../report.md). It reuses the harn
 | `results/strategies.json` | L2, L4 and L5 |
 | `results/strategies-naming.json`, `naming-sheet-head.json` | L3: the sheet with heads, agreement and name-truth failures for both naming variants |
 | `results/strategies-reader.json` | L2's stand-in reader at the move level under each move rule, with every answer |
+| `rjexp/harness.py` | A harness for the real code of `examples/report-jobs`: one step per SELECT, session commit, S3 upload and Celery message, on SQLite, with fakes for S3, the broker and the clock; six scenarios explored up to two preemptions; writes runs in the shape `levels.build_effects` cuts |
+| `results/report-jobs/` | L2, L3 and L5 on report-jobs: `strategies.json`, `strategies-naming.json`, the naming prompts and sheet, the twelve raw answers, `runs-meta.json` |
 
 ## Reproduce
 
@@ -51,7 +53,21 @@ $PY -I mlexp/strategies.py reader-prompts graphs/v2.12 l2reader
 $PY -I mlexp/strategies.py reader-score l2reader results
 ```
 
-`levels.build` and `analyze.analyse` take the options `move_close` and `outcomes`; their defaults give the results of the first experiment byte for byte.
+For report-jobs (its own environment, from `examples/report-jobs/src/requirements.lock` without `psycopg2-binary` and `uvicorn`; the analysis runs in the rq environment):
+
+```sh
+RJ=rjvenv/bin/python
+$RJ -I rjexp/harness.py ../../../../examples/report-jobs/src rj 2
+# a copy of the source that only adds comments and one unused line, for stability (see results/report-jobs)
+$RJ -I rjexp/harness.py rj-v2-src rj-v2 2
+$PY -I mlexp/strategies.py structure rj results/report-jobs rj-v2
+$PY -I mlexp/strategies.py name-prompt rj ../../../../examples/report-jobs l3rj
+# run l3rj/prompt-name.md and l3rj/prompt-name-head.md through `claude -p`, 3 samples each for opus and sonnet,
+# into l3rj/answers/name-<model>-<n>.json and name-head-<model>-<n>.json
+$PY -I mlexp/strategies.py name-score l3rj l3rj/answers results/report-jobs
+```
+
+`analyze.analyse` reads either rq's graphs or report-jobs' `rj-runs.pkl`. `levels.build` and `analyze.analyse` take the options `move_close` and `outcomes`; their defaults give the results of the first experiment byte for byte.
 
 The level analysis is deterministic. The LLM parts are not; the answers used are kept.
 

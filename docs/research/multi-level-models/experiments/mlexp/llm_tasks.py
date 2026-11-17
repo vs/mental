@@ -24,7 +24,8 @@ sys.path.insert(0, str(HERE.parent))
 
 from mlexp import analyze, levels  # noqa: E402
 
-from afexp.harness import digest, key_pattern  # noqa: E402
+from afexp.harness import digest  # noqa: E402
+from mlexp.levels import key_pattern  # noqa: E402
 
 DOCS = ['docs/docs/jobs.md', 'docs/docs/job_registries.md']
 

@@ -124,14 +124,14 @@ The views (P13 to P17) do not change how a ladder is built. They are recorded he
 
 ### 5.2 Options of `closing-rules` and `documented`
 
-Each option has a default, the setting used on rq, so that every experiment changes one thing at a time.
+Each option had a default, the setting used in the first rq experiment, so that every experiment changes one thing at a time. The Default column now shows what L2 to L5 decided on rq and report-jobs (section 8).
 
 | Option | Values | Default | Practice | Experiment |
 |---|---|---|---|---|
-| **O1 `move_close`** | `every-write`: a move closes after each on-chain write; `atomic-group`: after the evidence of atomicity ends (transaction, lock, conditional update); `write-run`: as `every-write`, but a write followed directly by another write to the same key, with nothing read in between, does not close the move; `prefer`: build the others and keep the one whose move classes are most stable across versions, ties broken by how well a class predicts its observable change | `every-write` | P4 | L2 |
-| **O2 `naming`** | `children`: the LLM gets the children's names; `head`: it also gets the head effect, the one that changes the level's observable or closes the step, and name truth is checked against it | `children` | P5 | L3 |
-| **O3 `outcomes`** | `partition`: each goal under one outcome (the subject it changes first), overlaps reported; `object-centric`: each goal lists every subject it changes and appears under each, marked shared | `object-centric` (what the rq experiment ran) | P7 | L4 |
-| **O4 `merge_test`** | `band`: merge below 2 and split above 7 lower steps per step (the original A3); `single-child`: merge when about four in five upper steps have one lower step (the revised A3); `span-overlap`: merge when two adjacent levels' step lengths overlap heavily | `single-child` | P8, P9 | L5 |
+| **O1 `move_close`** | `every-write`: a move closes after each on-chain write; `atomic-group`: after the evidence of atomicity ends (transaction, lock, conditional update); `write-run`: as `every-write`, but a write followed directly by another write to the same key, with nothing read in between, does not close the move; `prefer`: build the others and keep the one whose move classes are most stable across versions, ties broken by how well a class predicts its observable change | `write-run` (decided; `atomic-group` and `prefer` Measured) | P4 | L2 |
+| **O2 `naming`** | `children`: the LLM gets the children's names; `head`: it also gets the head effect, the one that changes the level's observable or closes the step, and name truth is checked against it | `head` for moves, `children` for activations and goals (decided) | P5 | L3 |
+| **O3 `outcomes`** | `partition`: each goal under one outcome (the subject it changes first), overlaps reported; `object-centric`: each goal lists every subject it changes and appears under each, marked shared | `object-centric` (decided on rq; not testable on report-jobs) | P7 | L4 |
+| **O4 `merge_test`** | `band`: merge below 2 and split above 7 lower steps per step (the original A3); `single-child`: merge when about four in five upper steps have one lower step (the revised A3); `span-overlap`: merge when two adjacent levels' step lengths overlap heavily | `single-child` (decided; `span-overlap` Measured) | P8, P9 | L5 |
 | **O5 `top_vocabulary`** | `glossary`: the project glossary only; `framework:<name>`: outcome and stage names prefer the terms of a process framework the organisation uses (APQC, SCOR, its own), mapped to glossary terms | `glossary` | P10 | L6 |
 | **O6 `kinds`** | the subset of the seven kinds to try as candidates, and project-specific kinds proposed as a charter plus a closing rule | all seven | P8 | L1 |
 
@@ -257,7 +257,7 @@ These are the checks of 5.3 in the specification (pair, barrier, coverage, invar
 | Subject | Why | Available |
 |---|---|---|
 | rq 2.12, with 2.0 and 3.0 | the measured baseline; one store, a dependency bug | yes, in the research harness |
-| report-jobs | the first target; several moves inside one function; Postgres, Redis, S3, two workers | yes |
+| report-jobs | the first target; several moves inside one function; Postgres, Redis, S3, two workers | yes; L2 to L5 run on 2026-11-17 with `rjexp/` |
 | a system with several services and a subject that changes hands | where stage and exchange should be admitted | to choose |
 | a project with runbooks or a documented process | for `documented` and `framework` top vocabulary | to choose |
 | a project that is mostly computation, such as a compiler | where outcome and stage have little to work on | to choose |
@@ -302,6 +302,23 @@ Option O1. On rq the rules closed "mark started" as two moves; the hand grouping
 - **`prefer` chooses `write-run`** (mean stability 0.73 against 0.69, outside the tie margin of 0.02).
 - **Not decided.** `prefer`'s choice beats the fixed rules on rq, but the rule asks for "at least one subject and loses on none", and rq is one subject. **Proposal:** make `write-run` the working default of `closing-rules`, and repeat L2 on report-jobs, where `atomic-group` can differ. The reader here used mechanical move names (closing function and what it writes), so that only the cut differed between rules; the first experiment's reader used LLM names.
 
+**Result on report-jobs (2026-11-17; [`report-jobs/strategies.json`](research/multi-level-models/experiments/results/report-jobs/strategies.json), key `L2`).** The subject is the real code of `examples/report-jobs`, run by a new harness ([`rjexp/harness.py`](research/multi-level-models/experiments/rjexp/harness.py)):
+- one step per SELECT, per session commit, per S3 upload and per Celery message sent or received, on SQLite;
+- six two-actor scenarios, explored up to two preemptions: 115 runs, 24 of them anomalous;
+- the anomalies are three of the example's four known bugs. Two workers claim one report and upload it twice (14 runs). `requeue_stuck` sets a finished report back to PENDING, so it is delivered again (4). The duplicate idempotency key gives a 500 (6).
+- The fourth known bug, a PENDING row nothing will pick up, happens without concurrency, and an oracle that compares with sequential runs cannot see it.
+
+| | `every-write` | `atomic-group` | `write-run` |
+|---|---|---|---|
+| Moves per run | 3.39 | 3.39 | 3.39 |
+| Move classes | 11 | 11 | 11 |
+| Causes at outcome / goal / move / activation (of 24) | 14 / 4 / 3 / 1 | the same | the same |
+| Longest explaining cut | 3 lines | 3 | 3 |
+
+- **All three rules give the same moves.** In `generate_report` the only write inside an open session transaction is the S3 upload. The upload is a call to an outside service, so it ends the activation before the DONE commit, and a move cannot span two activations. No two consecutive writes go to the same key, so `write-run` joins nothing. The reader test was not run, because the three renderings are identical.
+- **How a move is identified (the specification's open question).** Four moves close inside `generate_report`. Identified by their call site (`generate_report:32`, `:48`, `:52`, `:59`), all 11 classes are distinct. But only 5% of them survive a copy of report-jobs that adds comments and one unused line (`move_by_function`). Identified by the function and the *order* of the closing site in it, all 11 survive (1.0) and none collide, with or without the write set. On rq the same identity without the write set scores 0.875 and 0.50 against 3.0 and 2.0, close to the function-only identity (0.86, 0.52).
+- **Decided:** `write-run` is the default of O1. It beats the other rules on rq and loses on neither subject, which is the stated rule. `atomic-group` is *Measured*: it changed nothing on either subject. `prefer` is *Measured*: on report-jobs every rule ties. Move classes are identified by call, closing function and the order of the closing site; the write set is a property, not part of the identity.
+
 ### L3. Naming from the head
 
 Option O2. Move names agreed exactly in 22% of sample pairs and shared 0.51 of their words. The one wrong name, *record worker heartbeat*, passed every vocabulary check.
@@ -324,6 +341,21 @@ Option O2. Move names agreed exactly in 22% of sample pairs and shared 0.51 of t
 - **The name-truth check as first written was too strict.** Of its 20 failures on the first experiment's names, 15 were not wrong names. "Cancel" named the call a step belongs to; rq's started-jobs list does list executions; a dependent job is the job written. The revision exempts a word that names the step's own call and lets a list stand for what it lists. It was fitted to those failures, so its 0 on the new samples is weaker evidence than the drop from 20 to 6 under the original check.
 - **Decision by the stated rule: `head` is not adopted** for stability. **Proposal:** use the head for moves only, as a truth aid. Keep `children` for activations and goals. Keep "generate once, store with the step class" as the answer to instability (it already was). Run the revised name-truth check on report-jobs before relying on it.
 
+**Result on report-jobs (2026-11-17; [`report-jobs/strategies-naming.json`](research/multi-level-models/experiments/results/report-jobs/strategies-naming.json)).** Twelve samples, because report-jobs had no earlier ones: six without the head, six with it, three Opus and three Sonnet each, on 11 move, 5 activation and 4 goal classes. Report-jobs has no user documentation, so the prompt describes the service in a paragraph. The name-truth words and the storage words for report-jobs were written before the samples were seen. Cost $0.69.
+
+| | `children` | `head` |
+|---|---|---|
+| Moves: identical names / shared words | 9% / 0.43 | **21% / 0.57** |
+| Activations: identical / shared words | 12% / 0.49 | 12% / 0.43 |
+| Goals: identical / shared words | 25% / 0.67 | 23% / 0.74 |
+| Move names failing name truth (of 66) | 2 | 0 |
+| Names with a storage word | 0 | **5** ("insert", in two Opus samples) |
+
+- **Here the head raised move agreement clearly**, from 9% to 21% identical. Both "failures" without the head are doubtful: *release claim after failed upload* names the failure as context; *requeue failed report's build task* describes the report.
+- **It also let one storage word in.** The sheet lists the commands of a move, and with the head's emphasis two Opus samples called the create step *insert pending report*. The barrier check catches this, and its repair would ask for another word.
+- **Activations again did not gain** (shared words fell from 0.49 to 0.43).
+- **Decided, over both subjects:** `naming = head` for moves, with the barrier check. Moves on rq became truer, and moves on report-jobs agree more without losing truth. Activations and goals keep `children`. Names are still generated once and stored.
+
 ### L4. Overlapping outcomes
 
 Option O3. 4.4% of rq goals change two jobs.
@@ -342,6 +374,8 @@ Option O3. 4.4% of rq goals change two jobs.
 
 - **Partition hides changes.** In 8% of outcomes a goal filed under another job changed this job: completing `j1` releases `j2`, and under partition `j2`'s outcome does not show it. Placement is the same both ways, so object-centric costs nothing that was measured.
 - **Adopted for rq: `object-centric`** (M3 equal, M8 decides). M4 was not run, because the outcome rendering states the final state of every job, which answers the manager's questions under either rule. Divergence needs the multi-service subject.
+
+**Result on report-jobs.** Not testable: every scenario has one report, so no goal changes two. The two rules give identical outcomes. A scenario with two reports in flight would test it; none of report-jobs' known bugs needs one.
 
 ### L5. Which merge test
 
@@ -364,6 +398,21 @@ Option O4. The band failed on rq; `single-child` was fitted to the same data.
 - **`band` and `span-overlap` fail.** Both would merge move into effect, losing the level that names 285 causes, and outcome into stage. Span overlap fails for a plain reason: most moves are one effect long, so the two length distributions coincide. Jaques's test assumes levels whose steps differ in duration, and a level can be needed because of *what* it groups, not how long it lasts.
 - **Decided for rq: `single-child`**; `span-overlap` *Measured*, not chosen. `band` was already rejected. Repeat on the multi-service subject, where stage and exchange are expected to be admitted.
 
+**Result on report-jobs (2026-11-17; `report-jobs/strategies.json`, key `L5`).** The same thresholds.
+
+| Pair | Mean fan-in | One child | Length overlap | band | single-child | span-overlap | Anomalies named only at the dropped level |
+|---|---|---|---|---|---|---|---|
+| outcome / stage | 1.35 | 65% | 0.82 | merge | — | merge | 0 |
+| stage / goal | 1.00 | 100% | 0.85 | merge | merge | merge | 0 |
+| goal / exchange | 1.00 | 100% | 1.00 | merge | merge | merge | 0 |
+| exchange / activation | 1.43 | 57% | 0.63 | merge | — | merge | 0 |
+| activation / move | 1.19 | 36% | 0.59 | merge | — | merge | **1 (activation)** |
+| move / effect | 1.99 | 33% | 0.33 | — | — | — | 3 (move) |
+
+- **`single-child` passes again.** It merges stage and exchange into goal and drops no level that names an anomaly. `band` and `span-overlap` would also merge activation into move, losing the one cause named at the activation level.
+- **A measurement artifact was found and fixed.** The first stage signature included the subject's id. Report-jobs' ids depend on creation order, so a report created as `r2` instead of `r1` made 8 runs look "named at stage". The signature now leaves ids out, like the outcome signature. rq's figures are unchanged by the fix.
+- **Decided over both subjects: `single-child`.** `span-overlap` *Measured*, rejected on both.
+
 ### L6. Words at the top
 
 Option O5, and strategy `documented`. Needs a project with documents. This experiment is E5 of the multi-level report.
@@ -382,7 +431,7 @@ P13 to P17: the two-up frame, epitome and zoom back out, the status map, the run
 
 ## 9. The plan
 
-1. **Now, in the research harness.** L2, L3, L4 and L5 on rq reuse `mlexp/levels.py`, the naming sheet and the reader harness of the [multi-level experiments](research/multi-level-models/experiments/README.md). **Done 2026-11-17** (`mlexp/strategies.py`; $1.65 of LLM calls). Results are under each experiment above and in [findings, section L](findings.md#l-ladder-strategies-on-rq).
+1. **Now, in the research harness.** L2, L3, L4 and L5 on rq reuse `mlexp/levels.py`, the naming sheet and the reader harness of the [multi-level experiments](research/multi-level-models/experiments/README.md). **Done 2026-11-17** (`mlexp/strategies.py`; $1.65 of LLM calls). Results are under each experiment above and in [findings, section L](findings.md#l-ladder-strategies-on-rq). **Report-jobs done the same day** with a harness for its real code (`rjexp/harness.py`; $0.69 of LLM calls).
 2. **When phase 11 is built.** Implement `fixed` and `closing-rules` with every option of 5.2, and `ladder build`, `list`, `use` and `compare`. The golden report-jobs build (C24) covers one ladder per strategy, with answers from the `replay` backend. Run L7 on rq and report-jobs.
 3. **When `mentalvm` explores.** `mentalvm ladder eval` replaces the research harness for M1 to M3 and M7.
 4. **With the extended corpus.** L1 and L6, on the three subjects of 7.2 still to choose.

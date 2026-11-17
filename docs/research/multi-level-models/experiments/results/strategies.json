@@ -48,10 +48,16 @@
    "stability": {
     "v2.0": {
      "move_by_function": 0.517,
+     "move_by_order": 0.463,
+     "move_by_order_without_writes": 0.5,
+     "move_classes_by_order_without_writes": 23,
      "move_full": 0.463
     },
     "v3.0": {
      "move_by_function": 0.864,
+     "move_by_order": 0.5,
+     "move_by_order_without_writes": 0.875,
+     "move_classes_by_order_without_writes": 23,
      "move_full": 0.5
     }
    },
@@ -132,10 +138,16 @@
    "stability": {
     "v2.0": {
      "move_by_function": 0.517,
+     "move_by_order": 0.463,
+     "move_by_order_without_writes": 0.5,
+     "move_classes_by_order_without_writes": 23,
      "move_full": 0.463
     },
     "v3.0": {
      "move_by_function": 0.864,
+     "move_by_order": 0.5,
+     "move_by_order_without_writes": 0.875,
+     "move_classes_by_order_without_writes": 23,
      "move_full": 0.5
     }
    },
@@ -233,10 +245,16 @@
    "stability": {
     "v2.0": {
      "move_by_function": 0.609,
+     "move_by_order": 0.514,
+     "move_by_order_without_writes": 0.577,
+     "move_classes_by_order_without_writes": 20,
      "move_full": 0.514
     },
     "v3.0": {
      "move_by_function": 0.85,
+     "move_by_order": 0.559,
+     "move_by_order_without_writes": 0.864,
+     "move_classes_by_order_without_writes": 20,
      "move_full": 0.559
     }
    },

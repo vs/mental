@@ -1163,7 +1163,7 @@ Designs that exist in outline. None is part of version one.
 **The compiler**
 - Whether the default component split (packages, then call-graph clusters, then LLM naming) matches how developers see their project. This is the weakest part of the design.
 - Whether LLMs reliably tell a mechanism from an ordinary local decision, and which ones do.
-- How a move is identified when several moves close inside one function. In report-jobs, `generate_report` closes three moves at `s.commit()`, so the call and closing function that identify moves stably on rq do not tell them apart ([multi-level models](research/multi-level-models/report.md#10-what-is-evidence-and-what-is-inference)).
+- How a move is identified when several moves close inside one function. In report-jobs, `generate_report` closes three moves at `s.commit()`, so the call and closing function that identify moves stably on rq do not tell them apart ([multi-level models](research/multi-level-models/report.md#10-what-is-evidence-and-what-is-inference)). *Measured 2026-11-17:* the call, the closing function and the order of the closing site in it tell all of report-jobs' moves apart and survive a change that moves lines; line numbers do not (F-L9). Still open for code where the order of sites changes.
 - How reliable a business level is when the project has no docs.
 - Which coding agents report the LLM they run reliably enough for the call ledger.
 - How much answer quality differs between an exploring agent, a bare API call and a local model, per role.

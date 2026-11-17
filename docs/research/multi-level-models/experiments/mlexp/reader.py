@@ -51,6 +51,8 @@ A_LEVELS = ['business', 'system', 'services', 'components', 'statements']
 def show(x: Any) -> str:
     if x is None:
         return 'no record'
+    if len(x) == 4 and isinstance(x[1], bool):  # report-jobs: status, has a link, uploads, stranded
+        return f'status {x[0]}, {"has a download link" if x[1] else "no download link"}, file uploaded {x[2]} time{"" if x[2] == 1 else "s"}' + (', nothing will pick it up' if x[3] else '')
     result = {None: 'none', '1': 'success', '2': 'failure', '3': 'stopped', '4': 'retried'}.get(x[2], str(x[2]))
     return f'status {x[0]}, listed in {x[1] or "nothing"}, latest result {result}'
 

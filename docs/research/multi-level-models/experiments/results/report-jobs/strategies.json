@@ -1,0 +1,440 @@
+{
+ "L2": {
+  "atomic-group": {
+   "cause_placement": {
+    "activation": 1,
+    "goal": 4,
+    "move": 3,
+    "none": 2,
+    "outcome": 14
+   },
+   "effects_per_move": {
+    "max": 4,
+    "mean": 1.987,
+    "median": 2.0,
+    "n": 390,
+    "ones": 0.328
+   },
+   "explaining_cut": {
+    "duplicate-create": {
+     "max": 2,
+     "median": 2.0
+    },
+    "requeue-vs-work": {
+     "max": 3,
+     "median": 3.0
+    },
+    "two-workers": {
+     "max": 3,
+     "median": 3.0
+    }
+   },
+   "explaining_cut_max": 3,
+   "move_classes": 11,
+   "moves_per_activation": {
+    "max": 3,
+    "mean": 1.185,
+    "median": 1,
+    "n": 329,
+    "ones": 0.359
+   },
+   "moves_per_run": 3.39,
+   "purity": {
+    "classes_with_one_change_kind": 0.636,
+    "instances_matching_class_majority": 0.923
+   },
+   "stability": {
+    "rj-v2": {
+     "move_by_function": 0.053,
+     "move_by_order": 1.0,
+     "move_by_order_without_writes": 1.0,
+     "move_classes_by_order_without_writes": 11,
+     "move_full": 0.048
+    }
+   },
+   "symptom_placement": {
+    "goal": 6,
+    "outcome": 18
+   },
+   "witness_moves": 5,
+   "witness_tree": [
+    "GOAL w1 work (7 effects, 1 support)",
+    "  ACTIVATION part 0 (6 effects)",
+    "    MOVE [1,2] generate_report:32 -> ['report:*', 'reports:status']",
+    "    MOVE [3,4,5] generate_report:48 -> ['s3:reports/*.csv']",
+    "  ACTIVATION part 1 (1 effects)",
+    "    MOVE [7] generate_report:59 -> ['report:*', 'reports:status']",
+    "GOAL beat requeue (3 effects, 0 support)",
+    "  ACTIVATION part 0 (3 effects)",
+    "    MOVE [6,8] requeue_stuck:73 -> ['report:*', 'reports:status']",
+    "    MOVE [9] requeue_stuck:75 -> ['broker:q']"
+   ]
+  },
+  "every-write": {
+   "cause_placement": {
+    "activation": 1,
+    "goal": 4,
+    "move": 3,
+    "none": 2,
+    "outcome": 14
+   },
+   "effects_per_move": {
+    "max": 4,
+    "mean": 1.987,
+    "median": 2.0,
+    "n": 390,
+    "ones": 0.328
+   },
+   "explaining_cut": {
+    "duplicate-create": {
+     "max": 2,
+     "median": 2.0
+    },
+    "requeue-vs-work": {
+     "max": 3,
+     "median": 3.0
+    },
+    "two-workers": {
+     "max": 3,
+     "median": 3.0
+    }
+   },
+   "explaining_cut_max": 3,
+   "move_classes": 11,
+   "moves_per_activation": {
+    "max": 3,
+    "mean": 1.185,
+    "median": 1,
+    "n": 329,
+    "ones": 0.359
+   },
+   "moves_per_run": 3.39,
+   "purity": {
+    "classes_with_one_change_kind": 0.636,
+    "instances_matching_class_majority": 0.923
+   },
+   "stability": {
+    "rj-v2": {
+     "move_by_function": 0.053,
+     "move_by_order": 1.0,
+     "move_by_order_without_writes": 1.0,
+     "move_classes_by_order_without_writes": 11,
+     "move_full": 0.048
+    }
+   },
+   "symptom_placement": {
+    "goal": 6,
+    "outcome": 18
+   },
+   "witness_moves": 5,
+   "witness_tree": [
+    "GOAL w1 work (7 effects, 1 support)",
+    "  ACTIVATION part 0 (6 effects)",
+    "    MOVE [1,2] generate_report:32 -> ['report:*', 'reports:status']",
+    "    MOVE [3,4,5] generate_report:48 -> ['s3:reports/*.csv']",
+    "  ACTIVATION part 1 (1 effects)",
+    "    MOVE [7] generate_report:59 -> ['report:*', 'reports:status']",
+    "GOAL beat requeue (3 effects, 0 support)",
+    "  ACTIVATION part 0 (3 effects)",
+    "    MOVE [6,8] requeue_stuck:73 -> ['report:*', 'reports:status']",
+    "    MOVE [9] requeue_stuck:75 -> ['broker:q']"
+   ]
+  },
+  "prefer": {
+   "chosen": "every-write",
+   "scores": {
+    "atomic-group": {
+     "purity": 0.923,
+     "stability_by_function": 0.053
+    },
+    "every-write": {
+     "purity": 0.923,
+     "stability_by_function": 0.053
+    },
+    "write-run": {
+     "purity": 0.923,
+     "stability_by_function": 0.053
+    }
+   }
+  },
+  "write-run": {
+   "cause_placement": {
+    "activation": 1,
+    "goal": 4,
+    "move": 3,
+    "none": 2,
+    "outcome": 14
+   },
+   "effects_per_move": {
+    "max": 4,
+    "mean": 1.987,
+    "median": 2.0,
+    "n": 390,
+    "ones": 0.328
+   },
+   "explaining_cut": {
+    "duplicate-create": {
+     "max": 2,
+     "median": 2.0
+    },
+    "requeue-vs-work": {
+     "max": 3,
+     "median": 3.0
+    },
+    "two-workers": {
+     "max": 3,
+     "median": 3.0
+    }
+   },
+   "explaining_cut_max": 3,
+   "move_classes": 11,
+   "moves_per_activation": {
+    "max": 3,
+    "mean": 1.185,
+    "median": 1,
+    "n": 329,
+    "ones": 0.359
+   },
+   "moves_per_run": 3.39,
+   "purity": {
+    "classes_with_one_change_kind": 0.636,
+    "instances_matching_class_majority": 0.923
+   },
+   "stability": {
+    "rj-v2": {
+     "move_by_function": 0.053,
+     "move_by_order": 1.0,
+     "move_by_order_without_writes": 1.0,
+     "move_classes_by_order_without_writes": 11,
+     "move_full": 0.048
+    }
+   },
+   "symptom_placement": {
+    "goal": 6,
+    "outcome": 18
+   },
+   "witness_moves": 5,
+   "witness_tree": [
+    "GOAL w1 work (7 effects, 1 support)",
+    "  ACTIVATION part 0 (6 effects)",
+    "    MOVE [1,2] generate_report:32 -> ['report:*', 'reports:status']",
+    "    MOVE [3,4,5] generate_report:48 -> ['s3:reports/*.csv']",
+    "  ACTIVATION part 1 (1 effects)",
+    "    MOVE [7] generate_report:59 -> ['report:*', 'reports:status']",
+    "GOAL beat requeue (3 effects, 0 support)",
+    "  ACTIVATION part 0 (3 effects)",
+    "    MOVE [6,8] requeue_stuck:73 -> ['report:*', 'reports:status']",
+    "    MOVE [9] requeue_stuck:75 -> ['broker:q']"
+   ]
+  }
+ },
+ "L4": {
+  "object-centric": {
+   "cause_placement": {
+    "activation": 1,
+    "goal": 4,
+    "move": 3,
+    "none": 2,
+    "outcome": 14
+   },
+   "goals_under_two_outcomes": 0.0,
+   "outcomes": 115,
+   "outcomes_missing_a_change_to_their_subject": 0.0,
+   "outcomes_whose_final_state_is_wrong": 0.0,
+   "symptom_placement": {
+    "goal": 6,
+    "outcome": 18
+   }
+  },
+  "partition": {
+   "cause_placement": {
+    "activation": 1,
+    "goal": 4,
+    "move": 3,
+    "none": 2,
+    "outcome": 14
+   },
+   "goals_under_two_outcomes": 0.0,
+   "outcomes": 115,
+   "outcomes_missing_a_change_to_their_subject": 0.0,
+   "outcomes_whose_final_state_is_wrong": 0.0,
+   "symptom_placement": {
+    "goal": 6,
+    "outcome": 18
+   }
+  }
+ },
+ "L5": {
+  "named_at": {
+   "cause": {
+    "activation": 1,
+    "goal": 4,
+    "move": 3,
+    "none": 2,
+    "outcome": 14
+   },
+   "symptom": {
+    "goal": 6,
+    "outcome": 18
+   }
+  },
+  "pairs": {
+   "activation/move": {
+    "anomalies_named_only_at_dropped_level": 1,
+    "fan_in": {
+     "max": 3,
+     "mean": 1.185,
+     "median": 1,
+     "n": 329,
+     "ones": 0.359
+    },
+    "merge": {
+     "band": true,
+     "single-child": false,
+     "span-overlap": true
+    },
+    "span_overlap": 0.591,
+    "split_hint_band": false,
+    "would_drop": "activation"
+   },
+   "exchange/activation": {
+    "anomalies_named_only_at_dropped_level": 0,
+    "fan_in": {
+     "max": 2,
+     "mean": 1.43,
+     "median": 1.0,
+     "n": 230,
+     "ones": 0.57
+    },
+    "merge": {
+     "band": true,
+     "single-child": false,
+     "span-overlap": true
+    },
+    "span_overlap": 0.632,
+    "split_hint_band": false,
+    "would_drop": "exchange"
+   },
+   "goal/exchange": {
+    "anomalies_named_only_at_dropped_level": 0,
+    "fan_in": {
+     "max": 1,
+     "mean": 1.0,
+     "median": 1.0,
+     "n": 230,
+     "ones": 1.0
+    },
+    "merge": {
+     "band": true,
+     "single-child": true,
+     "span-overlap": true
+    },
+    "span_overlap": 1.0,
+    "split_hint_band": false,
+    "would_drop": "exchange"
+   },
+   "move/effect": {
+    "anomalies_named_only_at_dropped_level": 3,
+    "fan_in": {
+     "max": 4,
+     "mean": 1.987,
+     "median": 2.0,
+     "n": 390,
+     "ones": 0.328
+    },
+    "merge": {
+     "band": false,
+     "single-child": false,
+     "span-overlap": false
+    },
+    "span_overlap": 0.328,
+    "split_hint_band": false,
+    "would_drop": "move"
+   },
+   "outcome/stage": {
+    "anomalies_named_only_at_dropped_level": 0,
+    "fan_in": {
+     "max": 2,
+     "mean": 1.348,
+     "median": 1,
+     "n": 115,
+     "ones": 0.652
+    },
+    "merge": {
+     "band": true,
+     "single-child": false,
+     "span-overlap": true
+    },
+    "span_overlap": 0.824,
+    "split_hint_band": false,
+    "would_drop": "stage"
+   },
+   "stage/goal": {
+    "anomalies_named_only_at_dropped_level": 0,
+    "fan_in": {
+     "max": 1,
+     "mean": 1.0,
+     "median": 1,
+     "n": 155,
+     "ones": 1.0
+    },
+    "merge": {
+     "band": true,
+     "single-child": true,
+     "span-overlap": true
+    },
+    "span_overlap": 0.845,
+    "split_hint_band": false,
+    "would_drop": "stage"
+   }
+  },
+  "span_median": {
+   "activation": 3,
+   "effect": 1,
+   "exchange": 6.0,
+   "goal": 6.0,
+   "move": 2.0,
+   "outcome": 7,
+   "stage": 7
+  },
+  "verdict": {
+   "band": {
+    "drops_a_level_that_names_an_anomaly": [
+     "activation/move"
+    ],
+    "merges": [
+     "outcome/stage",
+     "stage/goal",
+     "goal/exchange",
+     "exchange/activation",
+     "activation/move"
+    ],
+    "merges_exchange": true,
+    "merges_stage": true
+   },
+   "single-child": {
+    "drops_a_level_that_names_an_anomaly": [],
+    "merges": [
+     "stage/goal",
+     "goal/exchange"
+    ],
+    "merges_exchange": true,
+    "merges_stage": true
+   },
+   "span-overlap": {
+    "drops_a_level_that_names_an_anomaly": [
+     "activation/move"
+    ],
+    "merges": [
+     "outcome/stage",
+     "stage/goal",
+     "goal/exchange",
+     "exchange/activation",
+     "activation/move"
+    ],
+    "merges_exchange": true,
+    "merges_stage": true
+   }
+  }
+ }
+}

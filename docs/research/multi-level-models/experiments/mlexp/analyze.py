@@ -108,11 +108,27 @@ def goal_sig(goal: dict[str, Any]) -> str:
     return digest([goal['class'], [act_sig(a) for a in goal['activations']]])
 
 
-def analyse(graph_dir: pathlib.Path, **options: str) -> dict[str, Any]:
-    """`options` are passed to levels.build (the strategy options O1 and O3)."""
+def load_trees(graph_dir: pathlib.Path, **options: str) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[bool]]]:
+    """Step trees and anomaly labels per scenario."""
+    rj = graph_dir / 'rj-runs.pkl'
+    if rj.exists():
+        import pickle
+
+        data = pickle.loads(rj.read_bytes())
+        return ({name: [levels.build_effects(run['effects'], **options) for run in g['runs']] for name, g in data.items()},
+                {name: g['labels'] for name, g in data.items()})
     seq, conc = evaluate.load(graph_dir, 0), evaluate.load(graph_dir, 2)
     ref_seq, ref_conc = evaluate.node_alpha(afs.reference, seq), evaluate.node_alpha(afs.reference, conc)
     labels, _ = evaluate.oracle_labels(ref_seq, ref_conc, seq, conc)
+    return {name: [levels.build(conc[name], run, **options) for run in conc[name]['runs']] for name in scenarios.ALL}, labels
+
+
+def analyse(graph_dir: pathlib.Path, **options: str) -> dict[str, Any]:
+    """`options` are passed to levels.build (the strategy options O1 and O3).
+
+    `graph_dir` holds either rq's explored graphs or report-jobs' runs (`rj-runs.pkl`, from rjexp/harness.py).
+    """
+    trees, labels = load_trees(graph_dir, **options)
     fan: dict[str, list[int]] = defaultdict(list)
     counts_b: dict[str, list[int]] = defaultdict(list)
     counts_a: dict[str, list[int]] = defaultdict(list)
@@ -122,11 +138,7 @@ def analyse(graph_dir: pathlib.Path, **options: str) -> dict[str, Any]:
     class_examples: dict[str, dict[str, Any]] = defaultdict(dict)
     placement: dict[str, dict[str, Counter[str]]] = {}
     cut: dict[str, list[int]] = defaultdict(list)
-    trees: dict[str, list[dict[str, Any]]] = {}
-    for name in scenarios.ALL:
-        graph = conc[name]
-        built = [levels.build(graph, run, **options) for run in graph['runs']]
-        trees[name] = built
+    for name, built in trees.items():
         clean_b = {(lv, st): set() for lv in B_LEVELS for st in (False, True)}
         clean_a: dict[str, set[str]] = {lv: set() for lv in A_LEVELS}
         clean_goals: set[str] = set()
@@ -198,7 +210,8 @@ def analyse(graph_dir: pathlib.Path, **options: str) -> dict[str, Any]:
 def witness(result: dict[str, Any]) -> dict[str, Any]:
     """The shortest dependency run that ends with the finished job still listed as started."""
     best = None
-    for tree, anomalous in zip(result['_trees']['dependency'], result['_labels']['dependency']):
+    name = 'dependency' if 'dependency' in result['_trees'] else 'requeue-vs-work'  # rq, or report-jobs
+    for tree, anomalous in zip(result['_trees'][name], result['_labels'][name]):
         if anomalous and (best is None or len(tree['effects']) < len(best['effects'])):
             best = tree
     assert best is not None

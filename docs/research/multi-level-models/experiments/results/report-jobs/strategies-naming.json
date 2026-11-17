@@ -1,0 +1,131 @@
+{
+ "children": {
+  "failure_share": 0.03,
+  "failures": [
+   {
+    "head": "writes: the report's record, the report's status",
+    "move": "m:1b962d",
+    "name": "Release claim after failed upload",
+    "sample": "name-opus-3",
+    "words": [
+     "\\b(file|csv|uploads?|uploaded)\\b"
+    ]
+   },
+   {
+    "head": "writes: the task queue",
+    "move": "m:560da1",
+    "name": "Requeue failed report's build task",
+    "sample": "name-opus-3",
+    "words": [
+     "\\b(running|claim|claims|claimed|done|delivered|complete|completed|failed|pending)\\b"
+    ]
+   }
+  ],
+  "levels": {
+   "activations": {
+    "classes": 5,
+    "pairwise_exact": 0.12,
+    "pairwise_token_jaccard": 0.485
+   },
+   "goals": {
+    "classes": 4,
+    "pairwise_exact": 0.25,
+    "pairwise_token_jaccard": 0.674
+   },
+   "moves": {
+    "classes": 11,
+    "pairwise_exact": 0.091,
+    "pairwise_token_jaccard": 0.432
+   }
+  },
+  "majority_failures": [
+   {
+    "move": "m:1b962d",
+    "name": "release claim after failed upload"
+   }
+  ],
+  "majority_moves": {
+   "m:091359": "reset failed report to pending",
+   "m:1b962d": "release claim after failed upload",
+   "m:1d90d1": "record new pending report",
+   "m:26ce19": "attempt upload, rejected",
+   "m:560da1": "send build task for retry",
+   "m:662f00": "queue build for stuck reports",
+   "m:86e635": "queue report task",
+   "m:909260": "mark report done with link",
+   "m:bb695c": "claim report as running",
+   "m:c22656": "build and upload csv file",
+   "m:c2770e": "reset stuck reports to pending"
+  },
+  "move_names_given": 66,
+  "name_truth_failures": 2,
+  "name_truth_failures_revised": 2,
+  "revised_failures": [
+   [
+    "name-opus-3",
+    "Release claim after failed upload"
+   ],
+   [
+    "name-opus-3",
+    "Requeue failed report's build task"
+   ]
+  ],
+  "samples": [
+   "name-opus-1",
+   "name-opus-2",
+   "name-opus-3",
+   "name-sonnet-1",
+   "name-sonnet-2",
+   "name-sonnet-3"
+  ],
+  "storage_words": 0
+ },
+ "head": {
+  "failure_share": 0.0,
+  "failures": [],
+  "levels": {
+   "activations": {
+    "classes": 5,
+    "pairwise_exact": 0.12,
+    "pairwise_token_jaccard": 0.431
+   },
+   "goals": {
+    "classes": 4,
+    "pairwise_exact": 0.233,
+    "pairwise_token_jaccard": 0.738
+   },
+   "moves": {
+    "classes": 11,
+    "pairwise_exact": 0.212,
+    "pairwise_token_jaccard": 0.57
+   }
+  },
+  "majority_failures": [],
+  "majority_moves": {
+   "m:091359": "reset failed report to pending",
+   "m:1b962d": "release claimed report to pending",
+   "m:1d90d1": "insert pending report with key",
+   "m:26ce19": "discard rejected attempt",
+   "m:560da1": "queue retried report task",
+   "m:662f00": "requeue stuck report task",
+   "m:86e635": "queue new report task",
+   "m:909260": "mark report done",
+   "m:bb695c": "claim pending report",
+   "m:c22656": "upload report file",
+   "m:c2770e": "reset stuck report to pending"
+  },
+  "move_names_given": 66,
+  "name_truth_failures": 0,
+  "name_truth_failures_revised": 0,
+  "revised_failures": [],
+  "samples": [
+   "name-head-opus-1",
+   "name-head-opus-2",
+   "name-head-opus-3",
+   "name-head-sonnet-1",
+   "name-head-sonnet-2",
+   "name-head-sonnet-3"
+  ],
+  "storage_words": 5
+ }
+}

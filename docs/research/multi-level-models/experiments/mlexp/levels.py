@@ -34,7 +34,17 @@ HERE = pathlib.Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[2] / 'abstraction-function' / 'experiments'))
 
 from afexp import afs  # noqa: E402
-from afexp.harness import digest, key_pattern  # noqa: E402
+from afexp.harness import digest  # noqa: E402
+from afexp.harness import key_pattern as rq_key_pattern  # noqa: E402
+
+import re  # noqa: E402
+
+RJ_IDS = re.compile(r'\b(r\d+|k\d+)\b')
+
+
+def key_pattern(key: str) -> str:
+    """A key with its ids replaced by `*`: rq's jobs and workers, report-jobs' reports and keys."""
+    return RJ_IDS.sub('*', rq_key_pattern(key))
 
 READS = afs.READ_COMMANDS - {'EVALSHA'}
 PURE_READS = READS - {'LMOVE', 'LPOP', 'BLMOVE'}
@@ -75,6 +85,10 @@ def effects_of(graph: dict[str, Any], run: dict[str, Any]) -> list[dict[str, Any
             'ref_change': _ref_change(ref0, ref1),
             'body_ran': before['effects'] != after['effects'],
             'output': None,
+            # Generic atomicity flags, used by move_close='atomic-group': WATCH opens an optimistic
+            # transaction, a pipeline (EXEC) that writes or is rejected ends it.
+            'tx_open': any(name == 'WATCH' for name, _ in detail['commands']),
+            'tx_end': edge['label'].startswith('EXEC['),
         })
         for a, kind, op_id, value in run['events'][i]:
             if kind == 'begin':
@@ -115,8 +129,12 @@ def build(graph: dict[str, Any], run: dict[str, Any], move_close: str = 'every-w
     The defaults are the rules of the first experiment. The options are those of
     docs/ladder-strategies.md 5.2: O1 `move_close` and O3 `outcomes`.
     """
+    return build_effects(effects_of(graph, run), move_close, outcomes)
+
+
+def build_effects(effects: list[dict[str, Any]], move_close: str = 'every-write', outcomes: str = 'object-centric') -> dict[str, Any]:
+    """The step tree of one run, from its effects: rq's (effects_of) or report-jobs' (rjexp)."""
     assert move_close in MOVE_CLOSE and outcomes in OUTCOMES
-    effects = effects_of(graph, run)
     mark_chain(effects)
     activations: list[dict[str, Any]] = []
     goals: list[dict[str, Any]] = []
@@ -150,13 +168,13 @@ def build(graph: dict[str, Any], run: dict[str, Any], move_close: str = 'every-w
         on_chain = [e for e in act['effects'] if e['chain']]
         for n, e in enumerate(on_chain):
             current.append(e)
-            if any(name == 'WATCH' for name, _ in e['commands']):
+            if e['tx_open']:
                 watching = True
             closes = bool(e['writes'] or e['rejected'])
             if move_close == 'atomic-group' and watching:
-                # An optimistic transaction is one move: it ends at its commit attempt,
-                # accepted or rejected. Writes made meanwhile outside it join it.
-                closes = e['rejected'] or (bool(e['writes']) and e['label'].startswith('EXEC['))
+                # A transaction is one move: it ends at its commit attempt, accepted or rejected.
+                # Writes made meanwhile outside it (an upload, a heartbeat) join it.
+                closes = e['rejected'] or (bool(e['writes']) and e['tx_end'])
             if move_close == 'write-run' and closes and not e['rejected'] and n + 1 < len(on_chain):
                 # Consecutive writes to the same key, with nothing read in between, are one move.
                 nxt = on_chain[n + 1]
@@ -167,7 +185,9 @@ def build(graph: dict[str, Any], run: dict[str, Any], move_close: str = 'every-w
                 current = []
                 watching = False
         if current:
-            if act['moves']:
+            # Reads left at the end of an activation join the move before them. Writes left there (a
+            # transaction cut by the activation's end, under atomic-group) are a move of their own.
+            if act['moves'] and not any(e['writes'] for e in current):
                 act['moves'][-1]['effects'].extend(current)
             else:
                 act['moves'].append({'effects': current, 'activation': act})
@@ -176,7 +196,11 @@ def build(graph: dict[str, Any], run: dict[str, Any], move_close: str = 'every-w
         last = [e for e in m['effects'] if e['writes'] or e['rejected']]
         closer = last[-1] if last else m['effects'][-1]
         written = sorted({key_pattern(k) for e in m['effects'] for k in e['writes']})
-        m['class'] = [m['activation']['api'], closer['stack'][-1] if closer['stack'] else '?', 'rejected' if closer['rejected'] else written]
+        # A move is identified by its call, the code that closes it, and what it writes. On rq the closing
+        # function is enough; report-jobs closes several moves in one function, so its effects carry
+        # the call site (function and line) as `anchor`.
+        where = closer.get('anchor') or (closer['stack'][-1] if closer['stack'] else '?')
+        m['class'] = [m['activation']['api'], where, 'rejected' if closer['rejected'] else written]
         m['ref_change'] = [c for e in m['effects'] for c in e['ref_change']]
     for act in activations:
         act['class'] = [act['api'], act['part']]

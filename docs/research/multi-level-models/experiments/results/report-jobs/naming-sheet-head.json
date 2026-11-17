@@ -1,0 +1,480 @@
+{
+ "activations": {
+  "a:create:0": {
+   "api_call": "create",
+   "head": {
+    "head_move": "m:1d90d1"
+   },
+   "moves": [
+    "m:1d90d1",
+    "m:86e635"
+   ],
+   "observable_changes": [
+    "('PENDING', False, 0, True) -> ('PENDING', False, 0, False)",
+    "None -> ('PENDING', False, 0, True)"
+   ],
+   "part": 0
+  },
+  "a:requeue:0": {
+   "api_call": "requeue",
+   "head": {
+    "head_move": "m:c2770e"
+   },
+   "moves": [
+    "m:662f00",
+    "m:c2770e"
+   ],
+   "observable_changes": [
+    "('DONE', True, 1, False) -> ('PENDING', True, 1, True)",
+    "('PENDING', True, 1, True) -> ('PENDING', True, 1, False)",
+    "('RUNNING', False, 0, False) -> ('PENDING', False, 0, False)",
+    "('RUNNING', False, 1, False) -> ('PENDING', False, 1, False)"
+   ],
+   "part": 0
+  },
+  "a:retry:0": {
+   "api_call": "retry",
+   "head": {
+    "head_move": "m:091359"
+   },
+   "moves": [
+    "m:091359",
+    "m:560da1"
+   ],
+   "observable_changes": [
+    "('FAILED', False, 0, False) -> ('PENDING', False, 0, False)",
+    "('FAILED', False, 0, False) -> ('PENDING', False, 0, True)",
+    "('PENDING', False, 0, True) -> ('PENDING', False, 0, False)"
+   ],
+   "part": 0
+  },
+  "a:work:0": {
+   "api_call": "work",
+   "head": {
+    "head_move": "m:bb695c"
+   },
+   "moves": [
+    "m:1b962d",
+    "m:26ce19",
+    "m:bb695c",
+    "m:c22656"
+   ],
+   "observable_changes": [
+    "('DONE', True, 1, False) -> ('DONE', True, 2, False)",
+    "('DONE', True, 1, False) -> ('RUNNING', True, 1, False)",
+    "('PENDING', False, 0, False) -> ('PENDING', False, 1, False)",
+    "('PENDING', False, 0, False) -> ('RUNNING', False, 0, False)",
+    "('RUNNING', False, 0, False) -> ('PENDING', False, 0, False)",
+    "('RUNNING', False, 0, False) -> ('RUNNING', False, 1, False)",
+    "('RUNNING', False, 1, False) -> ('RUNNING', False, 2, False)",
+    "('RUNNING', True, 1, False) -> ('RUNNING', True, 2, False)"
+   ],
+   "part": 0
+  },
+  "a:work:1": {
+   "api_call": "work",
+   "head": {
+    "head_move": "m:909260"
+   },
+   "moves": [
+    "m:909260"
+   ],
+   "observable_changes": [
+    "('PENDING', False, 1, False) -> ('DONE', True, 1, False)",
+    "('RUNNING', False, 1, False) -> ('DONE', True, 1, False)",
+    "('RUNNING', False, 2, False) -> ('DONE', True, 2, False)",
+    "('RUNNING', True, 2, False) -> ('DONE', True, 2, False)"
+   ],
+   "part": 1
+  }
+ },
+ "goals": {
+  "g:create": {
+   "activations": [
+    "a:create:0"
+   ],
+   "api_call": "create",
+   "observable_changes": [
+    "('PENDING', False, 0, True) -> ('PENDING', False, 0, False)",
+    "None -> ('PENDING', False, 0, True)"
+   ],
+   "returns": [
+    "\"202 PENDING\"",
+    "\"500 IntegrityError\""
+   ]
+  },
+  "g:requeue": {
+   "activations": [
+    "a:requeue:0"
+   ],
+   "api_call": "requeue",
+   "observable_changes": [
+    "('DONE', True, 1, False) -> ('PENDING', True, 1, True)",
+    "('PENDING', True, 1, True) -> ('PENDING', True, 1, False)",
+    "('RUNNING', False, 0, False) -> ('PENDING', False, 0, False)",
+    "('RUNNING', False, 1, False) -> ('PENDING', False, 1, False)"
+   ],
+   "returns": [
+    "\"ok\""
+   ]
+  },
+  "g:retry": {
+   "activations": [
+    "a:retry:0"
+   ],
+   "api_call": "retry",
+   "observable_changes": [
+    "('FAILED', False, 0, False) -> ('PENDING', False, 0, False)",
+    "('FAILED', False, 0, False) -> ('PENDING', False, 0, True)",
+    "('PENDING', False, 0, True) -> ('PENDING', False, 0, False)"
+   ],
+   "returns": [
+    "\"requeued\""
+   ]
+  },
+  "g:work": {
+   "activations": [
+    "a:work:0",
+    "a:work:1"
+   ],
+   "api_call": "work",
+   "observable_changes": [
+    "('DONE', True, 1, False) -> ('DONE', True, 2, False)",
+    "('DONE', True, 1, False) -> ('RUNNING', True, 1, False)",
+    "('PENDING', False, 0, False) -> ('PENDING', False, 1, False)",
+    "('PENDING', False, 0, False) -> ('RUNNING', False, 0, False)",
+    "('PENDING', False, 1, False) -> ('DONE', True, 1, False)",
+    "('RUNNING', False, 0, False) -> ('PENDING', False, 0, False)",
+    "('RUNNING', False, 0, False) -> ('RUNNING', False, 1, False)",
+    "('RUNNING', False, 1, False) -> ('DONE', True, 1, False)"
+   ],
+   "returns": [
+    "\"empty\"",
+    "\"ok\"",
+    "\"retry\""
+   ]
+  }
+ },
+ "moves": {
+  "m:091359": {
+   "api_call": "retry",
+   "commands": [
+    [
+     "SELECT",
+     [
+      "report:*"
+     ]
+    ],
+    [
+     "UPDATE",
+     [
+      "report:*",
+      "reports:status"
+     ]
+    ]
+   ],
+   "function": "retry:23",
+   "head": {
+    "function": "retry",
+    "observable_change": [
+     "('FAILED', False, 0, False) -> ('PENDING', False, 0, False)"
+    ],
+    "result": "writes: the report's record, the report's status"
+   },
+   "result": {
+    "writes_key_families": [
+     "report:*",
+     "reports:status"
+    ]
+   }
+  },
+  "m:1b962d": {
+   "api_call": "work",
+   "commands": [
+    [
+     "UPDATE",
+     [
+      "report:*",
+      "reports:status"
+     ]
+    ]
+   ],
+   "function": "generate_report:52",
+   "head": {
+    "function": "generate_report",
+    "observable_change": [
+     "('RUNNING', False, 0, False) -> ('PENDING', False, 0, False)"
+    ],
+    "result": "writes: the report's record, the report's status"
+   },
+   "result": {
+    "writes_key_families": [
+     "report:*",
+     "reports:status"
+    ]
+   }
+  },
+  "m:1d90d1": {
+   "api_call": "create",
+   "commands": [
+    [
+     "SELECT",
+     [
+      "reports:key:*"
+     ]
+    ],
+    [
+     "INSERT",
+     [
+      "report:*",
+      "reports:key:*",
+      "reports:status"
+     ]
+    ]
+   ],
+   "function": "create_report:31",
+   "head": {
+    "function": "create_report",
+    "observable_change": [
+     "None -> ('PENDING', False, 0, True)"
+    ],
+    "result": "writes: the idempotency key, the report's record, the report's status"
+   },
+   "result": {
+    "writes_key_families": [
+     "report:*",
+     "reports:key:*",
+     "reports:status"
+    ]
+   }
+  },
+  "m:26ce19": {
+   "api_call": "work",
+   "commands": [
+    [
+     "SELECT",
+     [
+      "orders"
+     ]
+    ],
+    [
+     "SELECT",
+     [
+      "orders"
+     ]
+    ],
+    [
+     "S3PUT",
+     [
+      "s3:reports/*.csv"
+     ]
+    ]
+   ],
+   "function": "generate_report:48",
+   "head": {
+    "function": "generate_report",
+    "observable_change": [],
+    "result": "commit attempt rejected, nothing written"
+   },
+   "result": "transaction rejected, nothing written"
+  },
+  "m:560da1": {
+   "api_call": "retry",
+   "commands": [
+    [
+     "SEND",
+     [
+      "broker:q"
+     ]
+    ]
+   ],
+   "function": "retry:24",
+   "head": {
+    "function": "retry",
+    "observable_change": [
+     "('PENDING', False, 0, True) -> ('PENDING', False, 0, False)"
+    ],
+    "result": "writes: the task queue"
+   },
+   "result": {
+    "writes_key_families": [
+     "broker:q"
+    ]
+   }
+  },
+  "m:662f00": {
+   "api_call": "requeue",
+   "commands": [
+    [
+     "SEND",
+     [
+      "broker:q"
+     ]
+    ]
+   ],
+   "function": "requeue_stuck:75",
+   "head": {
+    "function": "requeue_stuck",
+    "observable_change": [
+     "('PENDING', True, 1, True) -> ('PENDING', True, 1, False)"
+    ],
+    "result": "writes: the task queue"
+   },
+   "result": {
+    "writes_key_families": [
+     "broker:q"
+    ]
+   }
+  },
+  "m:86e635": {
+   "api_call": "create",
+   "commands": [
+    [
+     "SEND",
+     [
+      "broker:q"
+     ]
+    ]
+   ],
+   "function": "create_report:33",
+   "head": {
+    "function": "create_report",
+    "observable_change": [
+     "('PENDING', False, 0, True) -> ('PENDING', False, 0, False)"
+    ],
+    "result": "writes: the task queue"
+   },
+   "result": {
+    "writes_key_families": [
+     "broker:q"
+    ]
+   }
+  },
+  "m:909260": {
+   "api_call": "work",
+   "commands": [
+    [
+     "UPDATE",
+     [
+      "report:*",
+      "reports:status"
+     ]
+    ]
+   ],
+   "function": "generate_report:59",
+   "head": {
+    "function": "generate_report",
+    "observable_change": [
+     "('RUNNING', False, 1, False) -> ('DONE', True, 1, False)"
+    ],
+    "result": "writes: the report's record, the report's status"
+   },
+   "result": {
+    "writes_key_families": [
+     "report:*",
+     "reports:status"
+    ]
+   }
+  },
+  "m:bb695c": {
+   "api_call": "work",
+   "commands": [
+    [
+     "SELECT",
+     [
+      "report:*"
+     ]
+    ],
+    [
+     "UPDATE",
+     [
+      "report:*",
+      "reports:status"
+     ]
+    ]
+   ],
+   "function": "generate_report:32",
+   "head": {
+    "function": "generate_report",
+    "observable_change": [
+     "('PENDING', False, 0, False) -> ('RUNNING', False, 0, False)"
+    ],
+    "result": "writes: the report's record, the report's status"
+   },
+   "result": {
+    "writes_key_families": [
+     "report:*",
+     "reports:status"
+    ]
+   }
+  },
+  "m:c22656": {
+   "api_call": "work",
+   "commands": [
+    [
+     "SELECT",
+     [
+      "orders"
+     ]
+    ],
+    [
+     "SELECT",
+     [
+      "orders"
+     ]
+    ],
+    [
+     "S3PUT",
+     [
+      "s3:reports/*.csv"
+     ]
+    ]
+   ],
+   "function": "generate_report:48",
+   "head": {
+    "function": "generate_report",
+    "observable_change": [
+     "('RUNNING', False, 0, False) -> ('RUNNING', False, 1, False)"
+    ],
+    "result": "writes: the report file"
+   },
+   "result": {
+    "writes_key_families": [
+     "s3:reports/*.csv"
+    ]
+   }
+  },
+  "m:c2770e": {
+   "api_call": "requeue",
+   "commands": [
+    [
+     "SELECT",
+     [
+      "reports:status"
+     ]
+    ],
+    [
+     "UPDATE",
+     [
+      "report:*",
+      "reports:status"
+     ]
+    ]
+   ],
+   "function": "requeue_stuck:73",
+   "head": {
+    "function": "requeue_stuck",
+    "observable_change": [
+     "('RUNNING', False, 1, False) -> ('PENDING', False, 1, False)"
+    ],
+    "result": "writes: the report's record, the report's status"
+   },
+   "result": {
+    "writes_key_families": [
+     "report:*",
+     "reports:status"
+    ]
+   }
+  }
+ }
+}

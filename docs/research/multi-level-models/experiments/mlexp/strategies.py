@@ -31,7 +31,8 @@ sys.path.insert(0, str(HERE.parent))
 
 from mlexp import analyze, levels, llm_tasks, reader  # noqa: E402
 
-from afexp.harness import digest, key_pattern  # noqa: E402
+from afexp.harness import digest  # noqa: E402
+from mlexp.levels import key_pattern  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Thresholds fixed in advance (docs/ladder-strategies.md 5.2, O4).
@@ -72,11 +73,34 @@ def purity(result: dict[str, Any]) -> dict[str, float]:
     return {'classes_with_one_change_kind': round(single, 3), 'instances_matching_class_majority': round(inst, 3)}
 
 
+def by_order(result: dict[str, Any], writes: bool = True) -> set[str]:
+    """Move classes with a call site `function:line` replaced by the function and the site's order in it:
+    the identity the specification's open question proposes (port, closing statement, order in the function)."""
+    lines: dict[str, set[int]] = defaultdict(set)
+    classes = [v['class'] for v in result['move_classes'].values()]
+    for c in classes:
+        if ':' in c[1]:
+            f, line = c[1].rsplit(':', 1)
+            lines[f].add(int(line))
+    out = set()
+    for c in classes:
+        where = c[1]
+        if ':' in where:
+            f, line = where.rsplit(':', 1)
+            where = f'{f}#{sorted(lines[f]).index(int(line))}'
+        # Without writes, only whether the move was a rejected attempt stays part of its identity.
+        out.add(str([c[0], where, c[2] if writes else c[2] == 'rejected']))
+    return out
+
+
 def stability(base: dict[str, Any], other: dict[str, Any]) -> dict[str, float]:
     full = set(base['classes']['move']), set(other['classes']['move'])
     by_fn = analyze.fn(base), analyze.fn(other)
-    return {'move_full': round(len(full[0] & full[1]) / len(full[0] | full[1]), 3),
-            'move_by_function': round(len(by_fn[0] & by_fn[1]) / len(by_fn[0] | by_fn[1]), 3)}
+    order = by_order(base), by_order(other)
+    order_only = by_order(base, False), by_order(other, False)
+    j = lambda a, b: round(len(a & b) / len(a | b), 3)  # noqa: E731
+    return {'move_full': j(*full), 'move_by_function': j(*by_fn), 'move_by_order': j(*order), 'move_by_order_without_writes': j(*order_only),
+            'move_classes_by_order_without_writes': len(order_only[0])}
 
 
 # ---------------------------------------------------------------------------
@@ -121,7 +145,9 @@ def prefer_choice(out: dict[str, Any]) -> dict[str, Any]:
         named = sum(out[v]['cause_placement'].get(lv, 0) for lv in ('activation', 'move'))
         if named < base_named:
             continue
-        st = statistics.fmean(s['move_by_function'] for s in out[v]['stability'].values())
+        # With one version of the subject (report-jobs) stability cannot be measured: all are tied,
+        # and the tie-breaker decides.
+        st = statistics.fmean(s['move_by_function'] for s in out[v]['stability'].values()) if out[v]['stability'] else 0.0
         scores[v] = (st, out[v]['purity']['instances_matching_class_majority'])
     best = max(scores, key=lambda v: scores[v][0])
     ties = [v for v in scores if scores[best][0] - scores[v][0] < PREFER_TIE]
@@ -256,7 +282,8 @@ def placement_seven(r: dict[str, Any]) -> dict[str, dict[str, int]]:
             for tree in trees:
                 s = {lv: analyze.b_signature(tree, lv, with_state) for lv in analyze.B_LEVELS}
                 s['exchange'] = s['goal']
-                s['stage'] = digest(sorted([[x['subject'], [digest(g['class']) for g in x['goals']], x['enters'] if with_state else None] for x in stages_of(tree)], key=str))
+                # Like the outcome signature, without subject ids: report-jobs' ids depend on creation order.
+                s['stage'] = digest(sorted([[[digest(g['class']) for g in x['goals']], x['enters'] if with_state else None] for x in stages_of(tree)], key=str))
                 sigs.append(s)
             clean = {lv: {s[lv] for s, bad in zip(sigs, r['_labels'][name]) if not bad} for lv in SEVEN}
             for s, bad in zip(sigs, r['_labels'][name]):
@@ -275,6 +302,9 @@ OWNERS = [  # key family prefix -> what a reader would call it, checked in order
     ('rq:workers', 'the set of workers'), ('rq:queues', 'the set of queues'), ('rq:queue:*', 'a queue'),
     ('rq:wip:*', 'the started-jobs list'), ('rq:finished:*', 'the finished-jobs list'), ('rq:failed:*', 'the failed-jobs list'),
     ('rq:deferred:*', 'the deferred-jobs list'), ('rq:canceled:*', 'the canceled-jobs list'), ('rq:scheduled:*', 'the scheduled-jobs list'),
+    # report-jobs
+    ('report:*', "the report's record"), ('reports:status', "the report's status"), ('reports:key:*', 'the idempotency key'),
+    ('s3:reports/*.csv', 'the report file'), ('broker:q', 'the task queue'),
 ]
 
 
@@ -319,11 +349,50 @@ a move's name (a job, a worker, a queue, a list, an execution, a result) must be
 head writes.'''
 
 
+RJ_NAME_TASK = '''You are naming the steps of a multi-level model of report-jobs, a small service that builds CSV
+reports of orders: an HTTP API accepts a report request and queues a task; worker processes build
+the CSV, upload it and mark the report done, retrying on upload failure; a periodic job requeues
+reports that look stuck; an operator tool retries failed reports. The steps were found mechanically;
+do not regroup them. Three levels, from the bottom:
+
+- move: a few steps of one actor (database reads and commits, an upload, a message sent or received)
+  that together make one change (or one failed attempt). Readers: developers working on concurrency.
+  Mechanism words are fine (claim, commit, attempt); SQL, table, column, bucket and broker names are not.
+- activation: one actor's uninterrupted part of an operation, up to a call to an outside service.
+  Readers: developers.
+- goal: one operation of one actor (an API call, a worker handling one message, the periodic job,
+  the operator tool), seen as what that actor got done. Readers: product owners and support staff
+  who know what the service does for its users and nothing of its storage. Use only words such a
+  user would use.
+
+For every step class give a name of at most five words, verb first, and one clause that starts
+with "so that" and says what the step is for. Name moves first, then activations using your move
+names, then goals. Different classes need different names. The same class must get the name you
+would give it again tomorrow: prefer the plainest wording. A move's "function" names the code
+line that closes it.
+
+Answer with exactly one ```json block: {"moves": {id: {"name": ..., "so_that": ...}},
+"activations": {...}, "goals": {...}} with every id from the sheet below.'''
+
+STORAGE_RJ = re.compile(r'\b(sql|select|insert|row|rows|table|column|s3|bucket|redis|celery|broker|sqlalchemy|session|database|db)\b', re.I)
+
+
 def name_prompt(graph_dir: pathlib.Path, rq_root: pathlib.Path, out: pathlib.Path) -> None:
     result = analyze.analyse(graph_dir)
     sheet = head_sheet(result)
     out.mkdir(parents=True, exist_ok=True)
     (out / 'naming-sheet-head.json').write_text(json.dumps(sheet, indent=1, sort_keys=True))
+    if (graph_dir / 'rj-runs.pkl').exists():
+        # report-jobs: no user documentation exists; the service description stands in for it.
+        observable = ('An observable change is written as [status, has a download link, times the file was uploaded, '
+                      'stranded (pending with nothing queued to pick it up)] before -> after; None means no report record.')
+        about = (rq_root / 'README.md').read_text().split('Nothing here is compiled yet.')[0]
+        plain = {k: {cid: {f: v for f, v in c.items() if f != 'head'} for cid, c in grp.items()} for k, grp in sheet.items()}
+        for variant, task, shown in (('', RJ_NAME_TASK, plain), ('-head', RJ_NAME_TASK + '\n\n' + HEAD_NOTE.replace('(a job, a worker, a queue, a list, an execution, a result)', '(a report, its file, the task queue, its status, a key)'), sheet)):
+            (out / f'prompt-name{variant}.md').write_text(
+                f'{task}\n\n{observable}\n\n## Sheet of step classes\n\n```json\n{json.dumps(shown, indent=1, sort_keys=True)}\n```\n\n## What the service does\n\n{about}\n')
+        print('moves', len(sheet['moves']), 'activations', len(sheet['activations']), 'goals', len(sheet['goals']), 'prompt chars', len((out / 'prompt-name-head.md').read_text()))
+        return
     docs = '\n\n'.join(f'### {rel}\n' + (rq_root / rel).read_text() for rel in llm_tasks.DOCS)
     observable = ('An observable change is written as [status, places listing the job, type of latest result] '
                   'before -> after; None means the job has no record.')
@@ -347,12 +416,25 @@ TRUTH = [
 ]
 
 
-def name_truth(name: str, head: dict[str, Any]) -> list[str]:
+# The same check for report-jobs, written before its samples were seen.
+TRUTH_RJ = [
+    (re.compile(r'\b(file|csv|uploads?|uploaded)\b'), ('the report file',)),
+    (re.compile(r'\b(queues?|queued|task|message)\b'), ('the task queue',)),
+    (re.compile(r'\b(running|claim|claims|claimed|done|delivered|complete|completed|failed|pending)\b'), ("the report's record", "the report's status")),
+    (re.compile(r'\b(key|idempotency)\b'), ('the idempotency key',)),
+]
+
+
+def truth_table(sheet: dict[str, Any]) -> list[Any]:
+    return TRUTH_RJ if any('the report file' in m['head']['result'] or "the report's record" in m['head']['result'] for m in sheet['moves'].values()) else TRUTH
+
+
+def name_truth(name: str, head: dict[str, Any], table: list[Any] | None = None) -> list[str]:
     """Words of a move's name that its head does not write. Rejected commits write nothing and are skipped."""
     if not head['result'].startswith('writes: '):
         return []
     written = set(head['result'][len('writes: '):].split(', '))
-    return [rx.pattern for rx, owners in TRUTH if rx.search(name.lower()) and not written & set(owners)]
+    return [rx.pattern for rx, owners in (table or TRUTH) if rx.search(name.lower()) and not written & set(owners)]
 
 
 # Revision written after reading the failures of the check above on the first experiment's names
@@ -368,7 +450,7 @@ def _stem(word: str) -> str:
     return word
 
 
-def name_truth_revised(name: str, head: dict[str, Any], api_call: str) -> list[str]:
+def name_truth_revised(name: str, head: dict[str, Any], api_call: str, table: list[Any] | None = None) -> list[str]:
     if not head['result'].startswith('writes: '):
         return []
     written = set(head['result'][len('writes: '):].split(', '))
@@ -377,8 +459,8 @@ def name_truth_revised(name: str, head: dict[str, Any], api_call: str) -> list[s
             written |= set(held)
     call_words = set(re.findall(r'[a-z]+', api_call.lower()))
     bad = []
-    for rx, owners in TRUTH:
-        words = set(rx.findall(name.lower()))
+    for rx, owners in (table or TRUTH):
+        words = {w if isinstance(w, str) else w[0] for w in rx.findall(name.lower())}
         context = all(_stem(x) in call_words for x in words)
         if words and not context and not written & set(owners):
             bad.append(rx.pattern)
@@ -387,6 +469,7 @@ def name_truth_revised(name: str, head: dict[str, Any], api_call: str) -> list[s
 
 def name_score(out: pathlib.Path, baseline: pathlib.Path, results: pathlib.Path) -> None:
     sheet = json.loads((out / 'naming-sheet-head.json').read_text())
+    table = truth_table(sheet)
     first = [p for p in sorted(baseline.glob('name-*.json')) if not p.stem.startswith('name-head')]
     variants = {'children': first, 'head': sorted((out / 'answers').glob('name-head-*.json'))}
     report: dict[str, Any] = {}
@@ -406,12 +489,13 @@ def name_score(out: pathlib.Path, baseline: pathlib.Path, results: pathlib.Path)
         failures = []
         for sid, a in answers.items():
             for mid, entry in a['moves'].items():
-                bad = name_truth(entry['name'], sheet['moves'][mid]['head']) if mid in sheet['moves'] else []
+                bad = name_truth(entry['name'], sheet['moves'][mid]['head'], table) if mid in sheet['moves'] else []
                 if bad:
                     failures.append({'sample': sid, 'move': mid, 'name': entry['name'], 'words': bad, 'head': sheet['moves'][mid]['head']['result']})
-        revised = [f for f in failures if name_truth_revised(f['name'], sheet['moves'][f['move']]['head'], sheet['moves'][f['move']]['api_call'])]
+        revised = [f for f in failures if name_truth_revised(f['name'], sheet['moves'][f['move']]['head'], sheet['moves'][f['move']]['api_call'], table)]
         names_given = sum(len(a['moves']) for a in answers.values())
-        storage = sum(bool(llm_tasks.STORAGE_WORDS.search(a[lv][c]['name'])) for a in answers.values() for lv in ('moves', 'activations', 'goals') for c in a[lv])
+        words = STORAGE_RJ if table is TRUTH_RJ else llm_tasks.STORAGE_WORDS
+        storage = sum(bool(words.search(a[lv][c]['name'])) for a in answers.values() for lv in ('moves', 'activations', 'goals') for c in a[lv])
         majority = {}
         for mid in sheet['moves']:
             given = [a['moves'][mid]['name'].strip().lower() for a in answers.values() if mid in a['moves']]
@@ -420,7 +504,7 @@ def name_score(out: pathlib.Path, baseline: pathlib.Path, results: pathlib.Path)
         report[variant] = {'samples': sorted(answers), 'levels': per_level, 'name_truth_failures': len(failures), 'move_names_given': names_given,
                            'failure_share': round(len(failures) / names_given, 3), 'storage_words': storage,
                            'name_truth_failures_revised': len(revised), 'revised_failures': [[f['sample'], f['name']] for f in revised],
-                           'majority_failures': [{'move': m, 'name': n} for m, n in majority.items() if name_truth(n, sheet['moves'][m]['head'])],
+                           'majority_failures': [{'move': m, 'name': n} for m, n in majority.items() if name_truth(n, sheet['moves'][m]['head'], table)],
                            'failures': failures, 'majority_moves': majority}
     (results / 'strategies-naming.json').write_text(json.dumps(report, indent=1, sort_keys=True))
     for v, r in report.items():
