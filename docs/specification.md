@@ -40,7 +40,7 @@ Each section carries a status:
 4. **Change something** (put a load balancer in front of a service, swap one for another, flip an assumption) and see what changes in the traces.
 5. **Share the view** with a coding agent: what you have selected is the agent's context.
 
-**What Mental is not.** It does not execute your code, so it works without a running environment. It does not prove correctness: results hold within the model and within stated bounds. It is not a diagram generator: every item in the picture is a record the interpreter uses.
+**What Mental is not.** It does not execute your code, so it works without a running environment. It does not prove that code has no bugs: results hold within the model and within stated bounds, and section 8.11 (Experiment) says when a result may be called a proof, of which property and under which assumptions. It is not a diagram generator: every item in the picture is a record the interpreter uses.
 
 **The running example.** [`examples/report-jobs`](../examples/report-jobs/) is the first target. An API (`POST /reports`) stores a `PENDING` row in Postgres and queues a Celery task through Redis. Two worker replicas take tasks, build a CSV from the `orders` table, upload it to S3 and mark the row `DONE`. It is about 150 lines and contains four real bugs, including a race in which both workers process the same report.
 
@@ -404,6 +404,7 @@ Node kinds: `read`, `write`, `send`, `call`, `reply`, `branch`, `loop`, `lock`, 
 | `mechanism` (an entity type) | a lock, retry policy, claim | 5.4 |
 | `assumption` | a predicate bound by default, with reason and alternatives | 8.4 |
 | `variation_point` | a place where the structure can differ, with options | 8.8 |
+| `property` | a safety or liveness property in one level's words, with fairness and who approved it | 8.11 |
 
 ### 4.9 Storage
 
@@ -466,7 +467,7 @@ A level is a record with these parts (from the survey of how other fields relate
 | `pattern` | how it relates to the level below: `group`, `summarize`, `atomize`, `hide`, `assume` | that pattern's check |
 | `abstraction` | one expression per upper state variable, over lower state | accepted or rejected one by one |
 | `step_map` | which lower steps make up each upper step; which lower steps are invisible | the pair check |
-| `invariants` | properties in this level's words | bounded search |
+| `invariants` | properties in this level's words (`property` records, 8.11) | bounded search; proof is 8.11 |
 | `actors` | for people and outside systems: what they *may* do | used by the interpreter |
 
 Proposed with the ladder strategies (2026-11-17): every `level` record also carries `strategy` (the ID of the strategy that built it), `kind`, `charter` (readers, question, what a step is, what it hides, its why and how neighbours) and `admission` (computed admission results). Step classes are records of their own ([ladder strategies, 6.4](ladder-strategies.md#64-records)).
@@ -967,6 +968,121 @@ A stored schedule can be replayed after the code and the model change. Each choi
 
 Turning a plain-language **scenario** into a binding is an LLM task (`scenario-binding`); the interpreter itself takes only bindings.
 
+### 8.11 Properties, verdicts and proof
+
+**Status: Experiment.** Version one still promises only bounded search (8.4). This section says what a result may claim, how a proof could be reached later, and the experiments that decide whether to build it. The evidence is in the [verification and proof survey](research/verification-and-proof/report.md) (F-R9 to F-R11).
+
+**What can and cannot be proved.** No tool proves that code has no bugs. TLA+, Ivy, Kani and Astrée each prove a *stated property* of *a model* under *stated conditions* (F-R9). Mental can do the same, and its own question is sharper than TLA+'s, because its model is derived from the code: does a result about the model carry over to the code?
+
+- A **"holds"** result carries over only if the model allows at least everything the code can do: every record it rests on **over-approximates** the code, or is exact.
+- A **violation** carries over only if its steps are possible in the code: the witness is **reproduced** in the code, or rests on records that are exact.
+
+Mechanically extracted records over-approximate by construction, as in SLAM, where a predicate the tool cannot relate to others is a free choice. LLM-written records can err in both directions: LLM-written TLA+ of real systems both adds states the code never reaches and fuses code steps so that real states become unreachable (F-R10). So a proof may rest only on records whose direction is known.
+
+#### 8.11.1 The direction of a record
+
+Every record gains a field `approx`, beside `provenance`:
+
+| Value | Means | Typical records |
+|---|---|---|
+| `exact` | allows exactly the code's behavior, at the record's level of detail | structure from infrastructure files; IDs, ports, wires matched `exact` |
+| `over` | may allow more than the code, never less | full-detail behaviors from the extractor; a predicate left unbound (a `data` choice); a channel that may lose or duplicate |
+| `under` | may allow less than the code | a behavior with a call left `unresolved`, so the callee's effects are missing; a wire matched `heuristic`, whose real target may differ |
+| `unknown` | not established | an LLM-written summary case whose summary-agreement check (6.7) has not passed against a mechanical full graph |
+
+A **pack rule** gets no direction: it is an **assumption** of every result that uses it, named by pack, version and rule, as Kani lists its library models (F-R9).
+
+The interpreter records which records each run fired, so the records a result rests on are **computed, never declared**.
+
+#### 8.11.2 Verdicts
+
+Every result of `mentalvm explore` and `mentalvm check` on a property is one of:
+
+| Verdict | Fields | Example wording |
+|---|---|---|
+| `violation` | the witness; `reproduced`: `model-only` or `reproduced` (replayed in the code) | "violated, model-only: 23-step witness" |
+| `holds` | `extent`: `bounded` (with bounds) or `unbounded` (with the prover and the inductive invariant); `basis`: `sound` or `unsound` (with the records that make it so); `assumptions`: the pack rules used | "holds within 1 request, 2 replicas, 1 duplicate; unsound because of 2 summary cases" |
+| `bound-exceeded` | the cap hit (8.5) | |
+
+A result may be called a **proof** only when it is `holds`, `unbounded` and `sound`, and it is always shown with its assumptions. `sound` also requires that the build reported no unresolved reference where it would change the model ([resolution](resolution.md)) and no coverage failure among the records used.
+
+```json
+"result":{"verdict":"holds","property":"reports/prop:one-holder",
+          "extent":"bounded","bounds":{"depth":40,"dup":1,"preemptions":1,"replicas":2,"requests":1},
+          "basis":"unsound","because":["reports/worker/beh:generate-report/case:done"],
+          "assumptions":["pack:celery@5.4#acks-late-redelivery","pack:postgres@16#read-committed-update"]}
+```
+
+The engine's presentation rules (9.4) gain one: **never show a `holds` without its extent and basis, and never call it proven unless it is unbounded and sound.**
+
+#### 8.11.3 Properties
+
+Some properties need nobody to write them: no model gap, no deadlock, no illegal write, no zero-time cycle, no stranded state. They follow from the model's form (8.5, 6.7), and two of the four report-jobs bugs are violations of them. Everything else is a **`property`** record, written in one level's vocabulary from a small set of patterns:
+
+| Pattern | Says | Kind |
+|---|---|---|
+| `invariant` | a guard formula over state predicates holds in every reachable state | safety |
+| `never` | a named step never fires in a stated situation | safety |
+| `exclusive` | at most one activation at a time is inside a region of nodes, per key | safety |
+| `leads-to` | whenever one state formula holds, another eventually holds | liveness |
+
+Formulas use the guard grammar (4.7) over predicates on state variables (`over` a state variable, `scope: state`, with `equals`).
+
+```json
+{"id":"reports/prop:one-holder","level":"components","pattern":"exclusive",
+ "region":{"from":"reports/worker/beh:generate-report/n:claim",
+           "to":["reports/worker/beh:generate-report/n:mark-done","reports/worker/beh:generate-report/n:mark-failed",
+                 "reports/worker/beh:generate-report/n:mark-retry"]},
+ "per":"reports/db/store:report","provenance":"attested","source":"user","approval":"accepted"}
+{"id":"reports/prop:request-ends","level":"services","pattern":"leads-to",
+ "from":"reports/db/store:report/pred:status-is-pending",
+ "to":"reports/db/store:report/pred:status-is-done | reports/db/store:report/pred:status-is-failed",
+ "per":"reports/db/store:report",
+ "fairness":[{"kind":"weak","on":"reports/worker"},
+             {"kind":"strong","on":"reports/broker/port:tasks/wire:worker-task-generate-report"}],
+ "provenance":"attested","source":"user","approval":"accepted"}
+```
+
+Rules:
+- **Liveness needs fairness.** Without it, a scheduler that starves a worker forever violates every `leads-to`. Fairness is stated per property, as in TLA+: `weak` (a step continuously enabled eventually happens) or `strong` (a step enabled infinitely often eventually happens; needed where a channel may lose messages). The environment gets no fairness unless it is stated: a stub may fail forever. In report-jobs, `request-ends` is violated by the stranded row (the queue is down, so no task exists), which the machine check also predicts (F-S7).
+- **The LLM proposes, a person accepts.** A property states intent, not a fact about the code, so it carries a field `approval`: `proposed` or `accepted`. The LLM role `intent-invariants` (ladder strategies) proposes properties with anchors to where the intent is stated (docs, tests, comments, commits), as Specula does (F-R11); such a property is `inferred`, `source: llm`, `approval: proposed`. A property a person writes or accepts is `approval: accepted`; one a person writes from scratch has no code anchor and is `attested` with `source: user`. A proof of a property nobody accepted is not shown as a proof. LLMs make what they write permissive (F-R7), and a permissive property is easy to prove.
+- **Bounded liveness** is checked by the existing depth-first search: a cycle in the visited states on which the `to` formula never holds and every fairness condition is met is a **lasso** witness.
+
+#### 8.11.4 Proof mode
+
+To get a `sound` basis, `mentalvm explore --mode proof` runs only on records whose direction is `exact` or `over`: the full-detail behaviors from the extractor, with every predicate the extractor cannot relate to others left as a free `data` choice. This is predicate abstraction as in SLAM, and it has SLAM's cost: **spurious witnesses**. Each spurious witness becomes a repair task that adds the relation the code establishes (for example, that two predicates read the same column), anchored like every other record, after which the search runs again. F-S12 suggests the mode is workable on report-jobs: three of its four bugs follow from mechanical facts alone.
+
+#### 8.11.5 Unbounded results
+
+Search cannot reach "any number of workers". Every tool that reaches it needs an **inductive invariant**: a property that holds initially and that every step preserves (F-R9). Mental gets unbounded results from existing provers before it builds one:
+
+| Model | TLA+ |
+|---|---|
+| the configuration (8.1) | the variables |
+| `enabled` and `fire` per step kind | the disjuncts of `Next` |
+| scheduler choices | nondeterminism in `Next` |
+| fairness on a property | `WF` and `SF` |
+| a `property` | an invariant or a temporal formula |
+| a level's abstraction and step map | a refinement mapping |
+
+`mentalvm export --tla` writes the model as TLA+ for TLC, Apalache (inductive checks for fixed sizes) and TLAPS (any size). An Ivy export is the alternative under test. The LLM proposes pieces of an inductive invariant from each counterexample to induction, one blocking clause at a time, and the prover decides, as in IC3Syn. An export counts only after it agrees with `mentalvm` on the same bounds: two semantics that disagree silently would make every proof doubtful. Running TLC or Apalache needs Java, so export is an optional extra, against running locally with nothing else installed.
+
+A **cutoff** ("checking 2 workers settles every number") holds only for the class of systems its theorem covers, and none is known for systems shaped like report-jobs. Mental never assumes one.
+
+#### 8.11.6 Experiments
+
+None can be measured before the components it needs exist.
+
+| # | Question | Done when | Needs |
+|---|---|---|---|
+| **V1** | Does a TLA+ export agree with `mentalvm`? | the hand-written reference model, translated to TLA+, gives the four findings of 6.9 in TLC with the bounds of F-S11; later, the generated export and `mentalvm` give the same verdicts on every report-jobs run | milestone 1, then milestone 4 |
+| **V2** | Can a fix be proved for any size? | after the compare-and-set fix, `one-holder` is proved for any number of workers and duplicate deliveries (Apalache for fixed sizes, then TLAPS or Ivy); measured: hours of human work, LLM calls for invariant pieces | V1 |
+| **V3** | Is proof mode workable? | on report-jobs, proof mode finds the four bugs; counted: spurious witnesses and repairs until it does, and until the fixed code is clean | milestones 2 and 4 |
+| **V4** | How much of a normal build is usable for proof? | per property, the share of records it rests on that are `unknown`, before and after summary agreement | milestone 3 |
+| **V5** | Are witnesses real? | each witness of 6.9 replayed against the running code (a generated test under docker compose); counted: `reproduced` against `model-only` | milestone 4 |
+
+**Decide:** after V1 to V3, whether proof becomes a version-one feature, waits for later versions (section 12), or is dropped in favor of honest verdicts alone.
+
 ---
 
 ## 9. `mentaldbg`: debugging and showing
@@ -1175,6 +1291,13 @@ Designs that exist in outline. None is part of version one.
 - Whether a computed verdict on each move (atomic, guarded or non-atomic, by Lipton's reduction over its effects) is a good enough pointer to where search should look for races ([multi-level models, 5.3](research/multi-level-models/report.md#53-from-runs-to-the-model-step-classes)).
 - Replaying a schedule across model versions has no precedent and may confuse when IDs change.
 
+**Properties and proof** (8.11)
+- Whether the direction of an LLM-written summary can ever be more than `unknown` without a mechanical full graph to compare it with.
+- How many spurious witnesses proof mode gives on real code, and whether their repairs stay small (experiment V3).
+- Whether systems shaped like report-jobs (workers, a queue, rows) have a cutoff, so that a small bounded search settles every size.
+- Whether a person-written property fits the provenance values at all, or needs its own.
+- Which fairness the scheduler should assume when a property states none.
+
 **The debugger and viewer**
 - What the viewer looks like. This needs its own study, probably with competing designs.
 - What exactly is sent to the agent as context from the focus.
@@ -1191,5 +1314,5 @@ Designs that exist in outline. None is part of version one.
 
 - [Glossary](glossary.md): every term used here.
 - [Findings](findings.md): the facts cited as F-numbers.
-- Research reports: [static analysis and LLM system models](research/static-analysis-llm-system-models/report.md), [model interpreter semantics](research/model-interpreter-semantics/report.md), [abstraction levels](research/abstraction-levels/report.md), [multi-level models](research/multi-level-models/report.md), [levels in other domains](research/levels-in-other-domains/report.md).
+- Research reports: [static analysis and LLM system models](research/static-analysis-llm-system-models/report.md), [model interpreter semantics](research/model-interpreter-semantics/report.md), [abstraction levels](research/abstraction-levels/report.md), [multi-level models](research/multi-level-models/report.md), [levels in other domains](research/levels-in-other-domains/report.md), [verification and proof](research/verification-and-proof/report.md).
 - [Ladder strategies](ladder-strategies.md): how `mentalc` builds the level ladder in interchangeable ways, and the experiments that compare them.

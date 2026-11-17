@@ -232,6 +232,18 @@ The summary must agree with the full graph; a check enforces it.
 
 **Replay verdict.** The result of replaying a stored schedule on a changed model, per choice: *matched*, *infeasible* (the choice no longer exists) or *diverged*.
 
+**Property.** A statement about every run that a search or a prover checks, written in one level's words. *Safety* says nothing bad happens ("at most one worker holds a report"); *liveness* says something good eventually happens ("every requested report ends `DONE` or `FAILED`"). Some properties follow from the model's form and need nobody to write them: no deadlock, no illegal write, no message nothing handles. The others are `property` records, proposed by the LLM or written by a person, and accepted by a person. An *invariant* is a safety property about state.
+
+**Fairness.** An assumption that the scheduler does not starve a step forever, needed to check liveness. *Weak:* a step that stays enabled eventually happens. *Strong:* a step that is enabled again and again eventually happens. *Example:* without weak fairness on the workers, "every report ends" fails because a worker may simply never run.
+
+**Over- and under-approximation.** The direction in which a record may differ from the code. A record that *over-approximates* allows everything the code can do, and possibly more: a predicate left as a free choice where the code links it to another. One that *under-approximates* may allow less: two code steps fused into one, so that nothing can run between them. A "holds" result carries over to the code only if every record it rests on over-approximates or is exact; a violation carries over only if its steps are possible in the code.
+
+**Verdict of a property.** *Violation*, with a witness that is *model-only* or *reproduced* in the code; or *holds*, with an *extent* (*bounded*, with the bounds, or *unbounded*, with the prover) and a *basis* (*sound* if every record it rests on over-approximates or is exact, otherwise *unsound*, naming the records). Only *holds, unbounded, sound* is called a **proof**, and always with its assumptions.
+
+**Inductive invariant.** A property that holds in the initial state and that every step preserves. It is how a property is proved for runs of any length and any number of instances, which no bounded search can do. *Example:* "for each report, at most one activation is between claim and mark", once the claim is a compare-and-set.
+
+**Cutoff.** A theorem that checking a small instance of a system settles every size ("two processes suffice"). It holds only for the class of systems the theorem covers.
+
 ## Showing
 
 **Session.** One loaded model with its runs, breakpoints and focus, held by `mentaldbg`. The viewer, the coding agent and the terminal all attach to the same session.
