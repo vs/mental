@@ -60,7 +60,7 @@ Also decided by the owner on 2026-11-14, when these guidelines were accepted:
 |---|---|
 | `model` | none |
 | `extract` | none (`mentalc` hands it file contents and the compose JSON) |
-| `mentalc` | `main.rs`, `cli.rs`, `repo.rs`, `cache.rs`, `ledger.rs`, `backend/*.rs` |
+| `mentalc` | `main.rs`, `cli.rs`, `repo.rs`, `cache.rs`, `ledger.rs`, `backend/api.rs` |
 | `mentalvm` | `main.rs` |
 
 Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixture files.

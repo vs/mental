@@ -256,7 +256,7 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 - **Rule:** `repo.rs` runs `docker compose config` with a time limit of 60 s; when it passes, `mentalc` kills the process and exits 2 with an error that names the command and says to run it by hand to see why it stalls (a stopped Docker daemon, a remote `include:` being fetched). A non-zero exit is also exit 2, with the command's stderr. The limit is a parameter of the function, not a setting.
 - **Why:** the standard library's `wait` has no timeout, so a stalled command would hang `mentalc build` with no message; `compose config` normally answers in well under a second.
 - **Source:** spec 5.2 (the one process `mentalc` starts); principle "every external call has a timeout and a failure path".
-- **Enforced by:** a test in `repo.rs` that runs a command which never exits with a short limit and asserts the kill and the error text; a test of a command that exits non-zero.
+- **Enforced by:** a test in `repo/tests.rs` that runs a command which never exits with a short limit and asserts the kill and the error text; a test of a command that exits non-zero.
 
 ## Open questions for the owner
 

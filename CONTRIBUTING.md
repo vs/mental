@@ -76,7 +76,7 @@ Conventional commits: `type(scope): description`.
 | extract | unit, contract |
 | mentalc | unit, integration, end-to-end, contract |
 
-Put each level's tests under `tests/<level>/` in the component.
+Unit tests sit in a `tests.rs` beside the module they test (`#[cfg(test)] mod tests;`), and behavior through the public API in `<crate>/tests/*.rs`, one file per level or area ([T1](docs/guidelines/testing.md#t1-where-tests-live)); Cargo finds no test in a deeper folder of `tests/`.
 
 A test that covers an acceptance check names its requirement id (e.g. `R1`) in its name, so each check in docs/alpha/specification.md traces to a test.
 
@@ -185,7 +185,7 @@ A check skipped or loosened in one place, or a baseline loosened, needs a row he
 | `mentalc/src/repo.rs` | `clippy::disallowed_methods` | the file-system edge and the one process, `docker compose config` ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `mentalc/src/cache.rs` | `clippy::disallowed_methods` | writes the answer cache under `.mental/` ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `mentalc/src/ledger.rs` | `clippy::disallowed_methods` | appends the call ledger under `.mental/` ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
-| `mentalc/src/backend/*.rs` | `clippy::disallowed_methods` | the network edge of the `api` backend ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
+| `mentalc/src/backend/api.rs` | `clippy::disallowed_methods` | the network edge of the `api` backend ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `**/tests/**` | `clippy::disallowed_methods` | tests make temp directories and read fixture files ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `**/tests.rs` | `clippy::disallowed_methods` | unit tests make temp directories and read fixture files ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `docs/research/*/experiments/results/` | `typos` | recorded output of tools and LLMs (hashes, raw answers, prompts as sent); editing it would falsify the record, so `_typos.toml` excludes it |

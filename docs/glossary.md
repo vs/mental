@@ -265,6 +265,8 @@ The summary must agree with the full graph; a check enforces it.
 
 **Witness.** A shortest run found by search that reaches a bad state, with its schedule, so it can be replayed. *Example:* the run in which both workers read `PENDING` before either writes `RUNNING`.
 
+**Reference model.** The hand-written records of an example system, in `examples/<system>/model/`, that a build is compared against. It is a specification, never rewritten by a tool, and it grows by milestone: each milestone writes, before its code, the records of the kinds it is the first to produce. *Example:* milestone 1 writes report-jobs' build unit, pins, artifacts, launches and configuration inputs.
+
 **Stuck outcome.** Why a run cannot continue: a **model gap** (a message nothing handles), a **deadlock**, an **illegal write**, or a **zero-time cycle**.
 
 **Bound exceeded.** The result when one of the tool's own hard caps is hit (search depth, minimizer rounds, a fixpoint). It says nothing about the model and is never reported as "none within these bounds".

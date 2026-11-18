@@ -26,7 +26,7 @@
   <text class="m" x="310" y="88">boundary + interior</text>
   <text class="m" x="310" y="140">provided port</text>
   <text class="m" x="310" y="156">POST /reports</text>
-  <rect class="port" x="282" y="194" width="16" height="16" rx="3"/>
+  <rect class="port" x="282" y="194" width="16" height="16" rx="6"/>
   <path class="flow" d="M298,202 H358" marker-end="url(#a)"/>
 
   <rect class="box" x="360" y="174" width="130" height="56" rx="12"/>
@@ -41,10 +41,10 @@
   <text class="m" x="574" y="158" text-anchor="end">storage</text>
   <text class="m" x="574" y="238" text-anchor="end">queue</text>
   <text class="m" x="574" y="318" text-anchor="end">repo</text>
-  <rect class="port" x="582" y="80" width="16" height="16" rx="3"/>
-  <rect class="port" x="582" y="160" width="16" height="16" rx="3"/>
-  <rect class="port" x="582" y="240" width="16" height="16" rx="3"/>
-  <rect class="port" x="582" y="320" width="16" height="16" rx="3"/>
+  <rect class="port" x="582" y="80" width="16" height="16" rx="6"/>
+  <rect class="port" x="582" y="160" width="16" height="16" rx="6"/>
+  <rect class="port" x="582" y="240" width="16" height="16" rx="6"/>
+  <rect class="port" x="582" y="320" width="16" height="16" rx="6"/>
   <text class="m" x="575" y="358" text-anchor="end">required ports</text>
 
   <path class="flow" d="M598,88 H730" marker-end="url(#a)"/>
@@ -57,19 +57,19 @@
   <text class="m" x="665" y="320" text-anchor="middle">file system calls</text>
 
   <rect class="box" x="740" y="60" width="240" height="56" rx="12"/>
-  <rect class="port" x="732" y="80" width="16" height="16" rx="3"/>
+  <rect class="port" x="732" y="80" width="16" height="16" rx="6"/>
   <text class="h" x="758" y="84">Postgres</text>
   <text class="m" x="758" y="104">sql: tables reports, orders</text>
   <rect class="box" x="740" y="140" width="240" height="56" rx="12"/>
-  <rect class="port" x="732" y="160" width="16" height="16" rx="3"/>
+  <rect class="port" x="732" y="160" width="16" height="16" rx="6"/>
   <text class="h" x="758" y="164">S3 bucket</text>
   <text class="m" x="758" y="184">object API: put · get</text>
   <rect class="box" x="740" y="220" width="240" height="56" rx="12"/>
-  <rect class="port" x="732" y="240" width="16" height="16" rx="3"/>
+  <rect class="port" x="732" y="240" width="16" height="16" rx="6"/>
   <text class="h" x="758" y="244">Redis</text>
   <text class="m" x="758" y="264">queue: reports</text>
   <rect class="box" x="740" y="300" width="240" height="56" rx="12"/>
-  <rect class="port" x="732" y="320" width="16" height="16" rx="3"/>
+  <rect class="port" x="732" y="320" width="16" height="16" rx="6"/>
   <text class="h" x="758" y="324">Git repository</text>
   <text class="m" x="758" y="344">files: refs · objects</text>
 
