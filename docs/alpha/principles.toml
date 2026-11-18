@@ -961,12 +961,6 @@ globs = []
 stop = false
 
 [[baselines]]
-id = "typos"
-dir = "."
-command = "typos --format brief"
-pattern = "^(?P<file>[^:\\s]+):\\d+:\\d+: error: `(?P<rule>[^`]+)`"
-
-[[baselines]]
 id = "markdown"
 dir = "."
 command = "rumdl check ."

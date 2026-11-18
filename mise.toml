@@ -32,7 +32,7 @@ run = "python3 .claude/alpha/checks/secret_scan.py betterleaks dir --no-banner -
 run = "osv-scanner scan source --no-ignore ."
 
 [tasks."check:typos"]
-run = "python3 .claude/alpha/checks/ratchet.py typos"
+run = "typos"
 
 [tasks."check:markdown"]
 run = "python3 .claude/alpha/checks/ratchet.py markdown"

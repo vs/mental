@@ -190,3 +190,4 @@ A check skipped or loosened in one place, or a baseline loosened, needs a row he
 | `mentalc/src/backend/*.rs` | `clippy::disallowed_methods` | the network edge of the `api` backend ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `**/tests/**` | `clippy::disallowed_methods` | tests make temp directories and read fixture files ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `**/tests.rs` | `clippy::disallowed_methods` | unit tests make temp directories and read fixture files ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
+| `docs/research/*/experiments/results/` | `typos` | recorded output of tools and LLMs (hashes, raw answers, prompts as sent); editing it would falsify the record, so `_typos.toml` excludes it |
