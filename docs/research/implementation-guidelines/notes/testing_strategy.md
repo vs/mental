@@ -18,9 +18,11 @@ Mental context comes from `docs/specification.md` sections 3, 4.9, 6.7, 8.2–8.
 ## Which SQLite practices transfer to Rust, and how?
 
 ### Takeaway
+
 Almost every SQLite practice has a cheap Rust equivalent, with three exceptions: TH3's scale, the 200-item manual release checklist, and continuous fuzzing farms.
 
 The core that carries over:
+
 - 100% branch coverage measured by a tool;
 - countdown fault injection (fail the N-th call, raise N until the operation succeeds), run in transient and persistent modes;
 - boundary tests at, below and above each limit;
@@ -31,6 +33,7 @@ The core that carries over:
 In Rust the countdown runs over a trait the product already has, the LLM backend. Mutation testing (cargo-mutants) replaces SQLite's assembly-level branch-flipping script.
 
 ### Cited findings
+
 - SQLite's library is 155.8 KSLOC and its test code is 92,053 KSLOC, "590 times as much". The TCL suite has 51,445 distinct test cases. TH3 has 50,362, runs about 2.4 million test instances, and achieves "100% branch test coverage (and 100% MC/DC test coverage)" — [SQLite testing][sqlite-testing]
 - **OOM procedure:** an instrumented malloc is "rigged to fail after a certain number of allocations". The test fails the first allocation, checks the error is handled, increments the counter and repeats until the operation completes with no failure. Each sweep runs twice: once failing one time (transient) and once failing every call after the first (persistent) — [SQLite testing][sqlite-testing]
 - The injector is a countdown, `faultsimStep()`. It decrements `iCountdown`, fails once the countdown reaches zero, counts `nFail` and `nBenign`, and turns itself off after `nRepeat` failures — [sqlite src/test_malloc.c L65-86][sqlite-malloc]
@@ -66,17 +69,20 @@ In Rust the countdown runs over a trait the product already has, the LLM backend
 | Bloat for a one-person project | TH3-scale suites; MC/DC (the `--mcdc` flag exists but is unstable); OSS-Fuzz or 24/7 fuzzing; 200-item manual checklists; running under several compilers and endiannesses | skip |
 
 ### Gaps
+
 - I did not verify how rustc's branch coverage handles `assert!`/`debug_assert!` expansions, or `?` desugaring. If they count as branches, 100% branch coverage needs either a convention (invariant checks live in `debug_assert!` and coverage runs in release-with-debug-assertions-off?) or `#[coverage(off)]` helpers. Settle this with a 20-line spike before fixing the rule.
 - No tool for diff branch coverage was confirmed. The cargo-llvm-cov README does not cover diff coverage, and lcov output reaches Codecov as lines only. A small script that intersects `git diff` hunks with llvm-cov JSON branch regions may be needed. Not researched.
 
 ## How do top Rust projects structure tests so they stay fast, readable and data-driven?
 
 ### Takeaway
+
 The pattern that recurs is "a test is input text plus expected output text". Small cases are inline strings run through one `check(input, expect![..])` helper per feature. Larger cases are fixture files next to expected files, walked by one loop. The harness checks cross-cutting invariants on every fixture for free. Tests concentrate on a few stable API boundaries.
 
 On snapshot tools: expect-test (inline, update with `UPDATE_EXPECT=1`, no extra tool) suits small outputs. insta or snapbox suit separate `.snap` files with a review tool. Either way, CI rejects orphaned snapshots.
 
 ### Cited findings
+
 - rust-analyzer: "testing is based on *snapshot tests*: a test is a piece of input text, usually Rust code, and some output text". It uses `expect-test` plus a custom fixture DSL. Inside fixtures, `$0` marks a cursor and `// ^^^ label` annotates the line above. Expected output is regenerated with `UPDATE_EXPECT=1` — [r-a docs/book/src/contributing/testing.md][ra-testing]
 - rust-analyzer's fixture mini-language writes several files and crates in one string: `//- minicore: flag1, flag2`, `// /lib.rs crate:foo deps:bar` — [r-a testing.md][ra-testing]
 - "Architecture Invariant: rust-analyzer tests do not use libcore or libstd. All required library code must be a part of the tests. This ensures fast test execution" — [r-a architecture.md L412-414][ra-arch]
@@ -106,6 +112,7 @@ On snapshot tools: expect-test (inline, update with `UPDATE_EXPECT=1`, no extra 
 - TigerBeetle's `marks.zig` ties a log line in production code to one test that hits it. The stated goal is "traceability", to "trace production code to a single minimal hand-written test which explains why the code needs to exist" — [tigerbeetle src/testing/marks.zig][tb-marks]
 
 ### Inferences: the playbook for layers, fixtures and snapshots
+
 **Test layers and where each lives:**
 
 | Layer | Where | What | Speed |
@@ -119,18 +126,21 @@ On snapshot tools: expect-test (inline, update with `UPDATE_EXPECT=1`, no extra 
 | Fuzz | `fuzz/` (cargo-fuzz, its own workspace) | readers only. Saved crashes go back into `tests/data/` as fixtures | outside `cargo test` |
 
 **Fixture conventions:**
+
 - Inline raw strings when the input is under about 30 lines. Otherwise use a file pair `name.<ext>` plus `name.expected`.
 - One concept per fixture, minimized as rust-analyzer requires.
 - The layout of `tests/data/ok/` and `tests/data/err/` carries meaning: `ok` asserts no diagnostics, `err` asserts at least one. This is rust-analyzer's `parse_ok`/`parse_err` split.
 - For models, a fixture is a tiny `.mental/model/` directory of sorted JSONL. Build it from a small text DSL, like rust-analyzer's multi-file fixture, so that a test reads as one string.
 
 **Snapshot policy:**
+
 - Use `expect-test` everywhere: inline `expect![[...]]` for small outputs, `expect_file!` for large ones. It needs no extra tool (`UPDATE_EXPECT=1`), which matches "compact, no bloat". insta only adds a review UI that a solo maintainer doesn't need.
 - Never let a snapshot update the golden. The hand-written `examples/report-jobs` reference model is a golden, not a snapshot: it is compared with plain `assert_eq!` plus a readable diff, never with `expect_file!`.
 - CI runs with `UPDATE_EXPECT` unset and fails on any difference. A tidy test fails on orphaned `.expected` files, the equivalent of ruff's `--unreferenced reject`.
 - Snapshot only human-readable renderings: sorted JSONL, rendered diagnostics, traces one step per line. Never `Debug` output of internal structs, which churns on refactors.
 
 **Readability:**
+
 - One behavior per test, named after the behavior.
 - A test body is `check(input, expected)`. All plumbing lives in the helper.
 - Use `#[track_caller]` on helpers.
@@ -140,25 +150,30 @@ On snapshot tools: expect-test (inline, update with `UPDATE_EXPECT=1`, no extra 
 **Coverage marks (`cov_mark`):** optional. With a 100% diff branch-coverage gate and diff mutants, marks add production lines for little extra benefit. Use them only where a branch is subtle and several tests could plausibly cover it, so a reader can jump from the code to its canonical test.
 
 ### Gaps
+
 - I did not compare expect-test and insta on CI speed or compile time. The recommendation of expect-test rests on its smaller footprint and rust-analyzer's long use of it, not on measurement.
 
 ## How to inject failures (file I/O, HTTP, LLM backend errors) without adding production complexity?
 
 ### Takeaway
+
 Put each fault at a seam the product already needs and inject it there.
+
 - For Mental the seam is the `LlmBackend` trait: the spec already makes the backend a setting with `agent`, `api`, local and headless variants. A `Scripted` backend replays recorded answers, and a `Countdown<B>` wrapper fails the k-th call.
 - File I/O stays at the edge. A pure core works on in-memory text, with a thin read and write shell, so I/O faults come down to a few error paths at the boundary.
 - mentalvm has no I/O at all. Its faults (drop, duplicate, timeout) are model-level `env` choices that the search enumerates, which is Mental's own deterministic simulation.
 
 ### Cited findings
+
 - SQLite injects faults through pluggable interfaces it already ships: `sqlite3_config(SQLITE_CONFIG_MALLOC,...)` and the VFS. No test-only branches are added to core logic — [SQLite testing][sqlite-testing]; [sqlite src/test_malloc.c][sqlite-malloc]
 - wasmtime's OOM injection is a test `GlobalAlloc` (`OomTestAllocator`) with a thread-local state machine `OutsideOomTest → Counting → OomOnAlloc → DidOom`. Production code is unchanged — [wasmtime crates/fuzzing/src/oom.rs][wt-oom]
 - TigerBeetle's VOPR: "all non-deterministic parts of the system are stubbed out. This includes the clock, network, and disk operations". A seed sets the fault parameters (drop, reorder, partition, corrupt reads and writes), and "the seed and Git commit hash can be used to replay back the exact simulation" — [tigerbeetle docs/internals/vopr.md][tb-vopr]
 - The simulator also hosts specific hand-written scenario tests "that are hard or slow to replicate through random simulation" (`src/vsr/replica_test.zig`) — [tigerbeetle docs/internals/vopr.md][tb-vopr]
 - turmoil injects "latency, drops, partitions, crashes, torn writes" into simulated network and fs crates that replace `tokio::net` and `std::fs`, "under manual control or a seeded RNG". `FsConfig` has `block_size` for torn writes and `sync_probability` — [turmoil README.md][turmoil-readme]; [turmoil crates/turmoil-fs/src/lib.rs][turmoil-fs]
-- cargo-mutants' `error_values` makes functions that return `Result` produce `Err(...)`. This flags code where "there are _only_ tests for the error cases and not for the Ok case", and the reverse — [cargo-mutants book/src/error-values.md][cm-error]
+- cargo-mutants' `error_values` makes functions that return `Result` produce `Err(...)`. This flags code where "there are *only* tests for the error cases and not for the Ok case", and the reverse — [cargo-mutants book/src/error-values.md][cm-error]
 
 ### Inferences
+
 - **The LLM seam.** `trait LlmBackend { fn call(&mut self, task: &Task) -> Result<Answer, BackendError>; }` exists anyway (spec 6.5). Test implementations live under `#[cfg(test)]` or in a dev-only `testkit` module:
   - `Scripted`: answers keyed by task hash, loaded from a fixture file. The spec 6.6 call ledger (`calls.jsonl`) can serve as that fixture, so recorded real runs turn into deterministic tests at no extra cost.
   - `Countdown { inner, fail_at: k, mode: Once | Persistent, error }`: SQLite's procedure.
@@ -176,16 +191,19 @@ Put each fault at a seam the product already needs and inject it there.
 - Don't use mocking crates (mockall and similar). A hand-written 20-line `Scripted` backend is easier to read and has no macros.
 
 ### Gaps
+
 - Mental's backend trait does not exist yet. Whether `call` is sync or async changes the countdown wrapper's shape; wasmtime's has to handle both.
 
 ## How to use mutation testing so it is cheap in CI and meaningful?
 
 ### Takeaway
+
 Run `cargo mutants --in-diff git.diff` on every PR and fail on any missed mutant. Use a `mutants` cargo profile with no debug info, `--in-place` in CI, `error_values` set for the crate's error type, and skip doctests. Skips must be visible in code (`#[mutants::skip]` plus a reason comment) or listed with a reason in `.cargo/mutants.toml`.
 
 Diff runs miss tests weakened elsewhere: the diff is matched against the code under test only, so a diff that only changes tests runs no mutants. Add an optional periodic full run. A fast suite matters most, because cost is (number of mutants) × (build plus test time).
 
 ### Cited findings
+
 - `--in-diff` "tests only mutants that overlap with regions changed in the diff". Caution from the docs: "edits in one region cause code in a different region or a different file to no longer be well tested", and "a diff that only deletes or changes test code won't cause any mutants to run" — [cargo-mutants book/src/in-diff.md][cm-indiff]
 - The example workflow runs `git diff origin/${{ github.base_ref }}.. | tee git.diff` then `cargo mutants --no-shuffle -vV --in-diff git.diff`, and uploads `mutants.out` — [cargo-mutants examples/workflows/in-diff.yml][cm-wf]
 - CI recommendations: use `--in-place` to avoid copying the tree; install with `taiki-e/install-action`; GitHub annotations appear automatically — [cargo-mutants book/src/ci.md][cm-ci]
@@ -199,6 +217,7 @@ Diff runs miss tests weakened elsewhere: the diff is matched against the code un
 - SQLite's equivalent of a skip annotation is the `OPTIMIZATION-IF-TRUE/FALSE` comment, needed because flipping a branch that exists only for speed (`strHash` `c!=0`) is still correct — [SQLite testing][sqlite-testing]
 
 ### Inferences
+
 - **Mental CI job:** `cargo mutants --in-diff git.diff --in-place --profile mutants -- --all-targets`, and fail on missed mutants (the alpha kit gate). A `--timeout` multiple protects against the mentalvm search loops that mutants will inevitably make hang.
 - **mentalvm hangs:** mutating loop bounds in search, minimization or POR will produce timeouts. Rather than skipping, enforce every bound in code with a hard cap that returns a "bound exceeded" outcome (TigerBeetle: "Put a limit on everything"). A mutant then fails fast instead of hanging.
 - **Performance-only code** (state hashing caches, POR as a speed-up): this is the SQLite `strHash` case. Mutating POR to "no reduction" is behavior-preserving except for state counts. Make it detectable by asserting exact explored-state counts on tiny models (stateright-style golden counts), instead of skipping.
@@ -206,16 +225,19 @@ Diff runs miss tests weakened elsewhere: the diff is matched against the code un
 - **Periodic full run:** a weekly scheduled full `cargo mutants` (with `--shard` if needed) catches erosion that diff runs cannot see. It is optional for a one-person repo; turn it on when the suite is under about 30 s.
 
 ### Gaps
+
 - No measurements of how long cargo-mutants takes on a workspace like Mental's. The time budget must come from Mental's own suite speed.
 
 ## What should be fuzzed vs property-tested in each crate?
 
 ### Takeaway
+
 - **Property tests** (proptest, inside `cargo test`, deterministic thanks to committed regressions) suit structured invariants: round-trips, canonical forms, oracle agreement and algebraic laws.
 - **Fuzzing** (cargo-fuzz, outside `cargo test`) suits every reader of untrusted bytes. Its oracle should be "no panic, plus a round-trip or idempotence check", not just "no crash".
 - For a solo project: build the fuzz targets on every PR, run them briefly only when a reader changes, and turn every crash into a committed fixture.
 
 ### Cited findings
+
 - toml_edit's fuzz target parses, prints and re-parses. It asserts the re-parse succeeds and that `doc.to_string()` is stable (print, parse, print gives the same text). Non-UTF-8 input is dropped with `Corpus::Reject` — [toml crates/toml_edit_fuzz/parse_document.rs][toml-fuzz]
 - toml_edit property tests in `src/encode.rs`: for every printable string `"\\PC*"`, `Value::from(s).to_string()` must parse back, and so must `Key::new(s)`. Failures print the input and encoded value in fenced blocks — [toml crates/toml_edit/src/encode.rs L377-425][toml-encode]
 - ruff has fuzz targets for parse idempotency, fix validity, formatter idempotency and formatter validity. The idempotency harness also detects "unsteady state", where results only settle on the third round-trip — [ruff fuzz/fuzz_targets/ruff_parse_idempotency.rs][ruff-fuzz-idem]; [ruff fuzz/README.md][ruff-fuzz]
@@ -246,16 +268,19 @@ Diff runs miss tests weakened elsewhere: the diff is matched against the code un
 - Commit `proptest-regressions/` and minimized fuzz crashes, which become `tests/data/err/fuzz-<hash>.*` fixtures. This is SQLite's `fuzzcheck` idea at zero infrastructure cost.
 
 ### Gaps
+
 - Which Python parser `extract` will use (tree-sitter, ruff_python_parser or another) is not settled. A third-party parser's own crashes are out of scope, but the facts layer must survive its error recovery.
 
 ## How to test non-trivial algorithms (guard partition checks, model-checker search, POR) differentially against a simple reference implementation?
 
 ### Takeaway
+
 For each clever algorithm, keep a dumb reference implementation of about 30 lines in the test module. Compare the two on exhaustively enumerated tiny inputs and on proptest-generated small inputs, the way wasmtime checks against wasmi and v8, and the way the proptest state machine compares against a reference model.
 
 Check witnesses, not just verdicts: a reported overlap point must satisfy both guards, and a race schedule must replay into the violation. Pin exact state counts on tiny models, as stateright does, so that performance optimizations like POR, symmetry and caching cannot silently change what is explored.
 
 ### Cited findings
+
 - wasmtime's `oracles::differential` runs the same generated module on `lhs_engine` and `rhs_engine` (`DiffEngine` implementations for wasmi, v8 and wasmtime with other settings). Results must match `assert_eq!(lhs, rhs)`, and errors must match through `assert_error_match` — [wasmtime crates/fuzzing/src/oracles.rs L460-604][wt-oracles]; [oracles/diff_wasmi.rs, diff_v8.rs][wt-oracles-dir]
 - wasmtime warns that differential fuzzing only works where the semantics are fully specified. WASIp1 "is not suitable for differential fuzzing across engines" because "there is no great oracle" — [wasmtime docs/contributing-fuzzing.md L113-121][wt-fuzzdoc]
 - stateright asserts exact state counts for BFS and DFS on the same model (`256 * 256`), and with and without symmetry reduction (9 versus 6). It also asserts both the specific discovery path and that another valid path is accepted (`assert_discovery("solvable", vec![Guess::IncreaseY; 27])`) — [stateright src/checker/bfs.rs L442-475][sr-bfs]; [dfs.rs L560-586][sr-dfs]
@@ -265,6 +290,7 @@ Check witnesses, not just verdicts: a reported overlap point must satisfy both g
 - TigerBeetle's exhaustive generator enumerates every choice sequence within bounds by incrementing the rightmost choice that is still below its bound, like an odometer — [tigerbeetle src/testing/exhaustigen.zig][tb-exh]
 
 ### Inferences: differential oracles for Mental
+
 - **Guard algebra (spec 6.7: cover everything, no overlap).** The reference enumerates all 2^n assignments of the n atoms in the guards (n ≤ 10 in tests) and evaluates each guard. Production is whatever is clever (BDD, normalization, SAT).
   - Properties: `prod.verdict == ref.verdict`.
   - If production reports a gap, its witness assignment satisfies no guard.
@@ -289,25 +315,30 @@ Check witnesses, not just verdicts: a reported overlap point must satisfy both g
 - Keep each reference implementation inside the `tests.rs` of the module it checks, or in a `#[cfg(test)] mod reference;`. That way it is never shipped, never counted toward production coverage, and never mutated.
 
 ### Gaps
+
 - How big tiny models can get before the naive enumerator becomes too slow for the speed budget is unknown until mentalvm exists. Pick bounds empirically so the suite stays under budget.
 - There is no external oracle comparable to wasmi for Mental's semantics. The P language's checker is a candidate for spot-checking a few hand-translated models but is not researched here (another note covers P semantics).
 
 ## How to keep tests deterministic and within a speed budget?
 
 ### Takeaway
+
 Determinism comes from four things:
+
 - no wall clock, network or real LLM in tests;
 - seeded randomness with the seed printed;
 - committed proptest regressions;
 - sorted output everywhere, since the stored model is sorted JSONL by design.
 
 Speed comes from:
+
 - tiny fixtures (rust-analyzer's no-libstd invariant);
 - few heavy tests, gated locally but always run in CI;
 - a fast suite, which multiplies into cheap mutation testing.
 
 ### Cited findings
-- VOPR is "deterministic based on a _seed_ number and the Git commit". Time is simulated: "One minute of VOPR time is equivalent to days of real-world testing" — [tigerbeetle docs/internals/vopr.md][tb-vopr]
+
+- VOPR is "deterministic based on a *seed* number and the Git commit". Time is simulated: "One minute of VOPR time is equivalent to days of real-world testing" — [tigerbeetle docs/internals/vopr.md][tb-vopr]
 - proptest replays persisted failing seeds before generating new cases. It stores the seed rather than the value because "there is no way to determine whether any given value is actually within the domain of the strategy" — [proptest failure-persistence.md][pt-persist]
 - rust-analyzer's fast-test invariant (fixtures carry their own minimal core library), its slow-test gate, and the `is_ci()` behavior of `ensure_file_contents` — [r-a architecture.md][ra-arch]; [r-a test-utils/src/lib.rs][ra-tu]
 - cargo-mutants needs a tree "where `cargo test` passes reliably when copied to a temporary directory". Flaky or location-dependent tests break mutation testing — [cargo-mutants using-results.md][cm-results]
@@ -315,6 +346,7 @@ Speed comes from:
 - Spec 4.9 says the model is "one record per line, sorted by ID", and spec 8.2 says run-time IDs "are derived from the step that created them, so replay and comparison stay stable" — `docs/specification.md`
 
 ### Inferences
+
 - **Rules:**
   - Tests never read the clock: time-dependent code takes a `now` parameter.
   - Randomness comes only from proptest or from an explicit `seed: u64` that appears in the failure message.
@@ -329,14 +361,17 @@ Speed comes from:
 - Opt-level 3 for proptest dependencies in the test profile. Use the `mutants` profile with `debug = "none"`.
 
 ### Gaps
+
 - The numeric budgets above are proposals, not taken from any source. Calibrate them once the crates exist.
 
 ## Candidate testing guidelines (enforceable) and per-crate notes
 
 ### Takeaway
+
 About twenty rules cover the alpha kit's exhaustive-testing principle. Each is enforced mechanically where possible: a tidy test inside `cargo test`, the CI coverage and mutants gates, clippy config, or a reviewer checklist item. Most cost nothing beyond discipline.
 
 ### Cited findings
+
 - Rule sources are cited inline in the table below. All were introduced in the previous sections.
 
 ### Inferences: candidate guidelines
@@ -367,6 +402,7 @@ About twenty rules cover the alpha kit's exhaustive-testing principle. Each is e
 | T22 | Speed budget: the workspace suite stays under about 15 s, no test over 1 s, heavy tests gated locally but run in CI | Mutation cost is multiplied by suite time | [cargo-mutants performance][cm-perf]; [r-a slow tests][ra-tu] | nextest `slow-timeout`/`terminate-after`; CI timing |
 
 **Bloat to avoid for a one-person project:**
+
 - insta plus `cargo insta review`, when expect-test does the job;
 - mdtest-style Markdown test frameworks;
 - coverage marks on every branch (use them sparingly);
@@ -379,6 +415,7 @@ About twenty rules cover the alpha kit's exhaustive-testing principle. Each is e
 - full weekly mutation runs, until the suite is fast.
 
 ### Inferences: per-crate notes
+
 - **`model`** (the most exhaustively testable crate; pure, no I/O)
   - Reader and writer: proptest round-trip and canonical form, plus a cargo-fuzz target.
   - Semantic IDs: parse/display round-trip; ordering laws (sorting is total and consistent with `Ord`).
@@ -412,6 +449,7 @@ About twenty rules cover the alpha kit's exhaustive-testing principle. Each is e
   - Run the suite, or the replay subset, on the wasm32 target in CI, because this crate ships to WebAssembly.
 
 ### Gaps
+
 - The exact coverage interaction with `debug_assert!` and the diff branch-coverage tooling (see the first section's gaps) must be settled before T15 and T20 can be finalized together.
 - Whether `extract`'s facts format has a canonical writer (and therefore a round-trip property) depends on design decisions not yet made.
 

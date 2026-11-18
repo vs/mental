@@ -9,9 +9,11 @@ Pages that could not be opened: `blog.jetbrains.com` (HTTP 403 on three posts; w
 ## 1. Cargo
 
 ### Takeaway
+
 The `cargo metadata` page says nothing about build scripts or proc macros; build scripts are documented as running "just before building the package", and `cargo metadata` does not build. The real exposure is indirect: a repository-supplied `.cargo/config.toml` is read from the current directory and all parents, and `rust-toolchain.toml` selects the toolchain that the `cargo` proxy runs (with auto-install when `RUSTUP_AUTO_INSTALL=1`).
 
 ### Cited Findings
+
 - NOT FOUND (explicit statement): the `cargo metadata` page has no sentence on build scripts or proc macros. Its description is only: "Output JSON to stdout containing information about the workspace members and resolved dependencies of the current package." — [cargo metadata](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html)
 - CONFIRMED (build scripts run at build time): "Placing a file named `build.rs` in the root of a package will cause Cargo to compile that script and execute it just before building the package." — [Build Scripts](https://doc.rust-lang.org/cargo/reference/build-scripts.html)
 - CONFIRMED `--no-deps`: "Output information only about the workspace members and don't fetch dependencies." — [cargo metadata](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html)
@@ -31,20 +33,24 @@ The `cargo metadata` page says nothing about build scripts or proc macros; build
 - CONFIRMED (`RUSTUP_TOOLCHAIN` outranks the file): "If set, will override the toolchain used for all rust tool invocations." — [rustup environment variables](https://rust-lang.github.io/rustup/environment-variables.html)
 
 ### Inferences
+
 - `cargo metadata` does not compile, so `build.rs` and proc macros do not run; this follows from the build-script page ("just before building the package") plus the metadata description, not from an explicit sentence.
 - Whether `cargo metadata` itself invokes `rustc` (and therefore a repository-configured `build.rustc` / `rustc-wrapper`) is not stated on either page. Treat it as a possible execution path until tested: safest is to run with a controlled `CARGO_HOME`, `RUSTUP_TOOLCHAIN` set explicitly, `RUSTUP_AUTO_INSTALL=0`, and `--config` overrides, or to parse `Cargo.toml` / `Cargo.lock` directly.
 - Without `--no-deps` and without `--offline`, `cargo metadata` may download registry index and crates; with a repository `[source]` replacement or credential provider this contacts a repository-chosen host and may run a repository-chosen program.
 
 ### Gaps
+
 - No primary sentence found that says "cargo metadata does not run build scripts" or that says whether it invokes `rustc` for target info.
 - The rustup page does not state the default value of auto-install, nor whether `path` in `rust-toolchain.toml` is restricted for safety.
 
 ## 2. Go
 
 ### Takeaway
+
 The `go` command's documented design keeps module download free of module-code execution, but two things are repository-controlled: the `go` / `toolchain` lines in `go.mod` can make the `go` command download and run a different Go toolchain (default `GOTOOLCHAIN=auto`), and direct-mode downloads run `git`/`hg`. `go list -export` produces "up-to-date export information", which means building.
 
 ### Cited Findings
+
 - CONFIRMED (toolchain switch): "If no such program is found, the `go` command downloads and runs the specified Go toolchain." — [Go Toolchains](https://go.dev/doc/toolchain)
 - CONFIRMED (triggered by the repository's `go.mod`): "When a command encounters a module requiring a newer Go version and `GOTOOLCHAIN` permits running different toolchains (it is one of the `auto` or `path` forms), the `go` command chooses and switches to an appropriate newer toolchain". — [Go Toolchains](https://go.dev/doc/toolchain)
 - CONFIRMED (`toolchain` line): "The `toolchain` line declares a suggested toolchain to use with the module or workspace." — [Go Toolchains](https://go.dev/doc/toolchain)
@@ -67,20 +73,24 @@ The `go` command's documented design keeps module download free of module-code e
 - CONFIRMED (checksum verification): "If the computed hash does not match, the `go` command reports a security error and does not install the file in the module cache." — [Go Modules Reference](https://go.dev/ref/mod)
 
 ### Inferences
+
 - `go list -m all`, `go list -json -deps` and `go mod download` do not compile or run package code; this is the design implied by the docs (no build step is described for them), but I found no single sentence stating "does not execute module code".
 - `go list -export` and `-compiled` require running the compiler and, for cgo packages, the cgo tool and the C compiler (`CC`: "The command to use to compile C code."). Avoid both flags for an untrusted repository; `CGO_ENABLED=0` removes the C toolchain path.
 - A repository cannot set `GOFLAGS`, `GOTOOLCHAIN`, `GOPROXY` or `GOAUTH` through `go.mod`; they come from the environment or the user's `go env -w` file. The repository-controlled lever is the `go`/`toolchain` line. Running with `GOTOOLCHAIN=local`, `GOFLAGS=-mod=readonly` (or `-mod=mod` never), `GOPROXY=off` and `GOVCS=*:off` gives an offline, no-switch, no-VCS run.
 
 ### Gaps
+
 - NOT FOUND: an explicit Go statement that module download never executes downloaded code.
 - The last 15k characters of go.dev/ref/mod and the `-toolexec` text were not read.
 
 ## 3. Maven
 
 ### Takeaway
+
 Any `mvn` invocation in a checkout reads the repository's `.mvn/` directory: `extensions.xml` loads core extensions (arbitrary JVM code, fetched by coordinates), `maven.config` injects command-line options, `jvm.config` injects JVM options. POM-declared build extensions and plugins add more. The wrapper downloads and runs whatever `distributionUrl` names.
 
 ### Cited Findings
+
 - CONFIRMED (`.mvn` is repository content): "This directory is part of the project and may be checked into version control." The files "contain project specific configuration for running Maven." — [Configuring Maven](https://maven.apache.org/configure.html)
 - CONFIRMED (`.mvn/extensions.xml` loads code by coordinates): "all transitive dependencies of those extensions will automatically being downloaded from your repository." — [Configuring Maven](https://maven.apache.org/configure.html)
 - CONFIRMED (extensions add classes to Maven itself): "Extensions are a way to add classes to either the Core Classloader (Core Extensions) or the Project Classloader (Build Extensions)." and "There are core extensions which are loaded early and build extensions which are loaded late." — [Using Extensions](https://maven.apache.org/guides/mini/guide-using-extensions.html)
@@ -95,23 +105,27 @@ Any `mvn` invocation in a checkout reads the repository's `.mvn/` directory: `ex
 - CONFIRMED (new in 3.10): "Starting with Maven 3.10.0, Maven also loads the extensions listed in `${user.home}/.m2/extensions.xml`". — [Configuring Maven](https://maven.apache.org/configure.html)
 
 ### Inferences
+
 - `mvn dependency:tree` and `dependency:build-classpath` load the project model, so core extensions from `.mvn/extensions.xml` and POM build extensions run inside the Maven JVM before the goal does. `.mvn/jvm.config` can carry options such as `-javaagent:` and `.mvn/maven.config` can carry `-D`, `-s <settings>` or extra goals; the docs describe the files as generic option carriers and do not restrict their content.
 - `mvnw` is a repository-supplied shell script, so running it is running repository code by definition; the checksum properties do not help because the same checkout supplies them.
 
 ### Gaps
+
 - NOT FOUND: a Maven security page that states the trust model in one sentence.
 - NOT FOUND on the goal page: whether `dependency:tree` forks a lifecycle phase (the page lists no such attribute, which suggests it does not).
 
 ## 4. Gradle
 
 ### Takeaway
+
 Confirmed from Gradle's lifecycle docs: every build first runs init scripts, then evaluates the settings file, then evaluates the build files of every participating project; `buildSrc` is compiled automatically. The Tooling API executes builds and fails model fetch when a script fails to evaluate. The wrapper downloads and invokes the distribution in `distributionUrl`.
 
 ### Cited Findings
+
 - CONFIRMED (initialization): "Gradle first runs any init scripts, then evaluates the settings file" and "Gradle detects the set of projects (root and subprojects) and included builds participating in the build." — [Build Lifecycle](https://docs.gradle.org/current/userguide/build_lifecycle.html)
 - CONFIRMED (configuration): "Gradle evaluates the build files of every participating project". — [Build Lifecycle](https://docs.gradle.org/current/userguide/build_lifecycle.html)
 - CONFIRMED (`buildSrc`): "Gradle automatically compiles the code in `buildSrc` and includes it in the classpath of all build scripts." and "Gradle automatically treats it as an included build". — [Sharing build logic](https://docs.gradle.org/current/userguide/sharing_build_logic_between_subprojects.html)
-- CONFIRMED (init scripts): "Initialization scripts (*init scripts*) are Gradle scripts that run during the **initialization phase**, **before** the build's `settings.gradle(.kts)` and project build scripts are evaluated." — [Initialization Scripts](https://docs.gradle.org/current/userguide/init_scripts.html)
+- CONFIRMED (init scripts): "Initialization scripts (_init scripts_) are Gradle scripts that run during the **initialization phase**, **before** the build's `settings.gradle(.kts)` and project build scripts are evaluated." — [Initialization Scripts](https://docs.gradle.org/current/userguide/init_scripts.html)
 - REFUTED in part (init scripts from the checkout): the four documented locations are `-I`, `GRADLE_USER_HOME/init.gradle(.kts)`, `GRADLE_USER_HOME/init.d/` and `GRADLE_HOME/init.d/`; none is the project directory. A checkout supplies an init script only indirectly, through a wrapper distribution it names. — [Initialization Scripts](https://docs.gradle.org/current/userguide/init_scripts.html)
 - CONFIRMED (wrapper): the wrapper "invokes a declared version of Gradle, downloading it beforehand if necessary"; `distributionUrl` is "The full URL pointing to the Gradle distribution ZIP file." — [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html)
 - CONFIRMED (Gradle's own warning): "The Wrapper JAR is a binary file that will be executed on the computers of developers and build servers." and "treat it as untrustworthy until proven otherwise". — [Gradle Wrapper](https://docs.gradle.org/current/userguide/gradle_wrapper.html)
@@ -119,19 +133,24 @@ Confirmed from Gradle's lifecycle docs: every build first runs init scripts, the
 - CONFIRMED (model fetch evaluates scripts): `getModel` fails "because the target project's configuration script fails to evaluate". — [Tooling API](https://docs.gradle.org/current/userguide/tooling_api.html)
 
 ### Inferences
+
 - `gradle dependencies` is a task, so it runs in the execution phase after initialization and configuration; settings, build scripts, `buildSrc` and included builds are therefore all evaluated first. There is no Gradle mode that reads dependencies without evaluating repository scripts.
 
 ### Gaps
+
 - NOT FOUND: the literal sentence "every invocation" in the lifecycle page (the page describes the phases of "a build" without that wording).
 - Gradle's separate security page was not opened.
 
 ## 5. npm, pnpm, Yarn, Bun
 
 ### Takeaway
+
 npm 12 has shipped (GA 2026-07-08, docs show 12.2.2 as Latest) and blocks dependency install scripts, git dependencies and remote-URL dependencies by default, with an `allowScripts` allow-list in `package.json`. The root project's own lifecycle scripts still run on a bare `npm install`, and npm 12 adds a new root-level code hook, `.npm-extension.mjs`. pnpm blocks dependency build scripts since 10.0; the setting is `allowBuilds` (10.26+, the only one in 11+), earlier `onlyBuiltDependencies`. Yarn's `yarnPath` executes a repository-named binary.
 
 ### Cited Findings
+
 npm
+
 - CONFIRMED (npm 12 is GA): "npm v12 is now generally available and tagged `latest`." (published July 8, 2026) — [GitHub Changelog](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)
 - CONFIRMED (new default): "`allowScripts` defaults to off"; dependency lifecycle scripts "(i.e., `preinstall`, `install`, `postinstall`)" "no longer run unless explicitly allowed". — [GitHub Changelog](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)
 - CONFIRMED (scope of the block, announced June 9, 2026): "`npm install` will no longer execute `preinstall`, `install`, or `postinstall` scripts from dependencies"; "`prepare` scripts from git, file, and link dependencies are blocked the same way." — [GitHub Changelog](https://github.blog/changelog/2026-06-09-upcoming-breaking-changes-for-npm-v12/)
@@ -150,6 +169,7 @@ npm
 - CONFIRMED `package-lock-only`: "If set to true, the current operation will only use the `package-lock.json`, ignoring `node_modules`." — [npm config (v12)](https://docs.npmjs.com/cli/v12/using-npm/config)
 
 pnpm
+
 - CONFIRMED (10.0 changed the default): "Lifecycle scripts of dependencies are not executed during installation by default!" and "they should be listed in the `pnpm.onlyBuiltDependencies` field of `package.json`". — [pnpm v10.0.0 release](https://github.com/pnpm/pnpm/releases/tag/v10.0.0)
 - CONFIRMED (pnpm 10 setting names): `onlyBuiltDependencies` ("A list of package names that are allowed to execute \"preinstall\", \"install\", and/or \"postinstall\" scripts during installation."), `onlyBuiltDependenciesFile`, `neverBuiltDependencies`, `ignoredBuiltDependencies` (10.1.0), `strictDepBuilds` (10.3.0, default false), `dangerouslyAllowAllBuilds` (10.9.0), `allowBuilds` (10.26.0). — [pnpm 10.x settings](https://pnpm.io/10.x/settings)
 - CONFIRMED (pnpm 11 and later): "The following settings have been removed in v11 and replaced by `allowBuilds`"; `strictDepBuilds` now "Default: **true**". — [pnpm build settings](https://pnpm.io/settings/build)
@@ -159,6 +179,7 @@ pnpm
 - CONFIRMED (`pnpm list` can load the pnpmfile): `--find-by`: "Use a finder function defined in `.pnpmfile.mjs` to match dependencies by properties other than name."; `--lockfile-only`: "Read package information from the lockfile instead of checking the actual `node_modules` directory." — [pnpm list](https://pnpm.io/cli/list)
 
 Yarn and Corepack
+
 - CONFIRMED (`yarnPath` executes a repository-named binary): "This binary will be executed instead of any other (including the global one) for any command run within the directory covered by the rc file." and "If the file extension ends with `.js` it will be required, and will be spawned in any other case." — [.yarnrc.yml](https://yarnpkg.com/configuration/yarnrc)
 - CONFIRMED (opt-out): `ignorePath`: "If true, whatever Yarn version is being executed will keep running rather than looking at the value of `yarnPath` to decide." — [.yarnrc.yml](https://yarnpkg.com/configuration/yarnrc)
 - CONFIRMED (current Yarn default for dependency scripts): "If false (the default), Yarn will not execute the `postinstall` scripts from third-party packages when installing the project"; workspaces "will still see their postinstall scripts evaluated". — [.yarnrc.yml](https://yarnpkg.com/configuration/yarnrc)
@@ -169,17 +190,20 @@ Yarn and Corepack
 - CONFIRMED (Corepack off-switches): `COREPACK_ENABLE_PROJECT_SPEC` "can be set to `0` to prevent Corepack from checking if the package manager corresponds to the one defined for the current project."; `COREPACK_ENABLE_NETWORK` "can be set to `0` to prevent Corepack from accessing the network." — [Corepack README](https://github.com/nodejs/corepack/blob/main/README.md)
 
 Bun
+
 - CONFIRMED: "Because running arbitrary code is a security risk, Bun does not execute arbitrary lifecycle scripts by default, unlike other `npm` clients." — [Bun lifecycle scripts](https://bun.sh/docs/pm/lifecycle)
 - CONFIRMED (allow-list is repository-controlled): "To allow lifecycle scripts for a particular package, add its name to the `trustedDependencies` array in your `package.json`."; "A curated list of popular npm packages with lifecycle scripts is allowed by default." — [Bun lifecycle scripts](https://bun.sh/docs/pm/lifecycle)
 - CONFIRMED: "To disable lifecycle scripts for all packages, use the `--ignore-scripts` flag." — [Bun lifecycle scripts](https://bun.sh/docs/pm/lifecycle)
 
 ### Inferences
+
 - The allow-lists in npm 12 (`allowScripts` in `package.json`), pnpm (`allowBuilds`) and Bun (`trustedDependencies`) are all stored in the repository. For a developer's own project that is the trust decision; for `mentalc` analysing an arbitrary checkout it is repository-controlled input and must not count as the user's trust decision. Likewise the root package's own lifecycle scripts run on every bare install in all four managers unless `--ignore-scripts` is passed.
 - For npm, `--ignore-scripts` now also disables `.npm-extension`; a "no execution" invocation of npm 12 is `npm install --package-lock-only --ignore-scripts` or `npm ci --ignore-scripts`, plus a neutral `--userconfig`/registry if the project `.npmrc` must not redirect traffic.
 - `npm ls`, `npm ls --package-lock-only` and `pnpm list --lockfile-only` are read-only according to their pages (no script mentioned). `pnpm list --find-by` loads `.pnpmfile`; whether plain `pnpm list` loads it is not stated.
 - Running `yarn` in a checkout with `yarnPath` executes a file from the repository unless `ignorePath` is set from outside the repository (for example `YARN_IGNORE_PATH=1`).
 
 ### Gaps
+
 - The npm 12 scripts page does not restate the dependency-script block; the block is documented on the approve-scripts and config pages and in the changelog.
 - NOT FOUND: whether `npm install --package-lock-only` runs root lifecycle scripts (not stated; pass `--ignore-scripts`).
 - NOT FOUND: Bun's handling of the root package's own scripts on `bun install` (page is silent).
@@ -189,9 +213,11 @@ Bun
 ## 6. Python
 
 ### Takeaway
+
 Confirmed: sdists need the build backend to run; PEP 517 hooks are called from `pyproject.toml`-named backends (which can live in-tree). `.pth` `import` lines are still executed at startup in Python 3.15 but are now deprecated. uv states that build backends "may run arbitrary Python code"; Poetry auto-installs project-required plugins.
 
 ### Cited Findings
+
 - CONFIRMED (`.pth`): "For backward compatibility, lines starting with `import` (followed by space or tab) are executed with `exec()`." (Python 3.15.2 docs) — [site module](https://docs.python.org/3/library/site.html)
 - CONFIRMED (every startup): "Executable lines (`import` lines in `_name_.pth` files and `_name_.start` file entry points) are always run at Python startup (unless `-S` is given to disable the `site.py` module entirely)". — [site module](https://docs.python.org/3/library/site.html)
 - CONFIRMED (new, deprecation): "Changed in version 3.15: `.pth` file lines starting with `import` are deprecated." and they "will be silently ignored in Python 3.18 and 3.19." — [site module](https://docs.python.org/3/library/site.html)
@@ -204,19 +230,23 @@ Confirmed: sdists need the build backend to run; PEP 517 hooks are called from `
 - CONFIRMED (Poetry project plugins): "If the plugin is not installed in Poetry's own environment when running `poetry install`" "it will be installed only for the current project under `.poetry/plugins`"; "Installed plugin packages are automatically loaded when Poetry starts up." — [Poetry plugins](https://python-poetry.org/docs/plugins/)
 
 ### Inferences
+
 - `uv sync` in a checkout with a `[build-system]` runs the repository's build backend (editable install), even with `no-build`; `--no-install-project` plus `--frozen` avoids that. `[tool.uv]` in `pyproject.toml` can change indexes, which redirects network traffic to repository-chosen hosts.
 - A Poetry project can make `poetry install` fetch and load a plugin named in `[tool.poetry.requires-plugins]`; that is repository-controlled code execution inside Poetry.
 
 ### Gaps
+
 - NOT FOUND: a PyPA sentence that literally says "setup.py executes arbitrary code"; the setup.py-deprecation page and the pip download page do not say it.
 - The last quarter of the uv settings page was not read.
 
 ## 7. Ruby, PHP, Swift
 
 ### Takeaway
+
 Gemfile-as-Ruby and Composer scripts/plugins are confirmed from official docs. Composer has a real trust gate for plugins (`allow-plugins`, since 2.2.0). For SwiftPM the manifest-execution sentence could not be read from official docs; only the sandbox statement in SE-0303 was confirmed.
 
 ### Cited Findings
+
 - CONFIRMED (Bundler): "A `Gemfile` is evaluated as Ruby code". — [gemfile(5) on RubyGems Guides](https://guides.rubygems.org/gemfile/)
 - CONFIRMED (Bundler includes other files): "The `eval_gemfile` method reads the contents of another file as if they appeared in the current Gemfile." — [gemfile(5)](https://guides.rubygems.org/gemfile/)
 - CONFIRMED (Bundler's own warning): "These protocols are unauthenticated, so a man-in-the-middle attacker can deliver malicious code and compromise your system." (about `http://` and `git://`) — [gemfile(5)](https://guides.rubygems.org/gemfile/)
@@ -228,19 +258,23 @@ Gemfile-as-Ruby and Composer scripts/plugins are confirmed from official docs. C
 - NOT FOUND (SwiftPM "Package.swift is compiled and run"): docs.swift.org returned an empty body; the older PackageDescription page shows the manifest as Swift source (`import PackageDescription`, `let package = Package(...)`) but has no sentence about compilation or execution. — [PackageDescription](https://docs.swift.org/package-manager/PackageDescription/PackageDescription.html)
 
 ### Inferences
+
 - Composer's `allow-plugins` lives in `composer.json`, so like the JavaScript allow-lists it is repository-controlled when analysing someone else's checkout; `--no-plugins` and `--no-scripts` are the external switches (the `--no-scripts` flag was not on the scripts page I read).
 - The existence of a sandbox for "manifest parsing" in SE-0303 implies the manifest is executed, but that is an inference.
 
 ### Gaps
+
 - The Bundler `plugin` directive and `gemspec` evaluation text were not found on the page read.
 - SwiftPM: no directly quotable official sentence; the JetBrains AppCode post that describes it returned 403.
 
 ## 8. Docker Compose
 
 ### Takeaway
+
 `docker compose config` is documented only as "Parse, resolve and render compose file in canonical format"; no execution is documented. It does read repository-controlled files and interpolates host shell variables into its output, so it can leak host environment values, and `include` can reference remote sources.
 
 ### Cited Findings
+
 - CONFIRMED (what it does): "Parse, resolve and render compose file in canonical format". — [docker compose config](https://docs.docker.com/reference/cli/docker/compose/config/)
 - CONFIRMED (opt-outs exist, so the defaults interpolate and read env files): `--no-interpolate` "Don't interpolate environment variables"; `--no-env-resolution` "Don't resolve service env files"; `--no-path-resolution` "Don't resolve file paths". — [docker compose config](https://docs.docker.com/reference/cli/docker/compose/config/)
 - CONFIRMED (network-touching options are opt-in): `--resolve-image-digests` "Pin image tags to digests"; `--lock-image-digests` "Produces an override file with image digests". — [docker compose config](https://docs.docker.com/reference/cli/docker/compose/config/)
@@ -250,18 +284,22 @@ Gemfile-as-Ruby and Composer scripts/plugins are confirmed from official docs. C
 - CONFIRMED (remote include): "`include` allows you to reference Compose files from remote sources, such as OCI artifacts or Git repositories." — [Compose include how-to](https://docs.docker.com/compose/how-tos/multiple-compose-files/include/)
 
 ### Inferences
+
 - A compose file containing `${AWS_SECRET_ACCESS_KEY}` gets the host value substituted into `docker compose config` output. `mentalc` should either parse the YAML itself or run with `--no-interpolate --no-env-resolution` and a scrubbed environment.
 - With a remote `include`, `docker compose config` must fetch from a repository-chosen registry or Git URL (network, and a `git` subprocess for Git sources); the docs opened do not describe a prompt.
 
 ### Gaps
+
 - NOT FOUND: an explicit statement that `docker compose config` never executes anything, and how remote includes behave under `config`. `extends` was not read.
 
 ## 9. Git
 
 ### Takeaway
+
 Git's own manual states the model precisely: cloning untrusted content is generally safe, but running Git inside an untrusted `.git` directory is not, because config and hooks can run arbitrary commands. `safe.directory` (added April 2022 for CVE-2022-24765) only covers repositories owned by another user.
 
 ### Cited Findings
+
 - CONFIRMED: "Some configuration options and hook files may cause Git to run arbitrary shell commands. Because configuration and hooks are not copied using `git clone`, it is generally safe to clone remote repositories with untrusted content". — [git(1) SECURITY](https://git-scm.com/docs/git)
 - CONFIRMED: "it is not safe to run Git commands in a `.git` directory (or the working tree that surrounds it) when that `.git` directory itself comes from an untrusted source." — [git(1) SECURITY](https://git-scm.com/docs/git)
 - CONFIRMED (limit of the ownership check): "you can also acquire untrusted repositories that are owned by you (for example, if you extract a zip file or tarball from an untrusted source)." — [git(1) SECURITY](https://git-scm.com/docs/git)
@@ -277,18 +315,22 @@ Git's own manual states the model precisely: cloning untrusted content is genera
 - CONFIRMED (custom update command is not accepted from `.gitmodules`): "Note that this mechanism is not supported in the `.gitmodules` file or on the command line." — [git-submodule](https://git-scm.com/docs/git-submodule)
 
 ### Inferences
+
 - A fresh `git clone` over the network carries no hooks or config, so reading it with Git is safe by Git's own statement. A checkout that arrived as an archive, a copied directory, or one containing an embedded bare repository can carry `core.fsmonitor`, `core.hooksPath`, `core.sshCommand` and similar; `git status` there can execute them. `mentalc` should not shell out to `git` in a repository of unknown provenance, or should neutralise config (`-c core.fsmonitor=false -c core.hooksPath=/dev/null`, `safe.bareRepository=explicit`).
 - `git submodule update --init` contacts repository-chosen URLs; it is a network action under repository control and belongs behind the trust decision.
 
 ### Gaps
+
 - `protocol.file.allow` and the full list of command-running config keys were not read (the git-config page is 450k characters; only the first part and the source files for `safe.*` and `core.*` were read).
 
 ## 10. Trust gates in IDEs
 
 ### Takeaway
+
 IntelliJ's Safe Mode disables build-tool import, startup scripts, VCS support, Groovy DSL scripts, File Watchers and database connections. VS Code Restricted Mode disables or limits AI agents, terminal, tasks, debugging, workspace settings and extensions. The JetBrains "command line carries the same risk" sentence could not be opened at source.
 
 ### Cited Findings
+
 - CONFIRMED (IntelliJ options): "Preview in Safe Mode", "Trust Project", "Don't Open". Trust Project "opens and initializes the project, resolves project plugins, adds dependencies, and enables all IntelliJ IDEA features." — [IntelliJ project security](https://www.jetbrains.com/help/idea/project-security.html)
 - CONFIRMED (Safe Mode, build tools): "for a project that contains any build tool, the importing process is disabled."; "no build scripts are executed and no dependencies are resolved." — [IntelliJ project security](https://www.jetbrains.com/help/idea/project-security.html)
 - CONFIRMED (Safe Mode, other): "any scripts or tasks that are executed during the opening process are disabled."; "VCS support is fully disabled."; "any Groovy DSL scripts will not be executed."; "Database connections are disabled." — [IntelliJ project security](https://www.jetbrains.com/help/idea/project-security.html)
@@ -299,18 +341,23 @@ IntelliJ's Safe Mode disables build-tool import, startup scripts, VCS support, G
 - CONFIRMED (VS Code details): "Opening a workspace in restricted mode disables agents in that workspace."; "opening a terminal is blocked by default when a folder is open in Restricted Mode." — [VS Code Workspace Trust](https://code.visualstudio.com/docs/editing/workspaces/workspace-trust)
 
 ### Inferences
+
 - Both IDEs treat "resolve dependencies through the build tool" as the action that needs trust, and both keep browsing and editing available without it. That matches the proposed `mentalc` rule: static reading by default, build-tool invocation behind a trust decision.
 
 ### Gaps
+
 - The JetBrains blog posts (IntelliJ 2020.3.3, RubyMine and AppCode "Trusted Projects") could not be opened.
 
 ## 11. Coding agents as the trust gate
 
 ### Takeaway
+
 In Claude Code, permission rules and prompts apply to the tool calls Claude makes (the Bash command text Claude writes, or an MCP tool call), not to processes those tools spawn. The Bash sandbox does cover child processes of a Bash command, but local MCP servers run outside it "with your full access". So commands that `mentalc` spawns are never prompted for individually; under Bash they inherit the sandbox if one is on, under MCP they inherit nothing.
 
 ### Cited Findings
+
 Claude Code
+
 - CONFIRMED (what permissions cover): "**Permissions** control which tools Claude Code can use and which files or domains it can access. They apply to Bash, Read, Edit, WebFetch, MCP, and every other tool". — [Claude Code permissions](https://code.claude.com/docs/en/permissions)
 - CONFIRMED (Bash prompts): Bash commands: approval required "Yes, except a built-in set of read-only commands". — [Claude Code permissions](https://code.claude.com/docs/en/permissions)
 - CONFIRMED (rule order): "Rules are evaluated in order: deny, then ask, then allow. The first match in that order determines the outcome". — [Claude Code permissions](https://code.claude.com/docs/en/permissions)
@@ -336,6 +383,7 @@ Claude Code
 - CONFIRMED (auto-mode classifier sees tool calls, not results): "the classifier sees user messages, tool calls other than read-only lookups such as file reads and searches, and your CLAUDE.md content. Tool results are stripped from those requests". — [Claude Code permission modes](https://code.claude.com/docs/en/permission-modes)
 
 OpenAI Codex
+
 - Note: `developers.openai.com/codex/security`, `/codex/sandbox` and `/codex/agent-approvals-security` now answer with HTTP 308 to `learn.chatgpt.com/docs/...`; the openai/codex repository's `docs/sandbox.md` still links to the old `developers.openai.com/codex/security` address. Quotes below are from the redirect target.
 - CONFIRMED (two controls): sandbox mode is "What Codex can do technically (for example, where it can write and whether it can reach the network)."; approval policy is "When Codex must ask you before it executes an action." — [Codex: Agent approvals & security](https://learn.chatgpt.com/docs/agent-approvals-security)
 - CONFIRMED (modes): read-only: "can read files and run commands within the read-only sandbox."; workspace-write: "can read files, make edits, and run commands in the working directory automatically."; danger-full-access: "No sandbox; no approvals _(not recommended)_." — [Codex: Agent approvals & security](https://learn.chatgpt.com/docs/agent-approvals-security)
@@ -347,21 +395,25 @@ OpenAI Codex
 - NOT FOUND (Codex MCP servers and the sandbox): the page does not say whether MCP server processes run inside the sandbox; it says only that the command network proxy does not filter "MCP server connections". The Codex MCP page address I tried returned 404.
 
 ### Inferences
+
 - Answer to the design question, for Claude Code. (a) `mentalc` run through the Bash tool: the user or classifier approves the `mentalc ...` command line once; anything `mentalc` spawns (`cargo`, `go`, `mvn`, `npm`) gets no prompt of its own. If the Bash sandbox is enabled, those children are inside it (no network unless a host is allowed, writes limited to the working directory); if it is off, they run with the user's full access. (b) `mentalc` as a local stdio MCP server: the prompt is per MCP tool call by tool name; the server process and everything it spawns run outside the sandbox with the user's full access. The agent is therefore not a sufficient trust gate for `mentalc`'s internal subprocesses.
 - Consequences for the specification: make execution a separate, explicitly named surface so the agent's gate can see it. Options: a distinct MCP tool for "resolve with build tool" (optionally annotated `requiresUserInteraction`) apart from the static-extraction tool; or have `mentalc` never spawn build tools and instead print the exact command for the agent to run through its own Bash tool, where the permission prompt and sandbox apply.
 - A repository-supplied allow-list must not pre-authorise `mentalc` execution: Claude Code itself withholds repository `permissions.allow` rules until workspace trust, and in headless sessions there is no dialog at all, so `mentalc` needs its own default-deny.
 - Codex follows the same shape (sandbox on spawned commands and their children, approval on the command), so the same reasoning applies; MCP coverage is unverified.
 
 ### Gaps
+
 - No Claude Code sentence says in so many words "subprocesses of an MCP server are not subject to permission rules"; the conclusion combines "local MCP servers ... run with your full access" with the fact that rules match tool names and command text.
 - Codex: whether MCP servers are sandboxed is not documented on the page read.
 
 ## 12. Supply-chain incidents that used install-time execution
 
 ### Takeaway
+
 Install-time lifecycle scripts were the execution vector in the Nx compromise (August 2025), the Shai-Hulud worm (September 2025) and continue to be in 2026 (keyv, August 2026). These incidents are what GitHub cites for npm 12's new default.
 
 ### Cited Findings
+
 - CONFIRMED (Nx, advisory published Aug 27, 2025): "Malicious versions of the nx package, as well as some supporting plugin packages, were published to npm"; "The compromised package contained a `postinstall` script that scanned user's file system for text files". — [GHSA-cxm3-wv7p-598c](https://github.com/nrwl/nx/security/advisories/GHSA-cxm3-wv7p-598c)
 - CONFIRMED (Shai-Hulud, GitHub, Sept 22, 2025): "On September 14, 2025, we were notified of the Shai-Hulud attack."; "a self-replicating worm that infiltrated the npm ecosystem via compromised maintainer accounts"; "injecting malicious post-install scripts into popular JavaScript packages."; "Immediate removal of 500+ compromised packages from the npm registry." — [GitHub: Our plan for a more secure npm supply chain](https://github.blog/security/supply-chain-security/our-plan-for-a-more-secure-npm-supply-chain/)
 - CONFIRMED (Shai-Hulud, CISA, Sept 23, 2025): "has compromised over 500 packages"; it "targeted GitHub Personal Access Tokens (PATs) and application programming interface (API) keys for cloud services". — [CISA alert](https://www.cisa.gov/news-events/alerts/2025/09/23/widespread-supply-chain-compromise-impacting-npm-ecosystem)
@@ -369,9 +421,11 @@ Install-time lifecycle scripts were the execution vector in the Nx compromise (A
 - CONFIRMED (the vendor response): "This major release turns on the install-time security defaults we announced in June". — [GitHub Changelog, 2026-07-08](https://github.blog/changelog/2026-07-08-npm-install-time-security-and-gat-bypass2fa-deprecation/)
 
 ### Inferences
+
 - The keyv compromise happened about four weeks after npm 12 became `latest`; install hooks still pay off against clients on older npm versions, other package managers, or projects that have approved the package. A default-deny in `mentalc` is in line with where npm, pnpm, Yarn and Bun have all moved.
 
 ### Gaps
+
 - Other 2026 incidents (jscrambler, July 2026; Mastra, June 2026; a `@redhat-cloud-services` campaign, June 2026) appeared only in search results from secondary sites and were not opened; do not cite them from these notes.
 - The November 2025 "Shai-Hulud 2.0" wave was not researched.
 
@@ -379,32 +433,32 @@ Install-time lifecycle scripts were the execution vector in the Nx compromise (A
 
 | Tool or command | Executes repository-controlled code | Needs network | Evidence URL |
 | :- | :- | :- | :- |
-| `cargo metadata` | Conditional: no build scripts or proc macros (inferred); repository `.cargo/config.toml` can name `rustc`, wrappers, credential providers; `rust-toolchain.toml` picks the toolchain | Yes unless `--offline`/`--frozen`; `--no-deps` skips fetching | https://doc.rust-lang.org/cargo/commands/cargo-metadata.html |
-| `cargo build` / `check` | Yes: `build.rs`, proc macros | Yes unless offline | https://doc.rust-lang.org/cargo/reference/build-scripts.html |
-| `cargo` via rustup proxy | Conditional: `rust-toolchain.toml` selects (and with `RUSTUP_AUTO_INSTALL=1` installs) a toolchain | Conditional | https://rust-lang.github.io/rustup/environment-variables.html |
-| `go list -m all`, `go list -json -deps`, `go mod download` | Conditional: no package code (inferred); `go`/`toolchain` line switches to a downloaded toolchain unless `GOTOOLCHAIN=local`; direct mode runs `git`/`hg` | Yes unless `GOPROXY=off` / `-mod=vendor` | https://go.dev/doc/toolchain |
-| `go list -export` / `-compiled` | Conditional: compiles; cgo runs the C compiler and `pkg-config` | As above | https://pkg.go.dev/cmd/go |
-| `mvn dependency:tree`, `dependency:build-classpath` | Yes: `.mvn/extensions.xml`, POM build extensions, `.mvn/maven.config`, `.mvn/jvm.config` | Yes (plugins, extensions, dependencies) unless `-o` with a warm cache | https://maven.apache.org/configure.html |
-| `./mvnw` | Yes: repository script; downloads and runs `distributionUrl` | Yes on first use | https://maven.apache.org/tools/wrapper/ |
-| `gradle dependencies`, Tooling API model fetch | Yes: settings, build scripts, `buildSrc`, included builds | Yes unless `--offline` with a warm cache | https://docs.gradle.org/current/userguide/build_lifecycle.html |
-| `./gradlew` | Yes: repository wrapper JAR; downloads and runs `distributionUrl` | Yes on first use | https://docs.gradle.org/current/userguide/gradle_wrapper.html |
-| `npm install` / `npm ci` (npm 12) | Conditional: root lifecycle scripts and `.npm-extension` yes (not under `npm ci` for the extension); dependency scripts only if in `allowScripts`; nothing with `--ignore-scripts` | Yes | https://docs.npmjs.com/cli/v12/using-npm/config |
-| `npm install` (npm 11 and earlier) | Yes: root and dependency lifecycle scripts unless `--ignore-scripts` | Yes | https://docs.npmjs.com/cli/v11/using-npm/scripts |
-| `npm ls`, `npm ls --package-lock-only` | No (none documented) | No | https://docs.npmjs.com/cli/v12/commands/npm-ls |
-| `pnpm install` (10+) | Conditional: root scripts and `.pnpmfile` yes; dependency builds only if allowed (`allowBuilds`, formerly `onlyBuiltDependencies`) | Yes | https://pnpm.io/settings/build |
-| `pnpm list` | Conditional: `--find-by` loads `.pnpmfile`; otherwise none documented | No | https://pnpm.io/cli/list |
-| `yarn` (Berry) in a checkout | Yes if `.yarnrc.yml` sets `yarnPath` (unless `ignorePath`); `yarn.config.cjs` constraints; workspace postinstall | Yes for install | https://yarnpkg.com/configuration/yarnrc |
-| Corepack shim (`yarn`, `pnpm`) | Conditional: downloads and runs the version in `packageManager`; URLs only with `COREPACK_ENABLE_UNSAFE_CUSTOM_URLS=1` | Yes unless cached / `COREPACK_ENABLE_NETWORK=0` | https://github.com/nodejs/corepack/blob/main/README.md |
-| `bun install` | Conditional: dependency scripts only for `trustedDependencies` and the default list; none with `--ignore-scripts` | Yes | https://bun.sh/docs/pm/lifecycle |
-| pip / uv building an sdist or editable project | Yes: build backend from `pyproject.toml` (may be in-tree) | Yes (build requirements) | https://docs.astral.sh/uv/reference/settings/ |
-| `uv sync` | Conditional: yes when the project has a build system; avoid with `--no-install-project --frozen` | Yes | https://docs.astral.sh/uv/concepts/projects/sync/ |
-| `poetry install` | Conditional: project-required plugins are installed and loaded | Yes | https://python-poetry.org/docs/plugins/ |
-| Python interpreter start in an environment | Yes: `.pth` `import` lines, `sitecustomize` (unless `-S`) | No | https://docs.python.org/3/library/site.html |
-| `bundle install` / any Bundler command | Yes: `Gemfile` is evaluated as Ruby | Yes for install | https://guides.rubygems.org/gemfile/ |
-| `composer install` | Conditional: root `scripts` yes; plugins only if in `allow-plugins` (or approved at the prompt); `--no-plugins` disables | Yes | https://getcomposer.org/doc/06-config.md |
-| SwiftPM (`swift package ...`) | Yes, sandboxed (inferred from "the same sandbox that manifest parsing uses") | Conditional | https://github.com/swiftlang/swift-evolution/blob/main/proposals/0303-swiftpm-extensible-build-tools.md |
-| `docker compose config` | No execution documented; reads `.env`, env files, `include`; interpolates host environment into output | Conditional: remote `include`, `--resolve-image-digests` | https://docs.docker.com/reference/cli/docker/compose/config/ |
-| `git status` / `git log` in a checkout | Conditional: no for a fresh network clone; yes if `.git` itself is untrusted (config such as `core.fsmonitor`, hooks) | No | https://git-scm.com/docs/git |
-| `git submodule update --init` | No code from `.gitmodules` (custom command not accepted there); fetches repository-chosen URLs | Yes | https://git-scm.com/docs/git-submodule |
-| Subprocess of a Claude Code Bash command | Not prompted individually; inside the Bash sandbox when enabled | Per sandbox allow-list | https://code.claude.com/docs/en/sandboxing |
-| Subprocess of a local MCP server under Claude Code | Not prompted; outside the sandbox, "with your full access" | Unrestricted | https://code.claude.com/docs/en/sandboxing |
+| `cargo metadata` | Conditional: no build scripts or proc macros (inferred); repository `.cargo/config.toml` can name `rustc`, wrappers, credential providers; `rust-toolchain.toml` picks the toolchain | Yes unless `--offline`/`--frozen`; `--no-deps` skips fetching | <https://doc.rust-lang.org/cargo/commands/cargo-metadata.html> |
+| `cargo build` / `check` | Yes: `build.rs`, proc macros | Yes unless offline | <https://doc.rust-lang.org/cargo/reference/build-scripts.html> |
+| `cargo` via rustup proxy | Conditional: `rust-toolchain.toml` selects (and with `RUSTUP_AUTO_INSTALL=1` installs) a toolchain | Conditional | <https://rust-lang.github.io/rustup/environment-variables.html> |
+| `go list -m all`, `go list -json -deps`, `go mod download` | Conditional: no package code (inferred); `go`/`toolchain` line switches to a downloaded toolchain unless `GOTOOLCHAIN=local`; direct mode runs `git`/`hg` | Yes unless `GOPROXY=off` / `-mod=vendor` | <https://go.dev/doc/toolchain> |
+| `go list -export` / `-compiled` | Conditional: compiles; cgo runs the C compiler and `pkg-config` | As above | <https://pkg.go.dev/cmd/go> |
+| `mvn dependency:tree`, `dependency:build-classpath` | Yes: `.mvn/extensions.xml`, POM build extensions, `.mvn/maven.config`, `.mvn/jvm.config` | Yes (plugins, extensions, dependencies) unless `-o` with a warm cache | <https://maven.apache.org/configure.html> |
+| `./mvnw` | Yes: repository script; downloads and runs `distributionUrl` | Yes on first use | <https://maven.apache.org/tools/wrapper/> |
+| `gradle dependencies`, Tooling API model fetch | Yes: settings, build scripts, `buildSrc`, included builds | Yes unless `--offline` with a warm cache | <https://docs.gradle.org/current/userguide/build_lifecycle.html> |
+| `./gradlew` | Yes: repository wrapper JAR; downloads and runs `distributionUrl` | Yes on first use | <https://docs.gradle.org/current/userguide/gradle_wrapper.html> |
+| `npm install` / `npm ci` (npm 12) | Conditional: root lifecycle scripts and `.npm-extension` yes (not under `npm ci` for the extension); dependency scripts only if in `allowScripts`; nothing with `--ignore-scripts` | Yes | <https://docs.npmjs.com/cli/v12/using-npm/config> |
+| `npm install` (npm 11 and earlier) | Yes: root and dependency lifecycle scripts unless `--ignore-scripts` | Yes | <https://docs.npmjs.com/cli/v11/using-npm/scripts> |
+| `npm ls`, `npm ls --package-lock-only` | No (none documented) | No | <https://docs.npmjs.com/cli/v12/commands/npm-ls> |
+| `pnpm install` (10+) | Conditional: root scripts and `.pnpmfile` yes; dependency builds only if allowed (`allowBuilds`, formerly `onlyBuiltDependencies`) | Yes | <https://pnpm.io/settings/build> |
+| `pnpm list` | Conditional: `--find-by` loads `.pnpmfile`; otherwise none documented | No | <https://pnpm.io/cli/list> |
+| `yarn` (Berry) in a checkout | Yes if `.yarnrc.yml` sets `yarnPath` (unless `ignorePath`); `yarn.config.cjs` constraints; workspace postinstall | Yes for install | <https://yarnpkg.com/configuration/yarnrc> |
+| Corepack shim (`yarn`, `pnpm`) | Conditional: downloads and runs the version in `packageManager`; URLs only with `COREPACK_ENABLE_UNSAFE_CUSTOM_URLS=1` | Yes unless cached / `COREPACK_ENABLE_NETWORK=0` | <https://github.com/nodejs/corepack/blob/main/README.md> |
+| `bun install` | Conditional: dependency scripts only for `trustedDependencies` and the default list; none with `--ignore-scripts` | Yes | <https://bun.sh/docs/pm/lifecycle> |
+| pip / uv building an sdist or editable project | Yes: build backend from `pyproject.toml` (may be in-tree) | Yes (build requirements) | <https://docs.astral.sh/uv/reference/settings/> |
+| `uv sync` | Conditional: yes when the project has a build system; avoid with `--no-install-project --frozen` | Yes | <https://docs.astral.sh/uv/concepts/projects/sync/> |
+| `poetry install` | Conditional: project-required plugins are installed and loaded | Yes | <https://python-poetry.org/docs/plugins/> |
+| Python interpreter start in an environment | Yes: `.pth` `import` lines, `sitecustomize` (unless `-S`) | No | <https://docs.python.org/3/library/site.html> |
+| `bundle install` / any Bundler command | Yes: `Gemfile` is evaluated as Ruby | Yes for install | <https://guides.rubygems.org/gemfile/> |
+| `composer install` | Conditional: root `scripts` yes; plugins only if in `allow-plugins` (or approved at the prompt); `--no-plugins` disables | Yes | <https://getcomposer.org/doc/06-config.md> |
+| SwiftPM (`swift package ...`) | Yes, sandboxed (inferred from "the same sandbox that manifest parsing uses") | Conditional | <https://github.com/swiftlang/swift-evolution/blob/main/proposals/0303-swiftpm-extensible-build-tools.md> |
+| `docker compose config` | No execution documented; reads `.env`, env files, `include`; interpolates host environment into output | Conditional: remote `include`, `--resolve-image-digests` | <https://docs.docker.com/reference/cli/docker/compose/config/> |
+| `git status` / `git log` in a checkout | Conditional: no for a fresh network clone; yes if `.git` itself is untrusted (config such as `core.fsmonitor`, hooks) | No | <https://git-scm.com/docs/git> |
+| `git submodule update --init` | No code from `.gitmodules` (custom command not accepted there); fetches repository-chosen URLs | Yes | <https://git-scm.com/docs/git-submodule> |
+| Subprocess of a Claude Code Bash command | Not prompted individually; inside the Bash sandbox when enabled | Per sandbox allow-list | <https://code.claude.com/docs/en/sandboxing> |
+| Subprocess of a local MCP server under Claude Code | Not prompted; outside the sandbox, "with your full access" | Unrestricted | <https://code.claude.com/docs/en/sandboxing> |

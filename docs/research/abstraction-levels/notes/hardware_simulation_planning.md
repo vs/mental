@@ -27,9 +27,11 @@ Source note: every finding links to the page it came from. Three markers flag we
 ## 1. Gate against RTL: combinational equivalence checking
 
 ### Takeaway
+
 Gate-versus-RTL checking is routine because both sides keep the same state elements, so the tool pairs them up and compares only the logic between pairs. The pairing is found by name first and by function second. Where synthesis changed the state elements (retiming, state-machine re-encoding, merged registers), the synthesis tool hands the checker a file of hints describing what it did, and the checker proves each hint before using it. That hint-then-validate arrangement is the most transferable idea in this note.
 
 ### Cited Findings
+
 - Logic equivalence checking (LEC) uses static analysis to compare an HDL description against a gate netlist "for all inputs and all time". It requires the two designs to have the same number of states at the boundary; interior encodings may differ. Siemens calls it the most popular original use of equivalence checking — [Siemens Verification Horizons blog, 2019](https://blogs.sw.siemens.com/verificationhorizons/2019/07/11/the-many-flavors-of-equivalence-checking-part-1-synthesis-validation-with-lec-and-slec-a-k-a-the-most-popular-formal-apps-ever/) (vendor material).
 - Cadence Conformal treats primary inputs and outputs, flip-flops, latches and black boxes as "key points", pairs them between the two designs, then compares. Mapping is name-based first and function-based second; the name phase is quick and the functional phase is slow — [Cadence community forum](https://community.cadence.com/cadence_technology_forums/f/logic-design/22046/best-flow-to-map-most-key-points-before-compare) (search snippet; forum answers, not official documentation).
 - Synopsys Formality reads an "automated setup file" (`.svf`) that Design Compiler or Fusion Compiler writes during synthesis. It holds "hints regarding both guidance and setup" and lets Formality "automatically detect, and independently verify" the optimizations made — [Synopsys white paper, Techniques for Achieving Higher Completion in Formality](https://www.synopsys.com/content/dam/synopsys/implementation&signoff/white-papers/higher-completion-formality-wp.pdf) (vendor material).
@@ -40,21 +42,25 @@ Gate-versus-RTL checking is routine because both sides keep the same state eleme
 - A partition is checked in isolation with its boundary signals unconstrained, so a partition can fail although the designs are equivalent in context — [EQY issue 47](https://github.com/YosysHQ/eqy/issues/47) (search snippet).
 
 ### Inferences
+
 - The draft report says this check is routine "because registers on both sides can be matched". That is confirmed, with one addition the draft lacks: when registers cannot be matched directly, the fix in practice is not a smarter checker but a cooperating generator. The synthesis tool knows what it changed and says so; the checker trusts nothing and proves each statement.
 - Mental's LLM is in the position of the synthesis tool. It should emit the level map (which lower entities form an upper entity, which lower steps form an upper step, which names changed) as a list of small typed hints. The checker validates each hint on its own and reports accepted and rejected hints per upper element. A rejected hint is a finding with a location, not a failed build.
 - Partitioning by matched points is why the check scales and why failures are local: "1 of 44 partitions failed, here is its name". Mental's refinement check should report per upper step, not per level.
 - The partition false alarm (equivalent in context, not in isolation) will appear in Mental too: an upper step checked alone may need an invariant from its surroundings. That is the place for per-level invariants as assumptions.
 
 ### Gaps
+
 - I could not open official Conformal or Formality manuals (login required); the Conformal mapping description rests on forum answers.
 - No public data on how often LEC needs manual intervention on current designs.
 
 ## 2. Sequential equivalence and C/C++-to-RTL transaction equivalence
 
 ### Takeaway
+
 When the two sides have different numbers of states (untimed C++ against clocked, pipelined RTL), the comparison moves to outputs at transaction boundaries. Three commercial tools do this and are used for sign-off, but only at block level, and convergence on hard blocks still needs human-supplied case splits and intermediate lemmas. A 2024 study found soundness bugs in all three vendors' tools, which matters for any design that makes a checker the source of truth.
 
 ### Cited Findings
+
 - Sequential logic equivalence checking (SLEC) "allows for the number of states to differ between the two" designs as long as the outputs match. The main driver is high-level synthesis, which must insert registers because C++ has no clocks — [Siemens Verification Horizons blog](https://blogs.sw.siemens.com/verificationhorizons/2019/07/11/the-many-flavors-of-equivalence-checking-part-1-synthesis-validation-with-lec-and-slec-a-k-a-the-most-popular-formal-apps-ever/) (vendor material).
 - Siemens SLEC covers hand-written RTL, Catapult-generated RTL and power-optimized RTL, with "bug hunting, bounded-check, and full-proof strategies", and is positioned as a complement to simulation — [Siemens SLEC product page](https://www.siemens.com/en-us/products/ic/catapult-high-level-synthesis/hls-verification/slec/) (vendor claim).
 - Synopsys VC Formal DPV proves "transactional equivalence between a golden specification in C/C++ and the RTL designs", and also compares C to C and RTL to RTL — [Synopsys blog](https://www.synopsys.com/blogs/chip-design/datapath-validation-artificial-intelligence-mathematical-cores.html) (vendor claim).
@@ -65,21 +71,25 @@ When the two sides have different numbers of states (untimed C++ against clocked
 - The paper notes that equivalence checking is undecidable in general, so timeouts are an expected result — [Pardalos et al., DVCon 2024](https://www.doc.ic.ac.uk/~afd/papers/2024/DVCon.pdf).
 
 ### Inferences
+
 - The draft report says DPV "needs no correspondence between internal state elements". I could not confirm that sentence in the Synopsys pages I opened. What the sources do show is that the problem statement needs only input and output correspondence at the transaction boundary, while proofs on hard blocks converge only after engineers add internal structure by hand (case splits, per-block lemmas). The draft's sentence should be softened to "is specified only at transaction boundaries".
 - The tractability recipe is three things together: a small block, an agreed transaction boundary, and an RTL that was generated from the C++ by a tool or written against it. None holds for a whole design.
 - For Mental, a "transaction" is one upper step: a request handled, a job run. Comparing only at step boundaries is the right default, and it is the cheap check. Internal correspondences are optional hints that make a failing check explainable.
 - The Equifuzz result is a warning for a product whose pitch is "the checker decides what is fact". Mental's checkers can be tested the same way: generate model pairs that are equal by construction (a level and a trivially rewritten copy) and pairs that differ by one seeded fault, and confirm the checker says so.
 
 ### Gaps
+
 - No vendor-neutral data on what share of blocks converge without manual help.
 - I did not find public documentation of how DPV, SLEC or C2RTL users declare the transaction boundary and latency.
 
 ## 3. Instruction-set specifications and checking processors against them
 
 ### Takeaway
+
 The instruction-set architecture is the one hardware level with a single, authored, executable specification, and both Arm and RISC-V now generate their checks from it. The link down to a processor is an abstraction function that extracts architectural state (registers, flags, program counter) from pipeline state. It is hand-written per processor, and Arm reports it as the main cost. The checks are bounded and leave out large parts of the processor.
 
 ### Cited Findings
+
 - ISA-Formal checks datapath, pipeline control and forwarding and stall logic against Arm's Architecture Reference Manuals, which are mechanically translated to Verilog so that commercial model checkers can be used. It was applied to 8 Arm processors and found bugs in all of them — [Reid et al., CAV 2016, author page](https://alastairreid.github.io/papers/CAV_16).
 - The method: let the processor run for some cycles, then execute one instruction and apply "an abstraction function abs which extracts the architectural state of the processor immediately before" and immediately after it. The pipeline is not flushed. Instead of letting the tool choose any instruction, the method enumerates instruction classes and performs a separate check per class — [Reid et al., CAV 2016, PDF](https://static.aminer.org/pdf/20170130/pdfs/cav/wtylpbkhv9vdxulg74wf2uzzmi3iekyf.pdf).
 - "The only part that needs to be customized for each processor is the Verilog abstraction function that extracts the effective architectural state from the micro-architectural state." Most processors needed around 2,500 lines of such support code — [same PDF](https://static.aminer.org/pdf/20170130/pdfs/cav/wtylpbkhv9vdxulg74wf2uzzmi3iekyf.pdf).
@@ -95,6 +105,7 @@ The instruction-set architecture is the one hardware level with a single, author
 - The generated checks are of two kinds. Instruction checks, one per instruction and channel, confirm that the reported state change matches the instruction. Consistency checks cover what single-instruction checks miss: program-counter chaining forward and backward, register values equal to the last write, causality under out-of-order retirement, uniqueness of retirement order, and liveness. The generated checks "are bounded model checks"; liveness may need added fairness constraints — [riscv-formal procedure](https://yosyshq.readthedocs.io/projects/riscv-formal/en/latest/procedure.html).
 
 ### Inferences
+
 - The draft report's sentence on ISA-Formal is right but leaves out three facts that change the lesson: the check is bounded, it covers only part of the core, and the abstraction function is written by hand at about 2,500 lines per processor. The lesson is not "per-instruction checking is cheap" but "the property side can be generated; the mapping side is where the work and the bugs are".
 - That maps onto Mental exactly. Upper-level steps (the "instructions") can be proposed by the LLM and checked generically. The abstraction function from lower state to upper state is the artifact that needs the most care, and it should be debugged the way Arm does: first against two or three hand-checked, simple upper steps, before any generated check is trusted.
 - riscv-formal splits checking into "each step alone is right" and "the sequence of steps is coherent" (nothing lost, duplicated, reordered; each read sees the last write). ISA-Formal names the same residue as unfinished. Mental's per-run projection check needs both halves: each lower segment realizes its upper step, and the projected sequence has no lost, duplicated or reordered upper steps.
@@ -102,15 +113,18 @@ The instruction-set architecture is the one hardware level with a single, author
 - ASL and Sail show the value of one executable top-level artifact from which emulator, documentation and checks are generated. They also show that the top level is found by testing it against the implementations, with errors on both sides.
 
 ### Gaps
+
 - No public figures on ISA-Formal's current coverage at Arm after 2016.
 - I did not find a released Sail-generated SystemVerilog model in use for sign-off as of November 2026.
 
 ## 4. TLM against RTL since 2018, and the hardware stack as a whole
 
 ### Takeaway
+
 The prior note recorded that general equivalence between transaction-level models and RTL was called open in 2007. I found nothing from 2018 to 2026 that closes it. Progress has been in per-run comparison: co-simulating a virtual prototype with the RTL, fuzzing both, and running symbolic execution across the two levels. Across the whole stack, each adjacent pair has its own kind of check, and the strength of the check falls as the two levels' notions of a step diverge.
 
 ### Cited Findings
+
 - Herdt, Le, Große and Drechsler (DATE 2018) refine TLM properties to RTL properties automatically by reusing the transactor, relating TLM events to RTL signal combinations at clock cycles; they note manual translation is error-prone — [paper via CORE](https://core.ac.uk/download/161379479.pdf) (search snippet).
 - Cross-level processor verification (FDL 2020) couples an instruction-set simulator as reference model to an RTL core in tight co-simulation and evolves the instruction stream during the run — [Herdt et al., FDL 2020](https://vxproxy02.ics.jku.at/files/2020FDL_cross-level-processor-verification-riscv.pdf) (search snippet).
 - A 2024 method verifies a RISC-V interrupt controller by fuzzing TLM transactions on the virtual prototype and driving the same stimuli into the RTL through a TLM-to-RTL transactor — [Ahmadi-Pour, Hassan, Drechsler, RISC-V Summit Europe 2024](https://agra.informatik.uni-bremen.de/doc/work/RISCVSummit2024_SAP.pdf) (search snippet).
@@ -129,20 +143,24 @@ The stack, with the check used between each adjacent pair (compiled from section
 | Gate netlist | layout | extracted netlist | LVS graph comparison | exact, routine |
 
 ### Inferences
+
 - The draft report's phrase "open for TLM vs RTL" needs a qualifier. Equivalence of *synthesizable, untimed C++/SystemC blocks* with RTL is commercial practice (section 2). What is open is equivalence of *loosely timed virtual platforms* with RTL, where the two sides share neither state nor timing.
 - The table supports the draft's main claim and sharpens it. Checks are proofs where one level was mechanically derived from the other and the derivation left a trace (hints, matched names, a transaction boundary). They are per-run comparisons where the two levels were written independently. Mental's LLM-proposed upper levels are written independently of the code, so per-run comparison is the realistic baseline, and proof-like strength is available only where the upper level is derived deterministically from the lower one.
 - No hardware flow has one end-to-end check. The draft already says this; the table is the evidence.
 
 ### Gaps
+
 - The 2018–2025 items except arXiv:2509.05504 rest on search snippets.
 - I did not find a 2020s survey of formal TLM-versus-RTL equivalence; absence of evidence, not proof that none exists.
 
 ## 5. Multi-resolution modeling, aggregation–disaggregation and HLA
 
 ### Takeaway
+
 Military and policy simulation defines consistency between a detailed and an aggregate model as a commuting diagram, in a weak form (compare aggregated outputs) and a strong form (compare states after aggregating, running the coarse model and disaggregating). Agreement is expected only approximately and is measured, not proved. The field's hard-won practice is to avoid converting state between levels mid-run, and its senior author warns that the detailed model is not automatically the true one.
 
 ### Cited Findings
+
 - Multiresolution modeling is "building a single model, a family of models, or both to describe the same phenomena at different levels of resolution" — [Davis and Bigelow, Experiments in Multiresolution Modeling, RAND MR-1004, 1998](https://apps.dtic.mil/sti/pdfs/ADA355041.pdf) (search snippet; DTIC and RAND refused the fetch).
 - Davis and Hillestad (1993) define consistency as "the comparison between the projected state of an aggregate of high-resolution entities which evolved in M, and the projected state of the same aggregate initially controlled by M'". Weak consistency: aggregate the high-resolution outputs and compare with the low-resolution model's outputs; the models are consistent if these are "approximately equal". Strong consistency: aggregate the detailed state, evolve it in the coarse model, disaggregate, and compare with the detailed evolution — as quoted and drawn in [Soyez et al., 2013, arXiv:1311.5108](https://arxiv.org/abs/1311.5108) (secondary source quoting the 1993 paper).
 - In practice the same authors measure consistency by running the simulation several times at full detail and several times with dynamic level switching, recording mean values of chosen elements, and computing a dissimilarity — [Soyez et al., arXiv:1311.5108](https://arxiv.org/abs/1311.5108).
@@ -154,6 +172,7 @@ Military and policy simulation defines consistency between a detailed and an agg
 - The High Level Architecture was reissued as IEEE 1516-2025 ("HLA 4") in 2025 — [IEEE 1516-2025 record](https://standards.ieee.org/standard/1516-2025.html) (search snippet). HLA provides generic attribute ownership transfer between federates (divestiture and acquisition) — [PyHLA manual, ownership management](https://nongnu.org/certi/PyHLA/manual/node16.html) (search snippet). I found no source showing that HLA itself defines aggregation–disaggregation consistency; it appears to be left to each federation's object model and agreements.
 
 ### Inferences
+
 - The draft report says multi-resolution modeling "treats consistency between an aggregate model and a detailed one as an empirical comparison of outputs". That is half right. The *definition* (Davis and Hillestad) is a commuting diagram over an aggregation function, the same shape as a refinement mapping. Only the *evaluation* is empirical and approximate. The draft should say so, because it means this field agrees with the formal-methods fields on what the check is and differs only on tolerance.
 - Weak and strong consistency give Mental two useful grades. Weak: project the lower run's outputs upward and compare with the upper run's outputs. Strong: also require that upper state, pushed down, is a state the lower level could be in. Mental needs only the weak form for display and the projection check; the strong form is what mid-run zoom would need, and the prior note already recommends re-running instead.
 - Multiple-resolution entities are what Mental already does by keeping every level in the model at once. The "core attributes" idea is worth naming: for each level pair, list the few upper variables that must agree with the abstraction of lower state, and check exactly those.
@@ -161,15 +180,18 @@ Military and policy simulation defines consistency between a detailed and an agg
 - Approximate equality is a real choice Mental has to make for durations, counts and probabilities. For discrete state the comparison should be exact.
 
 ### Gaps
+
 - All RAND primary texts were blocked; the Davis findings rest on search snippets and one secondary paper. They should be re-checked against the PDFs before the report quotes them.
 - No source found on how current HLA federations test aggregate-versus-entity consistency in practice.
 
 ## 6. Hierarchical planning: downward refinement, angelic semantics, plan verification
 
 ### Takeaway
+
 Planning research offers three results. Bacchus and Yang treat refinability as a measurable probability per level pair and merge levels where it is low. Marthi, Russell and Wolfe make refinability hold by construction, by allowing only true descriptions of high-level actions, given as an upper and a lower bound on the reachable set. Behnke and colleagues show that checking whether a concrete action sequence is a valid decomposition of a hierarchy is NP-complete unless the decomposition is supplied.
 
 ### Cited Findings
+
 - The downward refinement property (DRP) holds when "every abstract solution can be refined to a concrete-level solution without backtracking across abstraction levels". It "is a strong requirement that is not often met in practice" — [Bacchus and Yang, Downward Refinement and the Efficiency of Hierarchical Problem Solving, Waterloo TR 1992](https://cs.uwaterloo.ca/research/tr/1992/45/drp.pdf) (technical-report version of the Artificial Intelligence 1994 article).
 - The paper gives a model of search cost "parameterized by the probability of an abstract solution being refinable", a syntactic test for the DRP in ABSTRIPS-style hierarchies, and the HighPoint algorithm. HighPoint takes the hierarchy proposed by Knoblock's Alpine, estimates a refinement probability for each pair of levels in a testing phase, and collapses levels whose probability is low; the reported runs use a threshold of 0.5 — [same report](https://cs.uwaterloo.ca/research/tr/1992/45/drp.pdf).
 - Angelic semantics defines a high-level action by "the set of states reachable by some refinement", with the choice of refinement "resolved in the planning agent's own best interest". The name contrasts with adversarial nondeterminism, where a plan must work "no matter how the choices are made" — [Marthi, Russell, Wolfe, ICAPS 2007](https://aima.eecs.berkeley.edu/~russell/papers/icaps07-hla.pdf).
@@ -183,6 +205,7 @@ Planning research offers three results. Bacchus and Yang treat refinability as a
 - HDDL is the common input language for hierarchical planning, an extension of PDDL adopted for the first hierarchical track of the International Planning Competition in 2020 — [Höller et al., arXiv:1911.05499](https://arxiv.org/pdf/1911.05499) (search snippet).
 
 ### Inferences
+
 - Two corrections to the draft report. First, it attributes "optimistic" and "pessimistic" descriptions to the ICAPS 2007 paper. That paper calls them *complete* and *sound* descriptions; the optimistic and pessimistic names, with costs, are from ICAPS 2008. Second, and more important, the draft reads the pessimistic description as "what it is guaranteed to do". That is not what it means. The lower bound is the set of states the *agent can force by choosing a refinement*. It is a guarantee only when the chooser is on your side.
 - This matters for the courier. A courier is not controlled by the system under study. For the question "can this scenario happen?" the courier's choices are angelic and the reachable-set reading fits. For the question "does the system cope with whatever the courier does?" the courier is an adversary, and the 2007 paper itself says that case needs the plan to work under all choices. So for uncontrolled human and physical actors, the bound Mental needs is the *upper* bound (everything the actor may do), and invariants must hold over all of it. The lower bound is useful only for steps where the modeled system chooses, for example a dispatcher service picking any free courier. The 2007 paper notes that complete (upper-bound) descriptions "may work unchanged" in nondeterministic environments, while sound ones need replacing.
 - "Downward refinement fails only if descriptions are false" is a clean statement of Mental's risk. An LLM-written summary behavior is a description of an upper step that may be false. Mental has two honest options, matching the two papers: check each summary against the lower level so it is true by construction (angelic), or measure how often upper paths have lower realizations and treat low scores as a defect of the level (Bacchus and Yang).
@@ -191,15 +214,18 @@ Planning research offers three results. Bacchus and Yang treat refinability as a
 - Bounds were hand-written in both angelic papers, and useful lower bounds were hard to write even by the authors. Expect an LLM to produce upper bounds more reliably than lower ones.
 
 ### Gaps
+
 - I read the 1992 technical report, not the 1994 journal text; statements should match but page references differ.
 - I did not find a tool that derives angelic descriptions automatically from a hierarchy, which both papers leave as future work.
 
 ## 7. LLM hierarchical planning with checked refinements, 2023–2026
 
 ### Takeaway
+
 The work closest to Mental's design lets an LLM propose a decomposition or an abstract action and lets a symbolic component decide whether to keep it. Acceptance is always by execution: the proposal's claimed effects must hold after the lower-level steps run. None of these systems proves a proposal correct in general, and the ones that learn a library score each proposal over many uses and discard low scorers.
 
 ### Cited Findings
+
 - Kambhampati et al. argue that autoregressive LLMs "cannot, by themselves, do planning or self-verification" and should be paired with "external model-based verifiers in a tighter bi-directional interaction regime"; LLMs can also help acquire the models that drive the verifiers — [LLMs Can't Plan, But Can Help Planning in LLM-Modulo Frameworks, ICML 2024, arXiv:2402.01817](https://arxiv.org/abs/2402.01817).
 - ChatHTN is an HTN planner that calls ChatGPT only when no method decomposes a compound task; the LLM "returns a sequence of primitive tasks" and planning continues — [Muñoz-Avila, Aha, Rizzo, arXiv:2505.11814](https://arxiv.org/abs/2505.11814).
 - After every decomposition, from a method or from the LLM, ChatHTN appends a verifier: a primitive task with no effects whose preconditions are the declared effects of the compound task. If they do not hold, the branch is rejected. The authors claim the planner is sound on this basis; it is not complete, and a wrong LLM decomposition can make a solvable problem fail on that branch. ChatGPT "rarely generates the same output when prompted with the same input", so each test got five attempts — [arXiv:2505.11814](https://arxiv.org/abs/2505.11814).
@@ -210,6 +236,7 @@ The work closest to Mental's design lets an LLM propose a decomposition or an ab
 - TheoryCoder uses high-level PDDL operators to constrain low-level search and has an LLM synthesize Python transition models that ground them — [arXiv:2503.20124](https://arxiv.org/pdf/2503.20124) (search snippet).
 
 ### Inferences
+
 - These systems confirm Mental's division of labor (LLM proposes, checker decides) and add a missing mechanic: a *verifier step*. For every upper step, state its declared effect as a predicate over upper state, and after the mapped lower steps have run, evaluate that predicate on the projected state. ChatHTN's verifier task is exactly this, and it is the per-step half of the projection check.
 - Ada's s/b score is the modern form of Bacchus and Yang's refinement probability, applied per operator instead of per level. Mental can keep the same two counters per upper step across scenarios: how often it was used, how often its lower realization satisfied its declared effect. A low ratio marks a bad summary; a low count marks an untested one. Both are honest things to show a user.
 - All of these accept by execution on the cases tried. Soundness holds per accepted plan, not for the operator in general. Mental's bounded-exhaustive mode can do better than any of them within its bounds, because it can try all schedules rather than the ones a planner happened to pick.
@@ -217,6 +244,7 @@ The work closest to Mental's design lets an LLM propose a decomposition or an ab
 - Run-to-run variation in LLM output (ChatHTN's five attempts) is a reason to store accepted level maps as artifacts and to check agreement across samples, as the "who decides what" table in `how-mental-works.md` already requires.
 
 ### Gaps
+
 - I found no 2023–2026 system that checks an LLM-proposed abstract action against *all* refinements, or that derives angelic bounds with an LLM.
 - Survival rates of LLM proposals are not reported by Ada; ChatHTN reports only three domains.
 - The search surfaced few 2026 papers; coverage of the newest work is thin.
@@ -224,9 +252,11 @@ The work closest to Mental's design lets an LLM propose a decomposition or an ab
 ## 8. Network protocol layering
 
 ### Takeaway
+
 There is real work checking one protocol layer against the service it should provide, and it uses the same two methods as everywhere else. Netsem specifies TCP twice, as a protocol and as a service, and tests an abstraction function between them on captured traces. Verdi proves a system once over an ideal network and carries the proof to a faulty network through a verified transformer. A full proof that TCP implements its service remained out of reach for Netsem, at 11 person-years.
 
 ### Cited Findings
+
 - Netsem wrote specifications in HOL4 "both of the service that they provide to applications (in terms of TCP bidirectional stream connections) and of the internal operation of the protocol (in terms of TCP segments and UDP datagrams), together with a testable abstraction function relating the two", validated against "several thousand traces captured from three implementations (FreeBSD, Linux, and WinXP)" — [Bishop et al., Engineering with Logic, Journal of the ACM 66(1), 2018](https://www.trustworthy.systems/publications/full_text/Bishop_FMNRSSW_19.pdf).
 - The abstraction function "takes a pair of states of the protocol-level model (one for each end of a TCP connection), together with an abstract model of the state of the intervening IP network (the TCP segments in flight), and constructs a state of the end-to-end service-level model". It "is what one would use as the invariant of a protocol correctness proof". A checker takes a protocol-level trace and "checks whether there is a corresponding trace of the service-level specification, with the abstraction function mapping protocol-level states onto service-level states at each step" — [same paper, section 1.5.2](https://www.trustworthy.systems/publications/full_text/Bishop_FMNRSSW_19.pdf).
 - The authors chose testing because the scale of the specifications made a proof "a challenging prospect". The service-level specification was written by hand, not derived; its control block has two fields against the protocol level's many. Service-level validation reached only proof of concept. The whole project took about 11 person-years — [same paper](https://www.trustworthy.systems/publications/full_text/Bishop_FMNRSSW_19.pdf).
@@ -236,12 +266,14 @@ There is real work checking one protocol layer against the service it should pro
 - Other layered efforts: a TCP layer verified against validated models of the layers beneath it — [AdaCore, Layered formal verification of a TCP stack](https://adacore.com/papers/layered-formal-verification-of-a-tcp-stack); a framework where security-protocol layers are verified independently and composed — [ePrint 2023/1329](https://eprint.iacr.org/2023/1329.pdf); a Bluetooth L2CAP state machine proved against its specification in Dafny and integrated into Android — [MobiCom 2025](https://www.cs.sfu.ca/~yuepeng/pubs/mobicom25.pdf) (all three: search snippets).
 
 ### Inferences
+
 - Netsem is the nearest existing instance of the draft report's recommendation 2 (check refinement per run by projection), and it is on TCP, which every web service sits on. The draft cites TLA+ trace validation and hardware for this; Netsem should be added. It also shows the shape of the abstraction function for a connection: it takes *both endpoints plus the messages in flight*. For Mental, the abstraction from service-level state to a business-level "order delivered" will likewise need the states of several entities and the contents of the wires and queues between them, not one entity's state.
 - Netsem's service level was authored by hand after the protocol level was understood, and was far smaller. That matches Mental's plan (LLM proposes upper levels after extraction of lower ones) and warns that validating the upper level took effort the project did not have.
 - Verdi's transformer is a level pattern the draft's list (hide, group, atomize, rename, summarize, assume) lacks: *same behavior, weaker environment*. A model checked with reliable delivery is re-run with duplication, loss or reordering switched on at the wires, and a known transformer (retry with deduplication, sequence numbers) is what justifies carrying properties across. In an interpreter this is a mode switch on wires plus a check, not a proof.
 - The sublayering paper states the abstraction barrier in protocol terms (each sublayer reads only its own header and interface data) and reports the case where it fails: shared state variables. That is the "leak is a finding" rule from `how-mental-works.md`, with TCP as a real example of a level that cannot be cut where intuition says.
 
 ### Gaps
+
 - I did not locate the Ensemble/Nuprl layered-protocol work or the Ivy QUIC specification in this session; both are relevant and unverified here.
 - No source found that checks an HTTP-level service description against TCP-level behavior the way Netsem relates TCP to streams.
 

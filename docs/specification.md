@@ -5,6 +5,7 @@
 Every term in **bold** on first use is defined in the [glossary](glossary.md). Facts from trials and research are in [findings](findings.md) and cited as F-numbers.
 
 Each section carries a status:
+
 - **Decided:** confirmed by the owner.
 - **Proposed:** the working answer, not yet confirmed.
 - **Experiment:** under test; the experiment that settles it is named.
@@ -69,7 +70,7 @@ Nothing here is final. A measured result overrules any sentence in this document
 | **P11** | The model and the picture are separate | Model (facts), run (one execution), view state (what is shown), skin (how it looks). Information flows only downward. |
 | **P12** | What you look at is the agent's context | The viewer and the coding agent share one **session**. |
 
-![One worker's claim code has four steps. Two workers running it give a four-by-four grid of states. The highlighted path reads twice before either writes and ends in a double claim.](images/state-grid.png)
+![One worker's claim code has four steps. Two workers running it give a four-by-four grid of states. The highlighted path reads twice before either writes and ends in a double claim.](images/state-grid.svg)
 
 ## 3. Three tools
 
@@ -227,7 +228,7 @@ Mental does not write its own resolver. Measured on five projects, two existing 
 | how it runs | in process, on ruff's own syntax tree | a separate program and an undocumented file format |
 | known danger | no return-type inference; an unstable 0.0.x API | types a receiver `Never` after a legacy SQLAlchemy `Column` test and drops the writes that follow (every `report.status = …` in report-jobs) |
 
-**Proposed for version one: ty, in process.** It needs nothing installed, works on the same syntax tree as the site walk so no positions have to be matched, reads the environment as files, and gets the write sites of report-jobs right. Its crates are pinned to one commit and confined to one crate, as ruff's are. Pyrefly's export is the second source under test (R2): its return-type inference is where the extra three points come from.
+**Proposed for version one: ty, in process.** It needs nothing installed, works on the same syntax tree as the site walk so no positions have to be matched, reads the environment as files, and gets the write sites of report-jobs right. Its crates are pinned to one commit and confined to one crate, as ruff's are. What they pull in (salsa, rayon, rand; 242 crates at ty 0.0.105) is accepted in that crate and nowhere else. Pyrefly's export is the second source under test (R2): its return-type inference is where the extra three points come from.
 
 The checker is set up from the build model, never from its own guesses: explicit roots, Python version and environment per build unit. A repository with several build units gets one checker run per unit.
 
@@ -318,6 +319,7 @@ The model is a flat set of **records** that refer to each other by ID. Every rec
 | artifact, launch, configuration input | `reports/artifact:app`, `reports/launch:worker`, `reports/launch:worker/cfg:database-url` |
 
 Rules:
+
 - The root slug is the system's name: `name` in `mentalc.toml`, else the compose project name, else the directory name.
 - Slugs are ASCII `[a-z0-9]+(-[a-z0-9]+)*`, made from a code name by one function. No counters and no positions; a collision is resolved by adding another code name. `[n]` is allowed on instances only, because it comes from configuration.
 - An ID has one canonical text form; a non-canonical ID is rejected, never normalized. Stored references are always full IDs.
@@ -343,7 +345,7 @@ The fields of each kind are fixed in the implementation plan of the milestone th
 
 ### 7.5 Storage
 
-```
+```text
 .mental/                       not committed
   model/                       one sorted JSONL file per record kind, plus format.json
   anchors.jsonl                record ID → file, lines, quote
@@ -529,7 +531,7 @@ The levels of [11.2](#112-kinds-of-level-and-their-closing-rules) start at the e
 
 ### 12.1 Configuration and steps
 
-```
+```text
 C = ⟨ E, S, L, Ch, A, T, φ, now ⟩
 E instances · S state variables · L locks and transactions · Ch one channel per wire instance
 A activations · T timers · φ predicate values assumed so far · now a logical time tag
@@ -609,7 +611,7 @@ Products (Mental for Claude Code, Mental for Codex, Mental Desktop) are thin she
 
 ### 14.2 Milestones
 
-**Status: Proposed.** Each milestone ends with something checkable on report-jobs, and each gets its own implementation plan in [`docs/plans/`](plans/) before it starts.
+**Status: Proposed.** Each milestone ends with something checkable on report-jobs, and each gets its own implementation plan in [`docs/plans/`](plans/) before it starts. The hand-written **reference model** of report-jobs, in `examples/report-jobs/model/`, grows with the milestones: each one writes by hand, before its code, the records of the kinds it is the first to produce, and its acceptance test compares the build against everything written so far.
 
 | # | Milestone | Done when | LLM |
 |---|---|---|---|

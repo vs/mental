@@ -47,24 +47,31 @@ The survey of other fields added nine more ideas. None of this is settled well e
 **Status: Proposed.**
 
 ### S1. One judge for every strategy
+
 A strategy decides levels, boundaries, the step map and names. It does not decide what counts as correct. The pair check, barrier check, coverage, invariants, name truth and admission measurements run the same way whichever strategy built the ladder. This is guideline C4 ("one judge for every backend") applied to ladders.
 
 ### S2. A strategy is a pure function of the model and answers
+
 `plan(model) -> tasks` and `apply(model, answers) -> ladder`, as for every LLM phase (C3). A strategy reads nothing else, writes nothing else and keeps no state between builds. Its options are part of its identity.
 
 ### S3. Every record says which strategy made it
+
 Each `level` and `step_class` record carries the strategy's ID: its name and canonical options. Two ladders of one commit can therefore sit side by side and be compared record by record.
 
 ### S4. The LLM names; it does not cut
+
 In every strategy except the baseline C, boundaries, the step map and support steps are computed. The LLM names step classes, writes charters and groups lifecycle states into stages, and every answer is checked. Strategy C is kept only as a measured baseline (5.1).
 
 ### S5. Strategies share LLM work through the cache
+
 The cache key is the task's content (6.8). Two strategies that ask the same naming question about the same step class get the same cached answer. Trying another strategy costs only the tasks that differ.
 
 ### S6. One ladder is active; others sit beside it
+
 The model has exactly one active ladder, which `mentalvm` and `mentaldbg` use by default. Other ladders are complete side files that can be shown, measured and made active. A ladder is never partial: if a strategy's tasks cannot be answered, that ladder fails with a clear error (the specification's rule against degraded output).
 
 ### S7. Losing strategies stay
+
 A strategy that loses an experiment stays in the code and in this document, marked *Measured*, as long as it costs little to keep. A later subject may reverse the result, and the baseline is what makes a new result meaningful.
 
 ## 3. What a strategy decides
@@ -203,7 +210,7 @@ So step classes and the step map can be derived from the behavior graphs and lif
 
 The active ladder's records live in the model (`levels.jsonl`, `step_classes.jsonl`, as 4.8 and 4.9 of the specification foresee). Each other ladder is stored as
 
-```
+```text
 .mental/
   ladders/<strategy-id>/        levels.jsonl  step_classes.jsonl  diagnostics.jsonl
 ```
@@ -303,6 +310,7 @@ Option O1. On rq the rules closed "mark started" as two moves; the hand grouping
 - **Not decided.** `prefer`'s choice beats the fixed rules on rq, but the rule asks for "at least one subject and loses on none", and rq is one subject. **Proposal:** make `write-run` the working default of `closing-rules`, and repeat L2 on report-jobs, where `atomic-group` can differ. The reader here used mechanical move names (closing function and what it writes), so that only the cut differed between rules; the first experiment's reader used LLM names.
 
 **Result on report-jobs (2026-11-17; [`report-jobs/strategies.json`](experiments/results/report-jobs/strategies.json), key `L2`).** The subject is the real code of `examples/report-jobs`, run by a new harness ([`rjexp/harness.py`](experiments/rjexp/harness.py)):
+
 - one step per SELECT, per session commit, per S3 upload and per Celery message sent or received, on SQLite;
 - six two-actor scenarios, explored up to two preemptions: 115 runs, 24 of them anomalous;
 - the anomalies are three of the example's four known bugs. Two workers claim one report and upload it twice (14 runs). `requeue_stuck` sets a finished report back to PENDING, so it is delivered again (4). The duplicate idempotency key gives a 500 (6).

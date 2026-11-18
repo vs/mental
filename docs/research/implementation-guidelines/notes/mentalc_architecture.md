@@ -23,9 +23,11 @@ NINJA = `https://github.com/ninja-build/ninja/blob/1a8fee23135e57cda12d47aedb19f
 ## 1. How should the phase pipeline be expressed: pure typed functions, side effects only at the edges?
 
 ### Takeaway
+
 All the clean codebases converge on the same pattern: a core that never does IO and cannot fail, which returns `(value, diagnostics)`. Around it is a thin outer layer that does IO and holds the only `Result`s that matter. The pipeline is plain sequential function calls in one driver function, with no pass-manager framework. For `mentalc` the one real complication is the LLM. Each LLM phase can stay pure if it is split into "plan tasks" (pure) and "apply answers" (pure), with the driver doing cache lookups and backend calls between them.
 
 ### Cited Findings
+
 - rust-analyzer: "core parts of rust-analyzer (`ide`/`hir`) don't interact with the outside world and thus can't fail. Only parts touching LSP are allowed to do IO." Analyses "compute `(T, Vec<Error>)` rather than `Result<T, Error>`" — [RA architecture.md L451-457](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/architecture.md#L451)
 - rust-analyzer: "parsing never fails, the parser produces `(T, Vec<Error>)` rather than `Result<T, Error>`" — [RA architecture.md L88](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/architecture.md#L88)
 - rust-analyzer: "The analyzer keeps all this input data in memory and never does any IO"; the input is `(PathBuf, String)` pairs plus a `CrateGraph` (the "ground state"); everything else is derived state — [RA architecture.md L25-33](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/architecture.md#L25)
@@ -44,6 +46,7 @@ All the clean codebases converge on the same pattern: a core that never does IO 
 - ruff: `lib.rs` exposes `pub fn run(args: Args) -> Result<ExitStatus>`, and `run_command` is one `match command { ... }` dispatching to one function per subcommand. `main.rs` only parses args, calls `run`, and maps errors to an exit code — [RUFF crates/ruff/src/lib.rs L128-212](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff/src/lib.rs#L128), [RUFF crates/ruff/src/main.rs](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff/src/main.rs)
 
 ### Inferences
+
 - **The pipeline is one function, not a framework.** `mentalc::build` should read like the spec table in 6.2: twelve `let x = phase(&a, &b);` lines, each phase a free function in its own module with a typed output struct. A `trait Phase` or a dynamic pass registry gives nothing when there are exactly twelve fixed phases in a fixed order, and it hides the data flow that the spec's Reads/Writes columns make explicit. (Based on typst `compile_impl`, jaq's explicit chain, and RA "functions over objects".)
 - **Each phase takes only what its "Reads" column names** (borrowed typed outputs of earlier phases) and returns `(Output, Vec<Diagnostic>)`. No phase receives a god-context holding everything. An internal `Ctx` inside a phase is fine (RA L364-383).
 - **One `World`-like edge for IO.** The non-LLM phases should read the repository through an in-memory snapshot (`RepoSnapshot { files: BTreeMap<RelPath, Bytes>, ... }`, loaded once, as RA's ground state) or through a small `trait Repo`. Then a phase never calls `std::fs`, `std::env` or the clock, and tests feed it a fixture string. typst putting `today()` in `World` is the precedent for treating the clock as input too (the call ledger's timestamps belong to the driver).
@@ -52,14 +55,17 @@ All the clean codebases converge on the same pattern: a core that never does IO 
 - The repair loop (phase 12 sends repairs back) stays in the driver: `check` is pure and returns diagnostics, each optionally carrying a `RepairTask`. The driver bounds the number of rounds.
 
 ### Gaps
+
 - None of the studied projects has an external oracle like an LLM inside its pipeline. The plan/apply split is my derivation from the pure-core pattern, not something copied from a codebase.
 
 ## 2. What is the minimal incremental cache that meets spec 6.8? Salsa vs a hand-written hash map on disk?
 
 ### Takeaway
+
 Use a hand-written, content-addressed answer store on disk: about 100 to 200 lines, one file per validated LLM answer under `.mental/cache/`, keyed by a stable cryptographic hash of the task's canonical bytes. Salsa solves a different problem: fine-grained, in-memory, revision-based recomputation inside a long-running process. Its persistence is a prototype feature, and its size (~27.7k lines, 15+ dependencies, proc macros, unwinding-based cancellation) is out of proportion for a batch CLI whose costly step is a few dozen LLM calls. Content addressing also gives "early cutoff" (Salsa's backdating, ninja's `restat`) for free.
 
 ### Cited Findings
+
 - Salsa's model: inputs plus pure memoized "query" functions in a database, recomputed when inputs change; "Salsa assumes that `your_program` is a purely deterministic function of its inputs, or else this whole setup makes no sense" — [SALSA book/src/overview.md](https://github.com/salsa-rs/salsa/blob/52b12a418909c9d982a842691c6eaacfc6d62936/book/src/overview.md), [SALSA book/src/how_salsa_works.md](https://github.com/salsa-rs/salsa/blob/52b12a418909c9d982a842691c6eaacfc6d62936/book/src/how_salsa_works.md)
 - Salsa structs "are just integers": a generated `#[salsa::input]` struct is a newtyped `salsa::Id`, and data lives in the database — [SALSA book/src/overview.md](https://github.com/salsa-rs/salsa/blob/52b12a418909c9d982a842691c6eaacfc6d62936/book/src/overview.md)
 - Salsa size and weight: 27,719 lines of Rust in `src/` and `components/`; required dependencies include `boxcar`, `crossbeam-queue`, `crossbeam-utils`, `hashbrown`, `hashlink`, `indexmap`, `intrusive-collections`, `parking_lot`, `portable-atomic`, `rustc-hash`, `smallvec`, `thin-vec`, `tracing`; default features pull `rayon`, `inventory`, and the proc-macro crate — [SALSA Cargo.toml L20-71](https://github.com/salsa-rs/salsa/blob/52b12a418909c9d982a842691c6eaacfc6d62936/Cargo.toml#L20) (line count measured locally with `wc -l`)
@@ -80,6 +86,7 @@ Use a hand-written, content-addressed answer store on disk: about 100 to 200 lin
 - ninja marks an output dirty when it is older than its newest input *or* when the recorded `command_hash` differs from the current command. `restat` rules let unchanged outputs stop rebuilding further down. `-d explain` records a human-readable reason for every rebuild ("output %s older than most recent input %s") — [NINJA src/graph.cc L225-262](https://github.com/ninja-build/ninja/blob/1a8fee23135e57cda12d47aedb19f795353fa13c/src/graph.cc#L225), [NINJA src/build_log.h L54-78](https://github.com/ninja-build/ninja/blob/1a8fee23135e57cda12d47aedb19f795353fa13c/src/build_log.h#L54)
 
 ### Inferences
+
 - **Why Salsa is wrong for Mental v1:**
   1. Each `mentalc` command is a short-lived process. With the `agent` backend, every `task next` and `task submit` is a *new* process, so an in-memory memo table such as Salsa's or comemo's is thrown away between calls. All the value is in persistence across processes, which in Salsa is a prototype.
   2. The costly operations are LLM calls (15 for a first build of report-jobs, 3 after a one-line fix, spec 6.4). The non-LLM phases on a 5-file repo take milliseconds and can simply rerun. Salsa's fine-grained dependency tracking optimizes the cheap part.
@@ -99,6 +106,7 @@ Use a hand-written, content-addressed answer store on disk: about 100 to 200 lin
 - Extract results could later be cached per file by content hash, so that large repos do not re-parse on each `task next`. This is not needed for v1 (an open question for the `extract` crate).
 
 ### Gaps
+
 - Salsa's `persistence` feature was not read in depth (no docs page found in `book/src`); its maturity is judged only from the CHANGELOG wording "prototype".
 - No published measurements of Salsa overhead for batch pipelines were found; the size and dependency comparison is the evidence.
 - buck2 (content-digest keyed actions, DICE) was not studied; ninja was enough to show the command-hash idea.
@@ -106,10 +114,12 @@ Use a hand-written, content-addressed answer store on disk: about 100 to 200 lin
 ## 3. How do these projects design diagnostics and CLI exit codes?
 
 ### Takeaway
+
 A diagnostic is a value: a stable id or code, a severity, a short message, a primary location, and optional secondary notes or hints. It is rendered by separate renderers (human, JSON, JSON lines, SARIF and so on) from a serializable *view* struct, so the internal type stays free to change. Exit codes use three levels: 0 clean, 1 "ran fine but found problems", 2 "the tool itself failed". Tool errors go to stderr as a chain of causes, and a broken pipe exits quietly.
 
 ### Cited Findings
-- ruff `Diagnostic::new(id: DiagnosticId, severity: Severity, message)`: "The identifier should be something that uniquely identifies the _type_ of diagnostic ... usable as a reference point for humans"; the primary message is "a single terse description". Inner fields include `annotations` (spans), `subs` (sub-diagnostics), `fix`, `documentation_url`, `secondary_code` — [RUFF crates/ruff_db/src/diagnostic/mod.rs L29-80, L499-512](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_db/src/diagnostic/mod.rs#L29)
+
+- ruff `Diagnostic::new(id: DiagnosticId, severity: Severity, message)`: "The identifier should be something that uniquely identifies the *type* of diagnostic ... usable as a reference point for humans"; the primary message is "a single terse description". Inner fields include `annotations` (spans), `subs` (sub-diagnostics), `fix`, `documentation_url`, `secondary_code` — [RUFF crates/ruff_db/src/diagnostic/mod.rs L29-80, L499-512](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_db/src/diagnostic/mod.rs#L29)
 - ruff `Severity { Hint, Info, Warning, Error, Fatal }` — [RUFF crates/ruff_db/src/diagnostic/mod.rs L1280-1286](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_db/src/diagnostic/mod.rs#L1280)
 - ruff has one renderer per format in `diagnostic/render/`: `azure, concise, full, github, gitlab, grouped, json, json_lines, junit, pylint, rdjson, sarif`, each with insta snapshots — [RUFF crates/ruff_db/src/diagnostic/render/](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_db/src/diagnostic/render)
 - ruff JSON is a separate serializable view, `JsonDiagnostic { cell, code, end_location, filename, fix, location, message, name, noqa_row, severity, url }`, with 1-based `{row, column}` locations built from the internal `Diagnostic` by `diagnostic_to_json` — [RUFF crates/ruff_db/src/diagnostic/render/json.rs L47-230](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_db/src/diagnostic/render/json.rs#L47)
@@ -122,6 +132,7 @@ A diagnostic is a value: a stable id or code, a severity, a short message, a pri
 - rust-analyzer error trivia: "Use `anyhow::Result` rather than just `Result`"; "Do not end error and context messages with `.`" — [RA style.md L853-864](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/style.md#L853)
 
 ### Inferences
+
 - **Mental's diagnostic is a model record, not a CLI artifact.** `diagnostics.jsonl` is part of `.mental/` (spec 4.9) and is read by `mentalvm` and `mentaldbg`. So the `Diagnostic` type belongs in the `model` crate and is deliberately `Serialize`: it *is* an IPC boundary in RA's sense. Phase-internal types (syntax trees, call-graph indices, plan structs) must not derive `Serialize`.
 - Suggested shape:
   - `Diagnostic { id: DiagId, code: Code, severity: Severity, message: String, anchor: Option<Anchor>, records: Vec<RecordId>, kind: Finding | Gap | Assumption | CheckFailed, repair: Option<RepairRef> }`.
@@ -138,14 +149,17 @@ A diagnostic is a value: a stable id or code, a severity, a short message, a pri
 - `main.rs` stays as small as ruff's: parse args, call `mentalc::run(args) -> anyhow::Result<ExitStatus>`, report the error chain. A custom panic hook is optional and not v1.
 
 ### Gaps
+
 - None of the studied tools has a "repair task" concept attached to a diagnostic. The `repair` field is Mental-specific and is covered by the LLM-loop study.
 
 ## 4. Which style rules best keep code compact and readable, and which can clippy enforce?
 
 ### Takeaway
+
 rust-analyzer's `style.md` is the best single source, and most of its rules aim at small surface area and local reasoning. About a third can be enforced mechanically: workspace clippy and rustc lints in `Cargo.toml`, `clippy.toml` `disallowed-methods`, and a `#[test]` tidy check in the RA style. The rest need a reviewer checklist. The key mechanical lever for "side effects only at the edges" is `disallowed_methods` on `std::fs`, `std::process`, `std::env` and the clock, allowed only in the IO modules.
 
 ### Cited Findings
+
 - RA workspace lints: rust `unreachable_pub = "warn"`, `unused_extern_crates`, `unused_lifetimes`, `elided_lifetimes_in_paths`; clippy groups `correctness`/`perf` deny, `complexity`/`style`/`suspicious` warn, `restriction` allow; individually `dbg_macro`, `todo`, `print_stdout`, `print_stderr`, `str_to_string`, `rc_buffer` warn ("CI raises these to deny"); allowed as subjective or noisy: `single_match`, `too_many_arguments`, `type_complexity`, `new_ret_no_self`, and others — [RA Cargo.toml L174-237](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/Cargo.toml#L174)
 - RA: "if some lints annoy you, allow them in the Cargo.toml [workspace.lints.clippy] section" — [RA style.md L102-104](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/style.md#L102)
 - RA dependency policy: "be very conservative with usage of crates.io dependencies. Don't use small 'helper' crates (exception: `itertools` and `either`) ... read Cargo.lock and see if some *transitive* dependencies do not make sense" — [RA style.md L55-62](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/style.md#L55)
@@ -161,6 +175,7 @@ rust-analyzer's `style.md` is the best single source, and most of its rules aim 
 - RA avoids bootstrapping and keeps codegen simple: "we use syn and manual string parsing" — [RA architecture.md L372-375](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/architecture.md#L372)
 
 ### Inferences
+
 - **Mechanically enforceable for mentalc:**
   - `[workspace.lints.rust]`: `unreachable_pub`, `unsafe_code = "forbid"`, `unused_extern_crates`, `elided_lifetimes_in_paths`.
   - `[workspace.lints.clippy]`: groups as RA, plus `dbg_macro`, `todo`, `print_stdout`, `print_stderr`, `str_to_string`, `fn_params_excessive_bools`, `large_enum_variant`, `needless_pass_by_value`, `disallowed_methods`, `disallowed_types`. In CI `-D warnings` turns them into errors, as RA does.
@@ -175,12 +190,15 @@ rust-analyzer's `style.md` is the best single source, and most of its rules aim 
 - Bloat flags in the sources themselves: RA's `stdx::never!`/`always!` soft assertions and per-request `catch_unwind` exist because RA is a long-running server that must not die. A batch compiler should just use `assert!`/`debug_assert!` and fail. ruff's jemalloc/mimalloc global allocators, colored output, and arg-file expansion (`ruff_command_line::expand_args`) are not v1 needs.
 
 ### Gaps
+
 - I did not verify which clippy lints have false positives on this toolchain; thresholds (for example, `too-many-arguments-threshold = 5`) are suggestions to tune once code exists.
 
 ## 5. Which testing strategies fit a compiler whose acceptance target is examples/report-jobs?
 
 ### Takeaway
+
 Use four layers.
+
 1. Data-driven unit tests: one `check(fixture, expect)` helper per phase, many one-line tests (RA, jaq).
 2. Multi-file fixture strings with inline annotations for expected diagnostics (RA fixture DSL, typst and ty annotations).
 3. CLI snapshot tests through `insta_cmd` with path filters (ruff).
@@ -189,6 +207,7 @@ Use four layers.
 Content addressing makes layer 4 cheap: the cache *is* the record/replay fixture, so CI needs no LLM.
 
 ### Cited Findings
+
 - RA: "tests are data driven and do not test the API. Tests which directly call various API functions are a liability"; a single `#[track_caller] fn check(input: &str, expect: Expect)` is "the single place that actually exercises a particular API", followed by "a hundred more tests that don't care about the specific API at all" — [RA architecture.md L416-436](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/architecture.md#L416)
 - RA tests at three boundaries (LSP: "heavy", few, gated by `RUN_SLOW_TESTS`; `ide`: "the middle, and most important"; `hir`) — "in a statically typed language, it's hard to make an error in the protocol itself if messages are themselves typed" — [RA architecture.md L390-407](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/architecture.md#L390)
 - RA: "tests do not depend on any kind of external resources, they are perfectly reproducible"; tests use no libstd ("All required library code must be a part of the tests. This ensures fast test execution") — [RA architecture.md L412-444](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/docs/book/src/contributing/architecture.md#L412)
@@ -203,6 +222,7 @@ Content addressing makes layer 4 cheap: the cache *is* the record/replay fixture
 - ruff tests cache invalidation as unit tests beside the code (`cache_adds_file_on_lint`, `cache_invalidated_on_file_modified_time`, …) — [RUFF crates/ruff/src/cache.rs L531-1010](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff/src/cache.rs#L531)
 
 ### Inferences
+
 - **Layer 1: per-phase `check` helpers.** Each phase module's `tests.rs` (decided layout) has one `#[track_caller] fn check(fixture: &str, expect: ...)` that parses a fixture, runs *only* that phase on typed inputs, and renders the output as stable text, compared with an inline `insta::assert_snapshot!(..., @"...")`. Inline insta snapshots give expect-test's ergonomics, so `expect-test` is not added as a second snapshot tool. Tests do not call phase internals.
 - **Layer 2: a Mental fixture DSL, kept tiny.**
   - One string with `//- path/to/file.py` headers for a miniature repository (RA format), plus optional `//- answers/<role>/<unit>.json` blocks holding canned LLM answers.
@@ -224,15 +244,18 @@ Content addressing makes layer 4 cheap: the cache *is* the record/replay fixture
 - `cov_mark` is optional. It helps find "the canonical test for each bit of code", but cargo-mutants plus 100% branch coverage (already decided) covers most of that value. Flag it as possible bloat.
 
 ### Gaps
+
 - None of the studied projects tests a pipeline against a recorded LLM; the record/replay design is derived, not observed.
 - I did not check `insta_cmd` maintenance status or version compatibility with the chosen `insta`.
 
 ## 6. Which enforceable rules should govern mentalc's architecture? (derived from questions 1–5)
 
 ### Takeaway
+
 About fifteen rules capture what the studied codebases do well and keep `mentalc` small. Each is listed with its rationale, its source, and how it is enforced. The most important are: pure phases with IO behind one edge (enforced by `disallowed_methods`), one sequential `build` function, a hand-written content-addressed answer cache instead of Salsa, diagnostics as model records, and data-driven fixture tests plus an offline golden build of report-jobs.
 
 ### Cited Findings
+
 - Each rule below cites its sources, which are the findings in sections 1–5 (RA architecture.md and style.md, ruff `cache.rs`/`lib.rs`/`main.rs`/`tests/cli`, typst `World`/`compile`, jaq tests, Salsa size and persistence status, ninja `graph.cc`).
 
 ### Inferences
@@ -321,6 +344,7 @@ Candidate guidelines (rule, rationale, source, enforcement):
     - *Enforcement:* reviewer (PR template checklist).
 
 Bloat to avoid explicitly in v1:
+
 - Salsa or comemo.
 - A pass-manager or `Phase` trait.
 - `expect-test` beside insta.
@@ -334,5 +358,6 @@ Bloat to avoid explicitly in v1:
 - Time-based cache eviction.
 
 ### Gaps
+
 - The exact module tree of `mentalc` (for example, `cli/`, `build.rs`, `phases/*.rs`, `cache.rs`, `backend/`, `check/*.rs`, `repo.rs`) is a proposal derived from these rules; it has not been validated against real code yet.
 - Whether rerunning the non-LLM phases on every `task next` stays fast enough on repositories larger than report-jobs is unmeasured. If not, per-file caching of extract results by content hash is the next step, still without Salsa.

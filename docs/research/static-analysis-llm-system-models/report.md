@@ -383,7 +383,8 @@ steps:
   - {id: .../s:reset-1,      actor: reports/worker, kind: write-state, after: [s:upload-1]}        # PENDING
   - {id: .../s:requeue,      actor: reports/worker, kind: send,        after: [s:reset-1]}
   - {id: .../s:deliver-2,    actor: reports/worker, kind: receive,     after: [s:requeue]}
-  - {id: .../s:upload-2,     actor: reports/worker, kind: send,        after: [s:deliver-2]}       # intermediate steps elided
+  # intermediate steps elided
+  - {id: .../s:upload-2,     actor: reports/worker, kind: send,        after: [s:deliver-2]}
   - {id: .../s:mark-done,    actor: reports/worker, kind: write-state, after: [s:upload-2]}        # DONE
 ```
 

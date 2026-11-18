@@ -33,9 +33,11 @@ Sources that could not be opened: Pnueli–Siegel–Singerman 1998 (Springer pay
 ## 1. CompCert
 
 ### Takeaway
+
 CompCert defines its levels as a short chain of intermediate languages, each with its own formal semantics, and proves once, per pass, a simulation diagram between the language before and the language after. The proofs compose into one end-to-end theorem. Where a pass is hard to prove (graph-colouring register allocation), CompCert runs unverified code and checks its result on every compilation with a small checker that is itself proved sound. The draft report's "about twenty intermediate languages" is wrong: there are 8 intermediate languages and about 20 passes.
 
 ### Cited Findings
+
 - [V] The current development lists the source language CompCert C, eight intermediate languages (Clight, Csharpminor, Cminor, CminorSel, RTL, LTL, Linear, Mach) and the target Asm. It lists 20 passes; 11 of them stay inside one language (for example eight RTL → RTL optimizations). — [CompCert commented development](https://compcert.org/doc/index.html)
 - [V] The user manual states the count as "8 intermediate languages and 15 compilation passes"; the 2009 paper says "14 passes that go through 8 intermediate languages". The pass count has grown; the language count has not. — [CompCert manual §1](https://compcert.org/man/manual001.html); [Leroy, CACM 2009](https://xavierleroy.org/publi/compcert-CACM.pdf)
 - [V] The link between adjacent levels is a simulation diagram: "each transition in the original program must correspond to a sequence of transitions in the transformed program that have the same observable effects" and preserve a relation ∼ between the states of the two programs. For register allocation the diagram is "lock-step" (one transition to exactly one). Observable effects are traces of input-output operations. — [Leroy, CACM 2009, §4.3](https://xavierleroy.org/publi/compcert-CACM.pdf)
@@ -48,6 +50,7 @@ CompCert defines its levels as a short chain of intermediate languages, each wit
 - [V] Not everything is proved. Preprocessing lacks a specification; for assembling and linking "we have no formal guarantees yet"; AbsInt's Valex tool gives "additional assurance via a posteriori validation of the executable". The theorem itself is one-directional: the behavior of the compiled code "improves on one of the allowed observable behaviors" of the source. — [CompCert manual §1](https://compcert.org/man/manual001.html)
 
 ### Inferences
+
 - Mental's level checker is a validator in Leroy's exact sense, and an *unverified* one. The honest claim is "this pair of levels was checked on these scenarios within these bounds", not "the upper level is correct".
 - The `Comp'` wrapper is the right contract for every LLM stage: output that fails validation is an error or a quarantined judgment record, never a silently accepted level.
 - "Reply false if unsure" translates to: a pair that the interpreter could not fully explore within its bounds is reported as *not validated*, with the reason, and is distinct from *refuted*.
@@ -55,15 +58,18 @@ CompCert defines its levels as a short chain of intermediate languages, each wit
 - CompCert's simulation is stated over observable traces. Mental needs the same decision per level pair: which events are observable at the upper level (replies, sends, store writes visible above), so that everything else may stutter.
 
 ### Gaps
+
 - Proof effort for the current (2026) development was not found; the 42,000-line figure is from 2009.
 - The lock-step, "plus" and "star with measure" diagram variants are described in Leroy's JAR 2009 backend paper, which was not opened. (training knowledge; not re-fetched)
 
 ## 2. CakeML
 
 ### Takeaway
+
 CakeML follows CompCert's architecture in HOL4 but states an explicit rule for when to add a level: introduce a new intermediate language whenever a significant higher-level feature has been compiled away or a new lower-level one is introduced. Its only use of translation validation is for speed during bootstrapping, with a proved algorithm as the fallback.
 
 ### Cited Findings
+
 - [V] The compiler is "a sequence of intermediate languages through which high-level features are compiled away incrementally", which "enables verification of each compilation pass at an appropriate level of semantic detail". The 2019 paper describes 12 intermediate languages and five targets; the project site today says "8 intermediate languages" and 6 architectures. — [Tan et al., JFP 2019](https://cakeml.org/jfp19.pdf); [cakeml.org](https://cakeml.org/)
 - [V] Design decision D0: fewer languages allow reuse of lemmas, but languages that support both higher- and lower-level features "can complicate the invariants needed to verify transformations, especially when no program will contain both at the same time". So "our CakeML compiler introduces a new intermediate language whenever a significant higher-level language feature has been compiled away, or when a new lower-level one is introduced"; "many transitions work within a single IL". — [Tan et al., JFP 2019, §2.1](https://cakeml.org/jfp19.pdf)
 - [V] Translation validation is used only for efficiency: the register allocator "takes an optional list of oracle colouring functions"; it "validates that they correctly colour the program"; "otherwise, it calls the graph colouring algorithm that we have proved always produces a correct colouring". The bootstrapped compiler runs the verified algorithm directly. — [Tan et al., JFP 2019, §11.3.1](https://cakeml.org/jfp19.pdf)
@@ -71,20 +77,24 @@ CakeML follows CompCert's architecture in HOL4 but states an explicit rule for w
 - [V] A separate front end, the "translator", is proof-producing: it "generates CakeML AST from ML-like functions in HOL and proves that the generated AST has the same behaviour as the HOL function". That is a certificate per run, not a proof of the tool. — [cakeml.org](https://cakeml.org/)
 
 ### Inferences
+
 - D0 is a usable test for Mental's inserted levels and domain ladders: a level earns its place only if some vocabulary disappears going up (or appears going down). A level whose vocabulary equals its neighbor's is a view, not a level. This is the same point as the draft's "many thin levels" recommendation, with a criterion attached.
 - The oracle-with-fallback design fits LLM summaries. The LLM's summary cases are an oracle; if they validate against the full graph they are used; if not, Mental falls back to a mechanically derived summary (the enumerated paths of the full graph, unnamed and ugly but correct).
 - The two published counts (12 in 2019, 8 today) show that the number of levels in a mature system is not stable. The ladder should be data, not code.
 
 ### Gaps
+
 - The site's "8 intermediate languages" was not reconciled with the paper's 12; the current language list was not opened.
 - How CakeML's proofs are maintained when a pass changes was not found.
 
 ## 3. Translation validation: Pnueli et al., Necula, Alive2
 
 ### Takeaway
+
 Translation validation checks each run of a translator instead of proving the translator. Twenty-five years of practice give three numbers worth keeping: a validator for GCC took about the effort of one compiler pass to build, slowed compilation fourfold and raised false alarms on up to 10% of functions for some passes; Alive2, designed for zero false alarms and bounded resources, found 47 new LLVM bugs by re-checking the existing unit tests. Both check *refinement* (the target shows a subset of the source's behaviors), not equality.
 
 ### Cited Findings
+
 - [S] Pnueli, Siegel and Singerman, "Translation Validation", TACAS 1998 — bibliographic data confirmed; the paper was not opened (paywalled). — [doi:10.1007/BFb0054170](https://doi.org/10.1007/BFb0054170)
 - [B] The 1998 paper validated a code generator from the synchronous language Signal to C, treating both programs as transition systems and having the translator emit a proof script that a separate proof checker checks; correctness is stated as refinement. (training knowledge; not re-fetched)
 - [V] Necula's validator for GCC "compares the intermediate form of the program before and after each compiler pass and verifies the preservation of semantics". It "does not rely on help from the optimizer" but uses "a few heuristics to detect the transformations that take place". The equivalence criterion is a simulation relation between the two programs, and the validator acts as "an inferencer for simulation relations", using symbolic evaluation. — [Necula, PLDI 2000](https://people.eecs.berkeley.edu/~necula/Papers/tv_pldi00.pdf)
@@ -98,6 +108,7 @@ Translation validation checks each run of a translator instead of proving the tr
 - [S] Alive (PLDI 2015), the predecessor, verified peephole optimizations written in a small DSL rather than validating compiler runs. — [Lopes et al., PLDI 2015](https://users.cs.utah.edu/~regehr/papers/pldi15.pdf)
 
 ### Inferences
+
 - Mental's refinement check by projection is bounded translation validation in Alive2's sense. Adopt its vocabulary: say "bounded", publish the bound (loop iterations, schedule depth, input classes covered), and keep five outcome classes per level pair: *validated within bounds*, *refuted with a counterexample run*, *timeout*, *unsupported construct*, *checker error*.
 - The direction of refinement matters. Going down (compiling), the lower level may remove nondeterminism. Going up (Mental's direction), the upper level may *add* behaviors (an over-approximation) but may not *lose* any lower behavior. A summary that drops a real case is the unsound direction; a summary with an unreachable case is merely imprecise. The checker should report the two differently.
 - Necula inferred the simulation relation with heuristics and paid with false alarms; Alive2 needs no relation because source and target share one language. Mental's levels differ in vocabulary, so it needs the relation (the abstraction function) to be given. Asking the LLM to emit it alongside the level is the equivalent of Pnueli's translator emitting a proof script, and Necula's "optimizer communicates to the validator what transformations were performed".
@@ -105,15 +116,18 @@ Translation validation checks each run of a translator instead of proving the tr
 - "A far more discerning oracle" suggests a cheap first experiment: run the pair check over scenarios Mental already has, before generating new ones.
 
 ### Gaps
+
 - The Pnueli paper was not read; its mechanism above is from memory.
 - No source was found on translation validation where source and target are in *different* vocabularies and the relation is supplied by an untrusted party, which is Mental's case. The nearest are verified lifting (section 9) and Necula's "framework that the optimizer can use to communicate".
 
 ## 4. MLIR: many levels in one infrastructure
 
 ### Takeaway
+
 MLIR is the closest structural precedent for a ladder that is data rather than code. Levels are *dialects*: namespaced sets of operations, types and attributes that anyone can define, and operations from different dialects can sit side by side in one function. Lowering is a set of rewrite patterns driven toward a declared *conversion target* (which operations are legal), applied partially or fully. What MLIR verifies after each step is structural validity of the IR, not that the lowering preserved meaning; semantic checks arrived later as separate research tools.
 
 ### Cited Findings
+
 - [V] Design principle "progressive lowering": "from the higher-level representation down to the lowest-level, with the lowering being performed in small steps along multiple abstraction levels". Earlier compilers had fixed levels (Open64 WHIRL has five; Clang lowers AST → LLVM IR → SelectionDAG → MachineInstr → MCInst) "in a rigid way". — [Lattner et al., "MLIR", arXiv 2002.11054, §2](https://arxiv.org/pdf/2002.11054)
 - [V] Design principle "maintain higher-level semantics": "Attempts to raise semantics once lowered are fragile"; "the loss of structure is then conscious and happens only where the structure is no longer needed". As a corollary, "mixing different levels of abstractions and different concepts in the same IR is a key property of the system to allow a part of the representation to remain in higher-level abstraction while another part is lowered". — [Lattner et al., arXiv 2002.11054, §2](https://arxiv.org/pdf/2002.11054)
 - [V] "Each Op, type and attribute belongs to exactly one dialect"; "Ops from different dialects can coexist at any level of the IR at any time". The language reference: "MLIR allows for multiple dialects, even those outside of the main tree, to co-exist together within one module"; each dialect has "a unique namespace". — [Lattner et al., arXiv 2002.11054, §4](https://arxiv.org/pdf/2002.11054); [MLIR Language Reference](https://mlir.llvm.org/docs/LangRef/)
@@ -127,6 +141,7 @@ MLIR is the closest structural precedent for a ladder that is data rather than c
 - [S] Earlier SMT-based translation validators for MLIR exist (mlir-tv, 2022) and reported ambiguities in MLIR's semantics. — [Bang et al., CAV 2022, doi:10.1007/978-3-031-13188-2_19](https://doi.org/10.1007/978-3-031-13188-2_19)
 
 ### Inferences
+
 - A level in Mental can be declared the MLIR way: a namespace plus a *legal set* (which entity kinds, step kinds and predicate families may appear). "The abstraction barrier" from the checkpoint is then MLIR's full-conversion check: a view at level L is valid if nothing illegal at L remains in it. This is cheap, deterministic and can be built before the interpreter.
 - Partial conversion is exactly zoom: part of the picture stays at the service level while one behavior is opened to statements. MLIR shows that mixed-level programs are workable if the boundary is explicit. Its materializations are Mental's adapters at a zoom boundary: where a business-level message meets a statement-level handler, something must convert the vocabulary, and a missing conversion is a failure, not a silent pass.
 - The transitive legalization graph says the LLM need not supply a direct map from statements to business. A chain of adjacent maps composes. This supports the draft's "check per adjacent pair".
@@ -135,15 +150,18 @@ MLIR is the closest structural precedent for a ladder that is data rather than c
 - "Attempts to raise semantics once lowered are fragile." Mental's whole direction is raising. MLIR's answer was to avoid raising by keeping structure. Mental cannot, so it must check each raise. The 2025 trick is still usable in reverse: define an upper-level step's meaning *as* its lowering (the anchored lower steps), which is what the refinement map already is.
 
 ### Gaps
+
 - No MLIR source states how many dialects a typical pipeline crosses or what legalization failures cost in practice.
 - IRDL (declarative dialect definitions) and the Transform dialect were not opened.
 
 ## 5. Abstract interpretation: Cousot, Astrée, IKOS, MOPSA, Goblint
 
 ### Takeaway
+
 In abstract interpretation a level is an abstract domain: a lattice of properties with operations that over-approximate the program's steps. Domains themselves are ordered by precision, are chosen by the tool's designer or by a command-line flag, and are combined in products. Invariants are never authored; they are the fixed point of the abstract semantics. Industrial precision came from adding domains specialized to one family of programs, and at least one analyzer reuses fixed-point results across program edits.
 
 ### Cited Findings
+
 - [V] The 1977 paper: "Abstract program properties are modeled by a complete semilattice"; "levels of abstraction are formalized by showing that consistent abstract interpretations form a lattice"; finite fixed-point approximation methods are introduced for when the iteration sequences are infinite. — [Cousot & Cousot, POPL 1977 (author page)](https://www.di.ens.fr/~cousot/COUSOTpapers/POPL77.shtml)
 - [V] The 1979 paper relates the concrete and abstract lattices by Galois connections, and studies the "sum", "product" and "power" of analysis frameworks; combined analyses give more precise results than running them separately and conjoining the answers, but this "can only be achieved by a new design of the approximate predicate transformer". — [Cousot & Cousot, POPL 1979 (author page)](https://www.di.ens.fr/~cousot/COUSOTpapers/POPL79.shtml)
 - [B] A Galois connection is a pair of monotone maps, abstraction α and concretization γ, such that α(c) ⊑ a exactly when c ⊆ γ(a). Widening is an operator that jumps ahead in the lattice so that iteration at loops terminates, at a cost in precision; narrowing recovers some of it. The term "reduced product" (domains exchange information after each step) comes from the 1979 paper. (training knowledge; not re-fetched)
@@ -155,6 +173,7 @@ In abstract interpretation a level is an abstract domain: a lattice of propertie
 - [S] The earlier paper (Seidl, Erhard, Vogler, 2020) shows that the top-down local solver can reuse earlier results by recursively destabilizing the unknowns that depend on a change. — [doi:10.1007/978-3-030-41103-9_5](https://doi.org/10.1007/978-3-030-41103-9_5)
 
 ### Inferences
+
 - A "precision level" in this family is chosen, not discovered: by a flag (IKOS), by tool designers after looking at alarms (Astrée), or by composition (MOPSA). The draft's sentence "the level is chosen by choosing the domain, once per analysis" is right for IKOS but understates Astrée, where the level was refined over months by people adding domains, and section 6, where it is adjusted during the run.
 - Astrée's lesson maps directly to packs. Generic domains gave alarms; domains that encode what a digital filter *is* removed them. A pack that knows what a connection pool or a `SELECT … FOR UPDATE` is plays the same role. Zero false alarms was achieved for one program family, not in general.
 - Mental's named predicates are a small abstract domain per behavior. The reduced-product idea says: keep several families (message-field predicates, stored-state predicates, config predicates) and let a fact learned in one prune another, rather than building one big vocabulary.
@@ -163,6 +182,7 @@ In abstract interpretation a level is an abstract domain: a lattice of propertie
 - The Goblint design (track which results depend on which inputs, invalidate lazily) is the model for caching level-pair checks across commits.
 
 ### Gaps
+
 - No primary source was opened for widening and reduced product definitions.
 - No measured figure for Goblint's incremental speedup was extracted.
 - Infer's compositional, diff-time analysis was not covered.
@@ -170,9 +190,11 @@ In abstract interpretation a level is an abstract domain: a lattice of propertie
 ## 6. Predicate abstraction, CEGAR, SLAM, BLAST, interpolation, CPAchecker, IC3/PDR
 
 ### Takeaway
+
 This family computes its own level. The abstraction is a set of predicates; the model checker explores the abstract program; a counterexample that cannot be replayed on the real program is *spurious*, and the reason it fails yields new predicates. CPAchecker names the predicate set a *precision*, stores it per program location or per function, and has measured that reusing stored precisions on later revisions cuts analysis time by a factor of more than four. This corrects the draft's statement that maintenance across change means re-running from scratch everywhere.
 
 ### Cited Findings
+
 - [S] Graf and Saïdi (CAV 1997) build an abstract state graph automatically from a program and "a partition of the state space induced by a finite set of predicates", using the PVS prover to decide, for each predicate, whether it or its negation holds after a step. — [Graf & Saïdi, SRI page](https://csl.sri.com/papers/grafsaidi97/)
 - [S] Clarke, Grumberg, Jha, Lu and Veith (CAV 2000; JACM 50(5), 2003): an automatic iterative abstraction-refinement method; an abstract counterexample that the concrete model cannot follow is "spurious", and the abstraction is refined by splitting the abstract state where the replay fails; finding the coarsest refinement is NP-hard. — [Clarke et al., Stanford-hosted copy](https://cs357.stanford.edu/cegar.pdf)
 - [V] SLAM checks "that software satisfies critical behavioral properties of the interfaces it uses"; Static Driver Verifier, shipped in the Windows Driver Kit, "uses the SLAM verification engine"; Boolean programs are "the internal language used for the model checking step". The SLAM2 paper is titled "Static Driver Verification with Under 4% False Alarms" (FMCAD 2010). — [SLAM project page](https://www.microsoft.com/en-us/research/project/slam/)
@@ -189,6 +211,7 @@ This family computes its own level. The abstraction is a set of predicates; the 
 - [V] The underlying idea in lecture form: a property P is usually not inductive, "but a stronger inductive invariant F may exist" with INIT ⇒ F, F ∧ T ⇒ F′ and F ⇒ P; IC3 finds F as a conjunction of clauses. — [IC3 lecture slides, Tel Aviv University](https://www.cs.tau.ac.il/~msagiv/courses/asv/IC3.pdf)
 
 ### Inferences
+
 - Mental's predicates per behavior are a precision in CPAchecker's sense. Store them as a first-class, small artifact keyed by behavior (function-scoped), not by statement position, because the measured result is that function scope survives edits. On a new commit, start from the stored predicate set and re-validate, instead of asking the LLM again. This also makes LLM output more stable across runs.
 - CEGAR without a prover: run a scenario at the summary level; replay it on the full graph. If the replay fails at some step, the summary allowed a path the code does not have. The failing step names the test in the code that separated the two; that test, or a predicate the LLM names for it, is the refinement. The interpreter plays Newton; no interpolation engine is needed because the full graph's guards are already anchored tests.
 - The opposite failure (the full level has a path with no summary case) has no CEGAR analogue, because CEGAR's abstraction is sound by construction. In Mental the abstraction is proposed, not constructed, so both directions must be checked. This is the main difference from this whole family and it should be stated in the report.
@@ -197,6 +220,7 @@ This family computes its own level. The abstraction is a set of predicates; the 
 - IC3 suggests how to grow level invariants without a prover: each bounded-exploration counterexample to an invariant yields one small lemma (one more predicate conjunct) rather than a rewritten invariant.
 
 ### Gaps
+
 - Lazy abstraction, interpolation, CEGAR and Graf–Saïdi were not read in full; SLAM's tool chain and numbers beyond the SLAM2 title are from memory.
 - "Dynamic precision adjustment" (changing the precision during a run) is confirmed only by title.
 - No source on reusing precisions when the *abstraction itself* came from an LLM.
@@ -204,9 +228,11 @@ This family computes its own level. The abstraction is a set of predicates; the 
 ## 7. Computed candidate invariants: Daikon and Houdini
 
 ### Takeaway
+
 Two older techniques compute invariants without a prover-driven search, and both fit an interpreter. Daikon proposes template invariants and keeps those never falsified by observed runs. Houdini takes any set of candidates and repeatedly drops those the checker refutes, returning the largest set that survives together. Recent LLM work reuses Houdini directly.
 
 ### Cited Findings
+
 - [V] Daikon performs "dynamic detection of likely invariants": an instrumenter records variable values at program points (`:::ENTER`, `:::EXIT`, `:::OBJECT`, `:::CLASS`), and Daikon reports properties from a built-in catalog of templates (bounds, equalities, one-of sets, sequence properties) that held in every observed execution. — [Daikon user manual](https://plse.cs.washington.edu/daikon/download/doc/daikon.html)
 - [V] Filtering: each invariant type has a confidence computation; an invariant is reported only above a limit that "defaults to .99", to exclude patterns that held by chance. Daikon "never outputs invariants that were ever false". The results are "likely" invariants: unobserved executions may violate them. — [Daikon user manual](https://plse.cs.washington.edu/daikon/download/doc/daikon.html)
 - [S] Houdini (Flanagan & Leino, FME 2001) "generates a large number of candidate annotations and uses ESC/Java to verify or refute each of them", repeating until nothing more is removed; it "computes the greatest subset" of the candidate set that is valid for the program. — [Flanagan & Leino, doi:10.1007/3-540-45251-6_29](https://link.springer.com/doi/10.1007/3-540-45251-6_29); [Ernst et al. annotation study, FSE 2002](https://homes.cs.washington.edu/~mernst/pubs/annotation-study-fse2002.pdf)
@@ -214,21 +240,25 @@ Two older techniques compute invariants without a prover-driven search, and both
 - [V] An LLM fine-tuned to predict invariants statically produced results of quality "comparable to those obtained by a dynamic analysis tool with access to five program traces". — [Pei et al., "Can Large Language Models Reason about Program Invariants?", ICML 2023](https://proceedings.mlr.press/v202/pei23a.html)
 
 ### Inferences
+
 - The interpreter's runs are Daikon traces. At each port and each level, record projected state and mine template invariants ("status is one of {pending, running, done}", "at most one courier per order"). They are candidates only.
 - Houdini is the right aggregation for LLM proposals: ask for many candidate invariants or predicates, run bounded exploration, drop each one that some run falsifies, keep the rest. It needs no repair dialogue and its cost is linear in the number of candidates.
 - Daikon's 0.99 confidence rule guards against a real risk for Mental: an invariant that "held" only because few scenarios reached that port. Report the number of observations behind each surviving invariant.
 - Houdini's result is conjunctive. It cannot discover a case split. That limit shows up again in section 8 as the main failure class.
 
 ### Gaps
+
 - The Houdini paper was not opened.
 - Daikon's performance on systems of Mental's target size was not looked up.
 
 ## 8. LLMs proposing invariants, predicates and abstractions for a checker (2023–2026)
 
 ### Takeaway
+
 The settled architecture is "the LLM proposes, a sound checker decides", with proposals treated as assumptions until proved. On small single-loop programs, success rates are now 78–93%, and LLM pipelines solve some problems symbolic tools cannot, while still solving fewer overall in one head-to-head study. Repairing a wrong proposal works far worse than generating a fresh one, and invariants that need a disjunction are the largest failure class. Since 2025 the same pattern has been applied to abstractions and contracts inside CEGAR loops, which is close to what Mental plans.
 
 ### Cited Findings
+
 - [V] LEMUR defines a proof calculus over an LLM (propose and repair oracles) and a verifier that answers True, False or Unknown. "Properties generated by an LLM are treated as assumptions until we can prove that they are invariants." Soundness is proved; termination is forced by capping proposals per goal at k. Rules include backtracking from a bad assumption and repair when a proposal is falsified or does not imply the goal. — [Wu, Barrett, Narodytska, "Lemur", arXiv 2310.04870](https://arxiv.org/html/2310.04870)
 - [V] LEMUR numbers: on 133 Code2Inv benchmarks, ESBMC alone solves 68, Code2Inv 92, LEMUR 103 (GPT-3.5) and 107 (GPT-4), with 4.7 proposals on average for GPT-4. On 47 SV-COMP tasks that ESBMC and UAutomizer could not solve in 10 minutes, each tool alone solves 1; LEMUR solves 14 (GPT-3.5) and 25 (GPT-4). Without the repair rules GPT-4 solved 19–20. Results vary between runs. Stated limits: small programs, multiple loops, nested formulas. — [Lemur, arXiv 2310.04870](https://arxiv.org/html/2310.04870)
 - [V] Loopy (Microsoft): on 469 single-loop C benchmarks with GPT-4 and at most 15 completions each, raw LLM output solves 293; with Houdini filtering 383; with repair 398 (84.9%). The symbolic verifier Ultimate solves 430, but Loopy solves 31 that Ultimate does not. Of the 71 failures, 44 needed disjunctions, 10 were checker failures, 9 needed more precise constraints. — [Kamath et al., "Finding Inductive Loop Invariants using LLM-based Reasoning", arXiv 2311.07948](https://arxiv.org/html/2311.07948)
@@ -245,6 +275,7 @@ The settled architecture is "the LLM proposes, a sound checker decides", with pr
 - [V] Event-B Agent (May 2026): an LLM agent builds an Event-B model from requirements and then refines and repairs it with feedback from formal verification, treating refinement and repair as mutually reinforcing. The abstract gives no numbers and does not say how gluing invariants are checked. — [Wang et al., arXiv 2605.17475](https://arxiv.org/abs/2605.17475)
 
 ### Inferences
+
 - These numbers are for programs of tens of lines with one loop and a given target assertion. They do not transfer to a service handler with I/O. What transfers is the *shape* of the results: filtering beats raw sampling by about 30%, repair adds a few percent, and the checker's own failures are a visible share of the misses (10 of 71).
 - Generate-and-filter should be the default; repair the exception. With repair at 16% against generation at 78%, re-asking with more context (a failing run, a template) is a better use of tokens than "fix this".
 - LORIS's mechanism is prover-free in spirit: turn the LLM's justification into small checkable claims and find the first false one. Mental's analogue: have the LLM justify a summary case as a list of anchored steps and guards; the checker finds the first guard or anchor that does not match the full graph and returns exactly that.
@@ -255,6 +286,7 @@ The settled architecture is "the LLM proposes, a sound checker decides", with pr
 - Agentic Model Checking's counterexample triage (is this failure real, or an artifact of the model?) is the same three-way classification the draft proposes for refinement failures.
 
 ### Gaps
+
 - Most figures are from abstracts or one HTML read; NeuroInv is from a search summary. Several of these are preprints.
 - No paper was found that measures LLM-proposed *predicate vocabularies* (names plus definitions) for predicate abstraction of software, or that reports stability of LLM proposals across commits.
 - InvBench's headline accuracy figures were not extracted.
@@ -262,9 +294,11 @@ The settled architecture is "the LLM proposes, a sound checker decides", with pr
 ## 9. Translation validation applied to LLM output
 
 ### Takeaway
+
 Where an LLM replaces the translator, existing validators are reused unchanged, and the measured validation rate is low. This is the most direct evidence for what Mental should expect when it validates LLM-proposed levels.
 
 ### Cited Findings
+
 - [V] LLM-Vectorizer: an LLM rewrites scalar loops as vectorized code with test-based feedback; Alive2 then checks the result. Alive2 verified 38.2% of the vectorizations as correct on the TSVC benchmark; speedups of 1.1× to 9.4× over Intel, GCC and Clang compilers. — [Taneja et al., "LLM-Vectorizer", arXiv 2406.04693](https://arxiv.org/abs/2406.04693)
 - [S] In that work, checksum testing judged one vectorization plausible while Alive2 found it inequivalent because of pointer aliasing; Alive2's verdicts are bounded because it unrolls loops. — [LLM-Vectorizer, arXiv 2406.04693](https://arxiv.org/pdf/2406.04693)
 - [V] LLMLift: an LLM translates programs into four domain-specific languages and also generates the proofs of functional equivalence; the authors report more benchmarks transpiled and less time than symbolic lifting tools. — [Bhatia et al., "Verified Code Transpilation with LLMs", arXiv 2406.03003](https://arxiv.org/abs/2406.03003)
@@ -272,12 +306,14 @@ Where an LLM replaces the translator, existing validators are reused unchanged, 
 - [V] Trivet (Sep 2026): for LLVM translation validation, deterministic scaffolding generates the proof skeleton and discharges routine obligations; the LLM handles transformation-specific ones; the Lean kernel checks every verdict. It verifies or refutes 147 of 148 transformations, including 10 where Alive2 times out. Scaffolding enables 26 more proofs than an unscaffolded baseline and cuts mean proof time by 75.9% and cost by 88%. — [Liao et al., "Trivet"](https://cs.uwaterloo.ca/~cnsun/public/preprint/trivet/)
 
 ### Inferences
+
 - 38.2% validated does not mean 61.8% wrong: the rest splits into wrong, timed out and unsupported. Mental should expect a large "not validated" bucket for LLM-proposed levels at first and must show it honestly, per level pair, with the reason.
 - Tests passing and the validator disagreeing (the aliasing case) is the argument for symbolic and bounded-exhaustive modes over concrete scenarios alone when checking a level.
 - Trivet's result is the strongest support in this sweep for Mental's division of labor: the deterministic scaffold made the LLM cheaper (88%) and more successful (26 more proofs). Give the LLM the skeleton (obligations, anchors, branch points) and ask it only for the judgment parts.
 - Wang and Xie show the safe way to let an LLM help the checker: its opinion may direct effort (what to fuzz, which scenario to run) but only a concrete counterexample counts.
 
 ### Gaps
+
 - LLMLift's proof-success rate and the checker it uses were not in the abstract.
 - No work was found validating an LLM-written *abstraction of a distributed system* against its code by simulation or model checking, other than PolyVer and Agentic Model Checking in section 8.
 

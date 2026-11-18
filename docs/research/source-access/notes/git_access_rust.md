@@ -2,7 +2,7 @@
 
 Research date: 2026-11-16. Evidence labels: unlabelled = read at the source (docs, source code in the crates.io tarball, advisory text, or my own `cargo tree` run on a scratch manifest I wrote); "snippet-only" = from a search summary; "unverified" = prior knowledge, not checked in this session. Weights below are crate counts from `cargo tree -e normal,build` on scratch manifests (nothing built), so compile time itself is a gap.
 
-**Summary, one line per option**
+## Summary, one line per option
 
 - **gix (gitoxide) 0.90.0, `default-features = false`** — pure-Rust git library, by far the most complete Rust reader. Weight: 88 crates with `sha1` only, 92 with `sha1,revision` (needed for `rev_parse_single`), 104 with `attributes` added (needed for `gix::Submodule`), 134 with defaults. Safety: `open::Options::isolated()` reads no system/user config and no environment, never spawns `git`, runs no hooks, filters only if asked; 2026 saw a stream of advisories on submodule names, symlinked `.gitmodules`, commit-graph and pack DoS, all fixed by 0.90.0. **Take: recommended, but used as a thin object reader with mentalc's own tree walker and `.gitmodules` parser, not through `gix::Submodule` or checkout APIs.**
 - **gix plumbing crates (`gix-odb` + `gix-pack` + `gix-object` + `gix-ref` + `gix-hash` + `gix-validate`)** — the same code without the `gix` facade. Weight: 58 crates, and no `gix-config`, `gix-transport`, `gix-protocol` or `gix-command`. Safety: smallest attack surface, but mentalc must then handle repository discovery, `extensions.objectFormat`, `core.useReplaceRefs` and HEAD/ref peeling itself. **Take: the fallback if the 92-crate facade is too heavy for the allowlist. Prototype it in an experiment against the facade.**
@@ -13,14 +13,18 @@ Research date: 2026-11-16. Evidence labels: unlabelled = read at the source (doc
 ## Q1. Which library is recommended for read-only access with minimal features, and what is its true weight?
 
 ### Takeaway
+
 Use `gix` 0.90 with `default-features = false, features = ["sha1", "sha256", "revision"]` (99 crates) or, to go lighter, the gix plumbing crates (58 crates). Do not enable `attributes` (it brings `gix-filter`, `gix-submodule`, `gix-command`) or any network feature. git2 has fewer Rust crates but compiles libgit2 from C and gates SHA-256 behind an unstable ABI flag.
 
 ### Cited Findings
-**Versions (as of 2026-11-16)**
+
+#### Versions (as of 2026-11-16)
+
 - gix 0.90.0 was released on 2026-10-22, git2 0.21.0 on 2026-10-06, and libgit2-sys 0.18.8+1.9.7 (bundling libgit2 1.9.7) on 2026-10-06. jj-lib is at 0.47.1 — [crates.io gix](https://crates.io/crates/gix), [git2](https://crates.io/crates/git2), [libgit2-sys](https://crates.io/crates/libgit2-sys), [jj-lib](https://crates.io/crates/jj-lib).
 - libgit2 upstream released v1.9.7 on 2026-08-13 and v2.0.0-rc.1 on 2026-10-14 — [libgit2 releases](https://github.com/libgit2/libgit2/releases).
 
-**gix features**
+#### gix features
+
 - The gix defaults are `max-performance, comfort, basic, extras, auto-chain-error, sha1`. Library developers are told to start from `default-features = false` and add components. "At least one hash algorithm must be enabled" (`sha1`, `sha256`) — [gix 0.90.0 Cargo.toml](https://docs.rs/crate/gix/0.90.0/source/Cargo.toml.orig).
 - `revision` enables `gix-revision/describe`, `merge_base` and `index`. `Repository::rev_parse_single` is behind `#[cfg(feature = "revision")]` — [Cargo.toml](https://docs.rs/crate/gix/0.90.0/source/Cargo.toml.orig), [repository/revision.rs](https://docs.rs/crate/gix/0.90.0/source/src/repository/revision.rs).
 - `attributes` pulls `gix-filter`, `gix-pathspec`, `gix-attributes`, `gix-submodule` and `command`. The `gix::submodule` module and `Repository::submodules()` are behind `#[cfg(feature = "attributes")]` — [Cargo.toml](https://docs.rs/crate/gix/0.90.0/source/Cargo.toml.orig), [lib.rs](https://docs.rs/crate/gix/0.90.0/source/src/lib.rs).
@@ -43,14 +47,17 @@ All measured on 2026-11-16.
 - Even `gix` with only `sha1` links `gix-config`, `gix-discover`, `gix-protocol`, `gix-transport` and `gix-command`. `gix-command` arrives via `gix-transport` ← `gix-protocol` ← `gix`. The plumbing set has none of these, but does include `gix-path` — measured `cargo tree -i` on the scratch manifest.
 - Source sizes in the 0.90 tarballs: `gix` 33.5k lines of Rust, `gix-pack` 11.3k, `gix-config` 10.2k, `gix-ref` 6.4k, `gix-object` 6.3k, `gix-odb` 5.6k. libgit2's bundled `src/*.c` totals about 124k lines — measured `wc -l` on the [libgit2-sys 0.18.8 tarball](https://crates.io/crates/libgit2-sys).
 
-**git2 features**
+#### git2 features
+
 - git2 0.21 has default features `[]`. `https` brings OpenSSL and `ssh` brings libssh2. `unstable-sha256` "reflect[s] upstream libgit2's GIT_EXPERIMENTAL_SHA256. This is an ABI-breaking change… Library authors: DO NOT enable this feature by default", and "libgit2's builtin SHA256 implementation is not thread-safe" without the OpenSSL route — [git2 0.21.0 Cargo.toml](https://docs.rs/crate/git2/0.21.0/source/Cargo.toml.orig).
 
-**Read APIs**
+#### Read APIs
+
 - gix read APIs exist as: `Repository::find_object`, `try_find_object`, `find_blob`, `rev_parse_single`; `Object::peel_to_commit`; `Commit::tree`; `Tree::decode`, `find_entry`, `lookup_entry_by_path`, `traverse()` — [repository/object.rs](https://docs.rs/crate/gix/0.90.0/source/src/repository/object.rs), [object/peel.rs](https://docs.rs/crate/gix/0.90.0/source/src/object/peel.rs), [object/commit.rs](https://docs.rs/crate/gix/0.90.0/source/src/object/commit.rs), [object/tree/mod.rs](https://docs.rs/crate/gix/0.90.0/source/src/object/tree/mod.rs).
 - jj reads a file as `repo.try_find_object(id)?.ok_or(..)?.try_into_blob()?.take_data()`. That is the raw blob, with no filter — [jj git_backend.rs L512-L522](https://github.com/jj-vcs/jj/blob/4351061bba89b3c503d133170952f94a2c95cdfd/git-backend/src/git_backend.rs#L512-L522).
 
-**Maturity and object-store coverage**
+#### Maturity and object-store coverage
+
 - jj uses `gix` 0.90 with `attributes, auto-chain-error, blob-diff, index, max-performance, sha1, sha256` — [jj Cargo.toml L62-L70](https://github.com/jj-vcs/jj/blob/4351061bba89b3c503d133170952f94a2c95cdfd/Cargo.toml#L62-L70). onefetch uses gix 0.90 with `max-performance, blob-diff, mailmap, index, status, sha1, anyhow` — [onefetch Cargo.toml](https://github.com/o2sh/onefetch/blob/main/Cargo.toml). git-cliff's core uses `git2` behind an optional `repo` feature — [git-cliff-core Cargo.toml](https://github.com/orhun/git-cliff/blob/main/git-cliff-core/Cargo.toml).
 - gix's object store already supports: alternates ("safe with cycles and recursive configurations"), multi-pack indices, object replacements (`git replace`), and shallow clone/fetch — [gitoxide crate-status.md](https://github.com/GitoxideLabs/gitoxide/blob/main/crate-status.md).
 - Still unchecked in that file: "Git 3.0 compatibility (`SHA-256`, `reftable`)" as an overall goal, and all promisor work: "fetch missing objects on demand from promisor remotes", "support … `extensions.partialClone`" — [crate-status.md](https://github.com/GitoxideLabs/gitoxide/blob/main/crate-status.md).
@@ -59,11 +66,13 @@ All measured on 2026-11-16.
 - unverified: libgit2 supports shallow clones since 1.7 and does not support partial clone or promisor objects.
 
 ### Inferences
+
 - The `gix` facade's extra ~35 crates over the plumbing set buy repository discovery, config layering with trust filtering, `objectFormat` and replace-refs handling, and rev-spec parsing. These are exactly the parts where getting it subtly wrong is a security or determinism bug. So the facade with `["sha1","sha256","revision"]` is the default recommendation, and the plumbing set is an experiment arm (it fits the "Experiment" status convention).
 - mentalc's allowlist today has 9 normal crates. Any git option adds roughly 50 to 100 crates, nearly all from one project (GitoxideLabs). The `deps.allow` tidy test should allow the `gix-*` family as one justified entry rather than ~90 lines.
 - Treat a missing object (partial clone, pruned alternate) as a nameable gap, never a fetch. gix has no promisor support, so the lookup simply returns not-found. That is the behaviour mentalc wants.
 
 ### Gaps
+
 - Compile time and binary size were not measured, because building was out of scope. Crate counts are a proxy only.
 - I did not verify that gix 0.90 rejects unknown `extensions.*` the way git does for format v1. I saw no such check in `incubate.rs`.
 - I did not check reftable support status in gix 0.90 beyond the unchecked crate-status line.
@@ -71,10 +80,13 @@ All measured on 2026-11-16.
 ## Q2. Can mentalc read git commits without violating "executes nothing the repository controls"? What must be turned off?
 
 ### Takeaway
+
 Yes, as long as it reads the object database in-process with gix and never runs the `git` binary. git's warning is about git honoring commands in `.git/config` and hooks. Reading objects runs neither in gix, if mentalc opens with `Options::isolated()`, leaves `git_binary` off, enables no network, filter or checkout feature, sets `core.useReplaceRefs=false`, and treats `.git` pointers, alternates and `.gitmodules` as untrusted data. R3 and section 12 need a rewording, from "does not run git" to "does not run the git program; reads git objects as data". F-U15 still justifies the no-subprocess part.
 
 ### Cited Findings
-**What git's manual says**
+
+#### What git's manual says
+
 - git(1) SECURITY: "Some configuration options and hook files may cause Git to run arbitrary shell commands… it is generally safe to clone remote repositories with untrusted content, inspect them with git log… However, it is not safe to run Git commands in a .git directory (or the working tree that surrounds it) when that .git directory itself comes from an untrusted source." It also notes you can "acquire untrusted repositories that are owned by you (for example, if you extract a zip file)", so `safe.directory` ownership checks do not cover that case. The advice is to sanitize with `git clone --no-local` — [git(1) SECURITY](https://git-scm.com/docs/git#_security).
 - Environment switches git offers include:
   - `GIT_NO_LAZY_FETCH`: "tells Git not to lazily fetch missing objects from the promisor remote on demand";
@@ -87,7 +99,8 @@ Yes, as long as it reads the object database in-process with gix and never runs 
 - `git cat-file --batch` prints `<oid> SP <type> SP <size> LF <contents> LF` and `<object> SP missing LF` for unresolvable names. `--filters` applies "smudge filters, end-of-line conversion, etc" and `--textconv` applies textconv drivers. Both are opt-in — [git-cat-file](https://git-scm.com/docs/git-cat-file).
 - `git archive` honors `export-ignore` and `export-subst` from the archived tree's `.gitattributes` (or `--worktree-attributes`, or `$GIT_DIR/info/attributes`). It can pipe output through the `tar.<format>.command` shell command — [git-archive](https://git-scm.com/docs/git-archive).
 
-**What gix reads and what it can spawn**
+#### What gix reads and what it can spawn
+
 - gix `open::permissions::Config` has the fields `git_binary` ("may involve executing the git binary"), `system`, `git` (XDG), `user` (`~/.gitconfig`), `env` and `includes` (`include`/`includeIf`). `Config::isolated()` sets all of them to false. `Config::all()` also keeps `git_binary: false`. "Configuration from inside of the repository is always loaded as it's definitely required for correctness" — [open/permissions.rs](https://docs.rs/crate/gix/0.90.0/source/src/open/permissions.rs).
 - `Attributes::isolated()` loads no system or XDG attribute files. `Environment::isolated()` denies `XDG_CONFIG_HOME`, `HOME`, `SSH_*`, `GIT_*`, HTTP proxy, identity and object-database variables. `Permissions::isolated()` combines the three. In 0.90, `Permissions::secure()` (the default) is identical to `all()` — [open/permissions.rs](https://docs.rs/crate/gix/0.90.0/source/src/open/permissions.rs).
 - `open::Options::isolated()` is "configured to prevent accessing anything else than the repository configuration file, prohibiting accessing the environment or spreading beyond the git repository location". Other options:
@@ -110,6 +123,7 @@ Yes, as long as it reads the object database in-process with gix and never runs 
 - jj opens gix with `open::Options::default()` plus `open_path_as_is(true)` and `strict_config(true)`, not `isolated()`: jj trusts the user's own repo — [jj git_backend.rs L617-L633](https://github.com/jj-vcs/jj/blob/4351061bba89b3c503d133170952f94a2c95cdfd/git-backend/src/git_backend.rs#L617-L633).
 
 **gitoxide advisories relevant to reading untrusted repos** (from the [gitoxide security advisories](https://github.com/GitoxideLabs/gitoxide/security/advisories) list)
+
 - [GHSA-q54r-jf2p-rfr2](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-q54r-jf2p-rfr2) (high, 2026-10-22, fixed in gix ≥ 0.90.0): `protect_options()` read `core.protectHFS`, `core.protectNTFS` and `gitoxide.core.protectWindows` with the unfiltered accessor. An untrusted `.git/config` could disable the `.git` path-confusion checks used by "checkout, index creation, merge, and tree editing". The trust filter is applied elsewhere "for diff drivers, merge drivers, URL rewrites, scheme permissions…".
 - [GHSA-989c-xj77-266r](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-989c-xj77-266r) (medium, fixed in gix-commitgraph ≥ 0.42.0): a crafted `.git/objects/info/commit-graph` "makes every history-walking gix command abort the whole process" via `panic!`/`unwrap`.
 - [GHSA-x494-mj8g-cj27](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-x494-mj8g-cj27) (high, fixed in gix-pack ≥ 0.69.0): unchecked indexing in delta application and uncapped size headers (panic/OOM) "triggered by malicious pack data received during clone/fetch". Further pack DoS advisories followed on 2026-09-25: GHSA-633h, GHSA-mpf5, GHSA-x862.
@@ -118,7 +132,8 @@ Yes, as long as it reads the object database in-process with gix and never runs 
 - [GHSA-f26g-jm89-4g65](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-f26g-jm89-4g65): `.gitmodules` could bypass the `update = !command` trust check (cf. CVE-2019-19604).
 - Checkout-only advisories (irrelevant if mentalc never checks out): CVE-2024-35186 traversal outside the worktree, CVE-2026-44471 symlink prefix reuse, GHSA-6p9q, GHSA-pmm9, CVE-2025-22620. Also CVE-2025-31130, "SHA-1 collision attacks are not detected", fixed by `sha1dc` in gix-features ≥ 0.41 — [advisories list](https://github.com/GitoxideLabs/gitoxide/security/advisories), [RustSec gix-features](https://rustsec.org/advisories/RUSTSEC-2025-0021.html).
 
-**libgit2 and git advisories**
+#### libgit2 and git advisories
+
 - [GHSA-27m5-gxxh-x79j](https://github.com/libgit2/libgit2/security/advisories/GHSA-27m5-gxxh-x79j) (CVE-2026-53585, fixed in 1.9.5 / 1.8.6): `git_delta_apply()` allocates the attacker-claimed result size before validating.
 - [GHSA-cw77-j82w-mchm](https://github.com/libgit2/libgit2/security/advisories/GHSA-cw77-j82w-mchm) (CVE-2026-53584): a submodule path with `../` "can cause the library to create directories outside the repository's working tree".
 - Older libgit2 advisories: CVE-2024-24577 (heap corruption in `git_index_add`) and CVE-2024-24575 (DoS in `git_revparse_single`) — [libgit2 advisories](https://github.com/libgit2/libgit2/security/advisories).
@@ -129,6 +144,7 @@ Yes, as long as it reads the object database in-process with gix and never runs 
 - CVE-2024-32002 (git < 2.45.1 etc.): "repositories with submodules can be crafted… into writing files not into the submodule's worktree but into a .git/ directory. This allows writing a hook that will be executed while the clone operation is still running" (case-insensitive filesystem plus symlinks) — [NVD](https://nvd.nist.gov/vuln/detail/CVE-2024-32002).
 
 **Git features that execute code or read ambient state** (unverified except where linked)
+
 - Hooks (`.git/hooks/*`, `core.hooksPath`) run on commit, checkout, merge and similar.
 - `core.fsmonitor` runs a program for index-reading commands such as `status`.
 - `core.sshCommand`, `GIT_SSH`, `credential.helper` and `protocol.*.allow` apply on fetch/push. With a promisor remote, even a read can fetch — [GIT_NO_LAZY_FETCH](https://git-scm.com/docs/git).
@@ -138,6 +154,7 @@ Yes, as long as it reads the object database in-process with gix and never runs 
 - `include.path`/`includeIf` pull in other config files. `safe.directory` is only an ownership check ([git(1)](https://git-scm.com/docs/git#_security)).
 
 ### Inferences
+
 - **R3 compatibility.** Every code-running feature in the list above is either (a) a git porcelain behaviour gix does not implement (hooks on read, fsmonitor, pager, editor), (b) a gix feature mentalc does not compile in (network and credentials, `attributes`/`gix-filter` smudge, `worktree-*`, `command`), or (c) an API mentalc does not call (signing, editor). So "reading the object database with a library" does not run anything the repository controls. The one residual risk is that `gix-command` and `gix-transport` are linked in via `gix-protocol` even with minimal features. mentalc's own G4 lint cannot see into dependencies, so add a tidy test that bans calls to `gix::Repository::{remote*, find_remote, command_context, filter_pipeline, submodules}` and `gix::open::Options::with`. Alternatively, use the plumbing set, which links none of them.
 - **What must be off or forced** (proposed `open` recipe; the key names and APIs were read, the combination is untested):
   - `gix::open::Options::isolated()`, which turns off system, user and XDG config, includes, env and git-binary.
@@ -152,15 +169,18 @@ Yes, as long as it reads the object database in-process with gix and never runs 
 - **Shelling out to `git`** cannot be made equivalent. Repository-local config is always loaded, `cat-file` on a missing object in a partial clone fetches unless `GIT_NO_LAZY_FETCH=1`, results vary with the user's git version (determinism, G8-style), and section 12.4 allows only the compose renderer to be started. F-U15's conclusion stands for the binary, but not for in-process reading.
 
 ### Gaps
+
 - I did not verify which repository-local config keys gix 0.90 honors in the read-only object path beyond `extensions.objectFormat`, `core.repositoryFormatVersion`, `core.useReplaceRefs`, `core.precomposeUnicode`, `core.protect*` and `extensions.worktreeConfig`. A key-by-key audit of `config/cache/access.rs` remains.
 - I did not test whether `filter_config_section` applies when trust is `Full` (a repo owned by the user, e.g. an extracted tarball). In that case gix applies all repo-local config, as git does. Since none of it executes in the read path this matters little, but it is unproven.
 
 ## Q3. What exact rules must a safe tree walker enforce (path validation, symlinks, gitlinks, case)?
 
 ### Takeaway
+
 Walk trees in memory and never materialize them on disk. Validate every entry name with `gix_validate::path::component` (all protections on, regardless of host OS or repo config). Accept only the five git modes. Treat symlinks as data with in-tree resolution only. Treat gitlinks as pointers resolved through a validated submodule name. Report case-fold and Unicode-normalization collisions as gaps, because the meaning of an import on macOS or Windows depends on them.
 
 ### Cited Findings
+
 - `gix_validate::path::component(input, mode, Options)` rejects these errors: `Empty`, `PathSeparator`, `WindowsPathPrefix`, `WindowsReservedName`, `WindowsIllegalCharacter`, `DotGitDir`, `SymlinkedGitModules` and `Relative`. Its options are `protect_windows`, `protect_hfs` ("ignoring codepoints just like HFS+ would", = `core.protectHFS`) and `protect_ntfs` ("8.3 filenames and alternate data streams", = `core.protectNTFS`). "The Default implementation maximizes safety by enabling all protections." "input must not make it possible to exit the repository, or to specify absolute paths." — [gix-validate path.rs](https://docs.rs/crate/gix-validate/0.13.1/source/src/path.rs).
 - GHSA-q54r shows that letting `.git/config` set `core.protectHFS`/`protectNTFS` is itself an attack. "On case-insensitive filesystems this lets crafted tree entries resolve to the .git directory" — [GHSA-q54r-jf2p-rfr2](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-q54r-jf2p-rfr2).
 - Submodule names must be validated before being joined to `.git/modules`. The pre-0.82 validator only checked the first `..` — [GHSA-p3hw-mv63-rf9w](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-p3hw-mv63-rf9w), [CVE-2018-11235](https://nvd.nist.gov/vuln/detail/CVE-2018-11235).
@@ -170,6 +190,7 @@ Walk trees in memory and never materialize them on disk. Validate every entry na
 - unverified: git's `fsck` flags `duplicateEntries`, `badFilemode`, `hasDot`, `hasDotdot`, `hasDotgit`, `zeroPaddedFilemode`, `gitmodulesSymlink` and `treeNotSorted`, and accepts the legacy mode `100664` as a regular file.
 
 ### Inferences
+
 Proposed walker rules for `repo.rs` (each one should be a unit test from a hand-built tree object):
 
 1. **Names.** Validate each entry name with `gix_validate::path::component(name, mode, Options { protect_windows: true, protect_hfs: true, protect_ntfs: true })`, never from repo config. Also reject NUL, `.` and `..`, an empty name, and any `/` or `\`. The rejection is a per-path diagnostic (G5: input problems are data) and the rest of the tree is still read.
@@ -182,15 +203,18 @@ Proposed walker rules for `repo.rs` (each one should be a unit test from a hand-
 8. **Never materialize.** mentalc never writes the tree to disk. That removes the whole checkout-escape advisory class (CVE-2024-35186, CVE-2026-44471, GHSA-6p9q, GHSA-pmm9).
 
 ### Gaps
+
 - No primary source was read for git's `verify_path()`/`fsck` message list in this session. The fsck rules above are unverified.
 - There is no data on how often real repositories contain case-fold collisions.
 
 ## Q4. Fidelity: what do "the files at commit X" mean?
 
 ### Takeaway
+
 Define them as the raw blobs of the commit's tree, with modes, plus gitlinks as pointers. Do not apply `.gitattributes` (`text`/`eol`/`filter`/`export-ignore`), because checkout output depends on the user's config and on filter programs. Recognize LFS pointer files and report them as a gap instead of smudging them.
 
 ### Cited Findings
+
 - Raw versus converted: `cat-file --filters` shows "the content as converted by the filters configured in the current working tree… (i.e. smudge filters, end-of-line conversion, etc)". Without it, cat-file returns "the raw (though uncompressed) contents" — [git-cat-file](https://git-scm.com/docs/git-cat-file).
 - `git archive` applies `export-ignore` and `export-subst` from the tree's `.gitattributes`, and can be overridden by `--worktree-attributes` or `$GIT_DIR/info/attributes`. It stamps the commit time as the mtime for a commit, and "the current time" for a bare tree — [git-archive](https://git-scm.com/docs/git-archive).
 - jj's `read_file` returns raw blob data. It builds a filter pipeline only for diffs — [jj git_backend.rs L512-L537](https://github.com/jj-vcs/jj/blob/4351061bba89b3c503d133170952f94a2c95cdfd/git-backend/src/git_backend.rs#L512-L537).
@@ -199,20 +223,24 @@ Define them as the raw blobs of the commit's tree, with modes, plus gitlinks as 
 - unverified: an LFS pointer is a small text blob starting with `version https://git-lfs.github.com/spec/v1`, followed by `oid sha256:<hex>` and `size <n>`. `text=auto`/`eol=crlf` only change line endings at checkout, and committed blobs are normally LF.
 
 ### Inferences
+
 - Raw blobs are the only definition that is the same on every machine (determinism). They are also what a parser should see: Python and TOML parsers accept both LF and CRLF.
 - Record the executable bit and the symlink target in the model as facts. Only gitlinks and symlinks affect resolution.
 - `.gitattributes` `export-ignore` and `linguist-vendored`/`linguist-generated` are useful hints, but they are hints only. Reading them as data, without the `attributes` feature, by parsing the blob, is fine. Applying `filter=` never is.
 - An LFS pointer (detected by its prefix and a size under 1 KiB) under a path mentalc would parse becomes an `lfs_pointer` gap with the fix `git lfs pull`. Without that rule, mentalc would silently parse pointer text as source.
 
 ### Gaps
+
 - I did not survey which other static analysers (CodeQL, Semgrep, SonarQube) read raw blobs versus a checkout.
 
 ## Q5. Submodules: where are the objects, what if they are absent, and how do gix and cargo handle them?
 
 ### Takeaway
+
 A gitlink holds only the submodule commit id. Its objects live in `<superproject git dir>/modules/<name>` (or in an old-form `.git` directory inside the submodule's worktree), located via the `.gitmodules` name-to-path map. mentalc should parse `.gitmodules` from the commit's own tree, validate the name, open that object store read-only with the same isolated options, and check that the gitlink commit exists. An absent store or a missing commit is a nameable gap (`git submodule update --init`). Recurse with a depth cap. Never fetch.
 
 ### Cited Findings
+
 - "a submodule usually (but not always) consists of (i) a Git directory located under the `$GIT_DIR/modules/` directory of its superproject, (ii) a working directory…, and a `.git` file at the root of the submodule's working directory pointing to (i)." "The gitlink entry contains the object name of the commit that the superproject expects the submodule's working directory to be at." `.gitmodules` "mainly serves as the mapping between the name and path of submodules". When a submodule is deinitialized, "the directory which is supposed to be the working directory is empty", while "the submodule's Git directory may be there" — [gitsubmodules(7)](https://git-scm.com/docs/gitsubmodules).
 - gix `Submodule` offers `name`, `validated_name`, `path`, `url`, `update`, `branch`, `fetch_recurse`, `ignore`, `shallow`, `is_active`, `index_id`, `head_id` (from the HEAD tree), `git_dir`, `work_dir`, `git_dir_try_old_form`, `state` and `open`. `Repository::modules()` prefers the worktree `.gitmodules` file, "If a file on disk isn't present, we will try to load it from the index, and finally from the current tree". Git configuration also contributes — [repository/submodule.rs](https://docs.rs/crate/gix/0.90.0/source/src/repository/submodule.rs), [submodule/mod.rs](https://docs.rs/crate/gix/0.90.0/source/src/submodule/mod.rs).
 - Cargo (git2), for each `repo.submodules()`:
@@ -225,6 +253,7 @@ A gitlink holds only the submodule commit id. Its objects live in `<superproject
 - Advisories show the dangers of this path: name traversal, symlinked `.gitmodules`, and `update=!cmd` — [GHSA-p3hw](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-p3hw-mv63-rf9w), [GHSA-pg4w](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-pg4w-g64p-qwhj), [GHSA-f26g](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-f26g-jm89-4g65), [libgit2 GHSA-cw77](https://github.com/libgit2/libgit2/security/advisories/GHSA-cw77-j82w-mchm).
 
 ### Inferences
+
 - **Do not use `gix::Submodule`.** It needs the `attributes` feature (+12 crates), mixes in worktree and config state, and reads the worktree `.gitmodules` first. For commit fidelity, the `.gitmodules` that counts is the blob in commit X's tree. Parse it as git-config text, either with `gix-config` (already in the facade's dependency tree) or with a small parser. Use only `submodule.<name>.path` and `.url`, and ignore `update`.
 - **Resolution order for gitlink path P in commit X.** Find the name N whose `path == P`. Validate N (no `..` component, no leading `/`, no `\`, not empty; `gix_validate::submodule::name` from ≥ 0.11.1). Then:
   - (a) open `<common_dir>/modules/N` if it exists;
@@ -237,15 +266,18 @@ A gitlink holds only the submodule commit id. Its objects live in `<superproject
 - This replaces section 6.1's "directory is empty" heuristic with a precise one: the gitlink says which commit, and the gap says whether the store or only the commit is missing.
 
 ### Gaps
+
 - I did not read gix's `git_dir_from_name` for linked worktrees, which keep submodules in their private git dir per the doc comment, beyond that comment.
 - I did not confirm the layout of nested submodules from a primary source.
 
 ## Q6. Working tree vs commit, and what jj's `Backend` trait teaches
 
 ### Takeaway
+
 Offer two explicit sources: `--rev <commit>`, which reads objects and is deterministic, and a worktree mode, which reads files and is what an agent editing code needs. Record which one was used. Never mix them silently. jj's backend trait shows a storage interface needs only about five read methods. mentalc needs fewer, because it is read-only and has no copy tracking.
 
 ### Cited Findings
+
 - jj's `Backend` trait (core/src/backend.rs, from L794) has:
   - metadata: `name`, `commit_id_length`, `change_id_length`, `root_commit_id`, `root_change_id`, `empty_tree_id` and `concurrency`;
   - async read and write methods: `read_file`, `write_file`, `read_symlink`, `write_symlink`, `read_copy`, `write_copy`, `get_related_copies`, `read_tree`, `write_tree`, `read_commit`, `write_commit`, `get_copy_records`, and `gc`.
@@ -259,6 +291,7 @@ Offer two explicit sources: `--rev <commit>`, which reads objects and is determi
   - onefetch and git-cliff read history through gix and git2 respectively ([onefetch Cargo.toml](https://github.com/o2sh/onefetch/blob/main/Cargo.toml), [git-cliff-core Cargo.toml](https://github.com/orhun/git-cliff/blob/main/git-cliff-core/Cargo.toml)).
 
 ### Inferences
+
 - **A `Snapshot` trait for mentalc** (sync, per G16), inside `repo.rs`:
   - `fn tree(&self, dir: &RelPath) -> Result<Vec<Entry>>`;
   - `fn read(&self, file: &RelPath) -> Result<Bytes>`;
@@ -269,14 +302,17 @@ Offer two explicit sources: `--rev <commit>`, which reads objects and is determi
 - **Default.** When the user names a rev, use commit mode. When an agent is iterating on uncommitted code, use worktree mode. Commit mode is what makes a model cacheable and shareable across machines.
 
 ### Gaps
+
 - I did not read ruff, ty or rust-analyzer source for their git interaction in this session.
 
 ## Q7. Determinism and identity: git object ids or blake3?
 
 ### Takeaway
+
 Use the git commit and tree ids as provenance and as cache keys. Keep the model's content identity as blake3 over the raw bytes, so a SHA-1 repo, a SHA-256 repo and a worktree snapshot of the same files give the same file identities. Reading objects involves no mtimes, so commit mode is mtime-free by construction.
 
 ### Cited Findings
+
 - gix selects the object hash from `extensions.objectFormat` (SHA-1 or SHA-256), so the same content has different ids in the two formats — [incubate.rs](https://docs.rs/crate/gix/0.90.0/source/src/config/cache/incubate.rs).
 - gix detects SHA-1 collisions with `sha1dc` since the CVE-2025-31130 fix. The `sha1dc` crate is in the minimal dependency set — [GHSA-2frx-2596-x5r6](https://github.com/GitoxideLabs/gitoxide/security/advisories/GHSA-2frx-2596-x5r6), measured `cargo tree`.
 - Replace refs can change what an id resolves to, unless `core.useReplaceRefs=false` / `GIT_NO_REPLACE_OBJECTS` — [core.rs](https://docs.rs/crate/gix/0.90.0/source/src/config/tree/sections/core.rs), [git(1)](https://git-scm.com/docs/git).
@@ -285,8 +321,10 @@ Use the git commit and tree ids as provenance and as cache keys. Keep the model'
 - unverified: a git blob id is `H("blob " + len + "\0" + content)`, and a tree id covers names, modes and child ids.
 
 ### Inferences
+
 - Reading a git id is not "a second hash" under the blake3-only rule, because nothing is computed. mentalc stores `(object_format, commit_id, tree_id)` as build provenance, and can memoize the `blob_id → blake3` mapping to skip re-hashing unchanged blobs between builds of nearby commits.
 - With replace refs off, no smudge, no checkout and no mtimes, commit mode depends on two things only: the object bytes, and the pointer files (alternates, submodule gitdirs) that mentalc records. It is then reproducible across machines. Worktree mode stays dependent on the machine, as section 6.3 already accepts for environments.
 
 ### Gaps
+
 - I did not measure the cost of blake3 re-hashing versus reusing git ids on a large repository.

@@ -5,9 +5,11 @@ Scope note: research done 2026-11-11. Sources marked (verified) were fetched or 
 ## Q1. Structure: ports, delegation, hierarchy and multiple decompositions (UML 2 composite structures, SysML v2/KerML, AADL, Wright/ADLs, C4, Ptolemy, Simulink)
 
 ### Takeaway
+
 UML 2 composite structures and SysML v2 give the closest match to our "boundary (ports + delegation) + interior" entity. UML gives the delegation/assembly split. SysML v2 gives the cleanest typed-port story: port definitions, conjugation, interface vs flow vs binding connections, all on a formal KerML core adopted by OMG in 2025. None of these languages handles two containment facets (logical and physical) natively in one tree. The established pattern is separate hierarchies linked by an allocation/binding relation (SysML allocation, AADL binding, C4 deployment views), which supports our "two facets over the same instances" decision.
 
 ### Cited Findings
+
 - UML 2: a connector is a *delegation* connector when one end attaches to a port of the containing classifier (not a part's port), and an *assembly* connector otherwise. Delegation means forwarding: a signal arriving at a port with a delegation connector to one or more inner parts/ports "will be passed on to those targets"; if several targets can handle it, it goes to all of them — [uml-diagrams.org, UML Connector](https://www.uml-diagrams.org/composite-structure-diagrams/connector.html) (verified, secondary summary of the UML 2.5 spec); normative text: [OMG UML 2.5.1](https://www.omg.org/spec/UML/2.5.1) (canonical).
 - The UML delegation semantics are known to be under-specified or contradictory. OMG issue UML25-566 reported conflicting constraints on matching provided/required interfaces for delegation connectors, and UML 2.5 "resolved" it by deleting one constraint — [OMG issue UML25-566](https://issues.omg.org/issues/UML25-566) (verified).
 - UML lacks the formality for rigorous verification of composite structures. ArchiTRIO adds a temporal-logic semantics and formal definitions of port and interface. The OMEGA profile gives an executable semantics for composite structures with ports as first-class citizens — [ArchiTRIO semantics, Pradella/Rossi/Mandrioli](https://pradella.faculty.polimi.it/papers/ArchiTRIO-semantics.pdf); [Component-based modeling in Umple (SciTePress 2018)](https://www.scitepress.org/PublishedPapers/2018/67159/67159.pdf) (verified via search snippets).
@@ -25,6 +27,7 @@ UML 2 composite structures and SysML v2 give the closest match to our "boundary 
 - Simulink subsystems: hierarchy is created by grouping blocks into subsystems with Inport/Outport blocks as the boundary. Virtual subsystems are purely graphical (they flatten for execution), while atomic subsystems execute as a unit — [MathWorks, Subsystems](https://www.mathworks.com/help/simulink/subsystems.html) (canonical).
 
 ### Inferences
+
 - Port semantics to adopt: a port is a typed feature with direction (provides/requires, or in/out), and port compatibility follows the SysML v2 conjugation rule. For our entities, "requires `POST /login`" on a client is the conjugate of "provides `POST /login`" on the server.
 - Delegation semantics to adopt: treat delegation as SysML v2 *binding* (identity or equivalence of outer and inner port), optionally carrying a transformation. Our "messages change form at the boundary" needs more than UML/SysML give, because their delegation is pure forwarding. Model a delegation wire either as a binding plus a named *adapter* (iptables DNAT, TLS termination, HTTP parse) or as a tiny boundary entity. Ptolemy's composite actor, where a level can change model of computation, is the precedent for "the interior speaks a different language than the boundary".
 - Boundary entities (LB, gateway) correspond to Wright's first-class *connectors* with roles and glue, or to an assembly connector promoted to a part. Wright's "port refines role" check is a template for validating that a gateway's routing actually covers the ports it fronts.
@@ -32,6 +35,7 @@ UML 2 composite structures and SysML v2 give the closest match to our "boundary 
 - Validation rule ("an open entity must account for every port"): this corresponds to the UML/SysML well-formedness that every boundary port is delegated or bound. Tools rarely enforce it (Umple finding), so our engine should.
 
 ### Gaps
+
 - I did not retrieve the normative UML 2.5.1 Composite Structures text or the KerML/SysML v2 formal PDFs, so the port, delegation and binding details above come from secondary summaries and OMG issue trackers.
 - I found no source that formally treats *multiple simultaneous containment hierarchies over the same instances* as a first-class concept, beyond allocation/binding between two models.
 - AADL port and binding details are from background knowledge cited to the SAE standard page, and were not re-verified this session.
@@ -39,9 +43,11 @@ UML 2 composite structures and SysML v2 give the closest match to our "boundary 
 ## Q2. Behavior formalisms: statecharts/SCXML, EFSMs, Petri nets, MSC/HMSC, BPMN, CSP/π, choreographies/MPST, P, TLA+/PlusCal, actors
 
 ### Takeaway
+
 No single formalism covers everything. The best fit for *scenario graphs* is a hierarchical graph of message-passing events. Global-view choreographies (HMSC/MPST global types) are a good template, but they carry known realizability pitfalls. Per-entity behavior summaries in behavior packs fit communicating extended state machines (P-style or statechart-style). TLA+/PlusCal is the strongest checking backend, but it is a poor interchange format for an LLM-written, visualized model.
 
 ### Cited Findings
+
 - Statecharts (Harel 1987): FSMs extended with hierarchy (OR-states), orthogonality (AND-states, concurrent regions) and broadcast communication, built to tame state explosion in reactive systems — [Harel, "Statecharts: A visual formalism for complex systems", SCP 1987](https://www.sciencedirect.com/science/article/pii/0167642387900359) (canonical).
 - Statecharts have many incompatible semantic variants: a 1994 survey compared about 20, which differ on step semantics, priority and instantaneous reaction — [von der Beeck, "A comparison of Statecharts variants", FTRTFT 1994](https://doi.org/10.1007/3-540-58468-4_189) (canonical).
 - SCXML (W3C Recommendation 2015) fixes one executable statechart semantics: run-to-completion macrosteps, document-order priority, and parallel states. It is an XML interchange format — [W3C SCXML](https://www.w3.org/TR/scxml/) (canonical).
@@ -66,6 +72,7 @@ No single formalism covers everything. The best fit for *scenario graphs* is a h
 - BPMN 2.0.2 is an OMG standard with an XML interchange format. Its execution semantics is token-based but given informally in the spec, so it is generally formalized by mapping to Petri nets — [OMG BPMN 2.0.2](https://www.omg.org/spec/BPMN/2.0.2) (canonical).
 
 ### Inferences
+
 - Scenario graph ≈ an HMSC/global type over *entity instances*: nodes are interaction fragments, edges are sequencing, branches are labeled by input classes, and cycles are kept. Because our graphs are *extracted from code*, where every local behavior exists by construction, not *specified* top-down, the realizability problem is reversed. The graph is an over-approximation of the product of local behaviors, and the risk is *spurious paths* (a global branch combination no local implementation can take), not unimplementable specs. The MPST/HMSC literature (local choice, causal closure) gives concrete well-formedness checks to flag such paths, e.g., "the branch is decided by one entity and every other entity learns it through a message".
 - Behavior packs (library/RFC summaries) are naturally *local* types or communicating EFSMs per entity: a TCP/TLS state machine from an RFC, or a library function's summary keyed by input class. Composition of user code and packs then matches MPST/choreography "global ↔ local" (project the scenario onto an entity to get its expected local behavior; compose local packs to get the global). P's model (event-driven state machines with typed events, plus a checker that explores message/failure interleavings) is the closest *industrial* match for packs that must also be checkable.
 - Statecharts (via SCXML semantics) are the natural vocabulary for *entity lifecycle and protocol state* (hierarchical and orthogonal states), and they visualize well. Pin one semantics, e.g., SCXML's run-to-completion, to avoid the variant problem.
@@ -73,6 +80,7 @@ No single formalism covers everything. The best fit for *scenario graphs* is a h
 - π-calculus name passing is the formal concept behind "a new socket/connection is created and handed off". This is dynamic port creation, which static ADLs (UML, SysML, AADL) model poorly.
 
 ### Gaps
+
 - I could not fetch the CACM 2025 AWS article (HTTP 403 on both CACM and ACM Queue). AWS-specific details beyond the P case-studies page come from a search summary.
 - I found no recent (2023–2026) source directly comparing these formalisms for *visualization* suitability. Visualization claims are inferences.
 - I did not check the BPMN formal-semantics literature (e.g., BPMN-to-Petri-net mappings) beyond the general statement.
@@ -80,9 +88,11 @@ No single formalism covers everything. The best fit for *scenario graphs* is a h
 ## Q3. Traces and partial orders: Mazurkiewicz traces, pomsets, happens-before/vector clocks, event structures, OpenTelemetry
 
 ### Takeaway
+
 A script with parallel lanes is, semantically, a *labeled partial order* (pomset) of events, with happens-before as the order. Mazurkiewicz traces are the special case where concurrency comes from a fixed independence relation. Prime event structures add *conflict*, which is exactly "untaken branches shown as forks", so a scenario graph unfolded around one script is an event structure. OpenTelemetry's span tree plus links is a weaker, informal causal DAG. It maps onto a script, but it lacks message-level happens-before and conflict.
 
 ### Cited Findings
+
 - Happens-before (Lamport 1978) is the smallest relation that contains program order on each process and send→receive, closed under transitivity. Logical clocks are consistent with it — [Lamport, "Time, Clocks, and the Ordering of Events", CACM 1978](https://lamport.azurewebsites.net/pubs/time-clocks.pdf) (canonical).
 - Vector clocks *characterize* happens-before exactly (e → f iff V(e) < V(f)), so concurrency between events is decidable from the timestamps — [Mattern, "Virtual Time and Global States of Distributed Systems", 1988](https://www.vs.inf.ethz.ch/publ/papers/VirtTimeGlobStates.pdf) (canonical).
 - Mazurkiewicz traces: equivalence classes of words under commutation of *independent* letters (a trace monoid). Each trace corresponds to a dependence graph (a partial order) — [Trace monoid (overview)](https://en.wikipedia.org/wiki/Trace_monoid); [Diekert & Rozenberg (eds.), The Book of Traces, 1995](https://doi.org/10.1142/2563) (canonical).
@@ -94,6 +104,7 @@ A script with parallel lanes is, semantically, a *labeled partial order* (pomset
 - I found no formal paper giving a partial-order semantics for OTel span links (search returned only docs and blogs) — [search result set: OTel docs, OpenTracing spec](https://opentelemetry.io/docs/specs/otel/overview/) (verified absence in this session's results).
 
 ### Inferences
+
 - Script semantics: a script is a pomset over step events. The `after: [...]` field in the checkpoint's step format *is* the covering relation of happens-before, and lanes are a presentation of chains. The engine should compute the transitive closure and render "concurrent" as incomparable.
 - Races: a race is two incomparable events on the same shared-state location, at least one a write. This is the standard happens-before data-race definition, adapted to DBs and files by treating each location or row as a "variable". Under Mazurkiewicz, the independence relation must mark conflicting accesses as *dependent*. The script then picks one linearization (an interleaving), and the "race view" shows the alternative orderings of those dependent pairs.
 - Forks and untaken branches: rendering untaken branches faintly is a view of the *prime event structure* around the chosen configuration (the conflict relation). This gives a precise meaning to "an assumption is an unbound branch choice": a choice between conflicting events.
@@ -101,15 +112,18 @@ A script with parallel lanes is, semantically, a *labeled partial order* (pomset
 - Three clocks: logical order = the pomset; presentation time = a linear extension with durations; observed time = timestamps attached to events. This separation matches the theory: a pomset admits many linear extensions, and playback picks one.
 
 ### Gaps
+
 - I found no source on formal semantics of OTel span links or on the consistency of OTel traces with Lamport happens-before. This is an open area as far as this session's searches show.
 - I did not search the race-detection literature specifically (e.g., FastTrack, DB-level anomaly checkers like Elle). The race definition above is standard, but it is cited here only through the Lamport/Mattern framework.
 
 ## Q4. Refinement and abstraction: what makes "zoom" sound (TLA+, Event-B, statechart hierarchy, MSC refinement)
 
 ### Takeaway
+
 A collapsed segment is a sound abstraction of its sub-steps under three conditions. First, there is a refinement mapping from fine to coarse state. Second, fine steps that do not change the abstract state map to *stuttering* steps. Third, when the segment runs concurrently with others, its sub-steps must be *reducible* to an atomic block (Lipton movers). Otherwise collapsing hides interleavings, which is exactly where races live. This gives a formal basis for the checkpoint rule "a collapsed segment never hides an error or an assumption", extended to "...or a non-atomic interleaving".
 
 ### Cited Findings
+
 - Refinement mappings: a low-level spec implements a high-level spec if there is a state mapping (possibly with history/prophecy variables) under which every low-level behavior maps to a high-level behavior — [Abadi & Lamport, "The Existence of Refinement Mappings", TCS 1991](https://lamport.azurewebsites.net/pubs/abadi-existence.pdf) (canonical).
 - TLA formulas are *invariant under stuttering*: adding steps that leave the variables unchanged does not affect satisfaction. This is why a fine-grained spec (with many internal steps) can implement a coarse one, as the internal steps become stuttering steps of the abstract spec — [Lamport, Specifying Systems](https://lamport.azurewebsites.net/tla/book.html) (canonical).
 - Event-B: refinement by *superposition* adds new variables and new events that must refine `skip` (stuttering) on the abstract variables, and must be *convergent* (bounded by a variant) so they cannot take control forever. Abstract events are refined by concrete events under a gluing invariant, with proof obligations discharged in Rodin — [Abrial, Modeling in Event-B, CUP 2010](https://doi.org/10.1017/CBO9781139195881) (canonical).
@@ -120,21 +134,25 @@ A collapsed segment is a sound abstraction of its sub-steps under three conditio
 - Linearizability: a concurrent operation spanning an interval behaves as if it took effect atomically at some point inside the interval. This is the correctness condition that justifies drawing a multi-step operation as one atomic step — [Herlihy & Wing, "Linearizability", TOPLAS 1990](https://doi.org/10.1145/78969.78972) (canonical).
 
 ### Inferences
+
 - Collapse (time) = TLA/Event-B refinement read backwards. The collapsed segment is the abstract event, and its sub-steps are the concrete events. Sub-steps that only forward the message (Docker NAT hops) are stuttering steps with respect to the app-level state, which formalizes the generator's "forwarding-only" collapse rule. The `contains: {assumptions, errors}` marker is the observable residue that refinement must not hide.
 - Collapse is sound only when one of three conditions holds: the segment touches no shared state (its sub-steps are all both-movers relative to other lanes), it is protected by a lock or transaction (reducible), or it is linearizable. If none holds, the engine should refuse to auto-collapse, or mark the segment "non-atomic".
 - Zoom (space) = structural refinement of an entity. It is sound if the interior's externally visible behavior at the boundary ports refines the closed entity's behavior summary (CSP-style trace refinement at the ports, as in Wright's port/role check). The "event lifts to deepest visible ancestor" rule is the *projection/hiding* operator, which hides internal events and keeps port events.
 - Unifying space and time zoom: in hierarchical CPN and Ptolemy, a single construct (a subpage or composite actor with ports) is refined in both structure and behavior. Our "one gesture opens time and space" corresponds to refining a step and the entity performing it together.
 
 ### Gaps
+
 - I found no specific literature on *MSC refinement* (refining one message into a sub-MSC) in this session. Older work exists (e.g., ITU Z.120 MSC references/decomposition), but it was not verified here.
 - I found no tool or paper that does *automated soundness checking of collapse* on traces extracted from code. This seems to be novel territory.
 
 ## Q5. Messages and protocol layering: formal treatments of encapsulation
 
 ### Takeaway
+
 Session-type theory has a direct notion of *nested protocols*: a parent session calls a sub-session that the parent's other participants cannot see. This is the closest formal analogue of "HTTP inside TLS inside TCP". The networking-architecture side has compositional layered models, but a formal, standard treatment of encapsulation-with-form-change at entity boundaries is thin. Treat each delegation/adapter as a typed transformer between message types (a layer map), and nest message types as an algebraic payload structure.
 
 ### Cited Findings
+
 - Nested protocols in session types: a parent protocol can call a *subprotocol*. Parties of the parent session do not have access to the subsession, so private interactions can be modeled inside public sessions — [Demangeon & Honda, "Nested Protocols in Session Types", CONCUR 2012](https://mrg.cs.ox.ac.uk/publications/nested-protocols-in-session-types/subsessioncam.pdf) (verified snippet).
 - Modular session types for objects: session-typed channels encapsulated in objects, with several methods operating on the same channel — [Modular Session Types for Objects (LMCS)](https://lmcs.episciences.org/1613/pdf) (verified snippet).
 - Networking textbook view: layering combines protocols, with higher-level protocols building on services from lower ones, and one protocol's payload is another protocol's encapsulated message — [UW CSE 461 lecture, Protocols and Layering](https://courses.cs.washington.edu/courses/cse461/06wi/Lectures/L5-protocols/l5.pdf) (verified snippet).
@@ -142,19 +160,23 @@ Session-type theory has a direct notion of *nested protocols*: a parent session 
 - RFCs already specify per-layer state machines (TLS 1.3, TCP, HTTP/2 streams), as noted in the project checkpoint — [RFC 8446](https://www.rfc-editor.org/rfc/rfc8446); [RFC 9293](https://www.rfc-editor.org/rfc/rfc9293); [RFC 9113](https://www.rfc-editor.org/rfc/rfc9113) (canonical).
 
 ### Inferences
+
 - Model a message as a *nested value*, `IP{TCP{TLS{HTTP{JSON}}}}`, with a type per layer, and a delegation wire or adapter as a typed function between layer types (decapsulate/encapsulate, possibly with state such as a TLS session). Visual "granularity follows openness" then becomes: show the outermost layer *not consumed* by any closed entity on the path.
 - Each layer's protocol is its own session (local type or state machine from a behavior pack), and a higher-layer session runs *on* a lower one, which is the nested-protocol and Zave–Rexford view. In a script, an L1 step "HTTPS POST" refines into L2 steps (TCP, TLS, HTTP), each refining into its own sub-session. Layering thus fits the same refinement machinery as Q4, with one twist: the refinement is *by layer* rather than *by entity*. This supports the checkpoint's "layer chips" control as a separate axis.
 
 ### Gaps
+
 - I found no dedicated formalism combining session types with protocol-stack encapsulation and payload transformation at boundaries. The search returned only the nested-protocol work and generic layering material.
 - The Zave & Rexford citation is from background knowledge and was not verified this session.
 
 ## Q6. Which formalisms are easiest for LLMs to generate correctly? (2023–2026 evidence)
 
 ### Takeaway
+
 Evidence consistently shows that LLMs get *syntax* right far more often than *semantics*. The more a target resembles a mainstream programming language or a simple diagram DSL, the higher the syntactic success. Free-form TLA+ from natural language is very weak (best 8.6% semantically correct in a 2026 30-model study), but TLA+ modeling *of real code* with checker feedback is much better (SysMoBench, invariants up to 81%). SysML v2 output often slips into SysML v1 syntax or invented keywords. State-machine structure (states) is good, but transitions, guards and actions are weaker. BPMN and Petri-net work succeeds mainly via an intermediate representation (POWL) plus validation loops. Every positive result depends on a *checker in the loop*.
 
 ### Cited Findings
+
 - **TLA+ from natural language (June 2026):** 30 LLMs from 8 families on 205 TLA+ specs, validated by SANY and TLC. The best result was 26.6% syntactic and 8.6% semantic correctness, and all successful outputs came from *progressive prompting*. Model size does not predict quality (DeepSeek-R1 8B beat its 70B variant), and code-specialized models underperform. The paper identifies five recurring hallucination categories attributed to training-data biases — [Bisharat et al., arXiv 2606.05792](https://arxiv.org/abs/2606.05792) (verified); [AI4FM Loyola summary](https://ai4fm.cs.luc.edu/posts/llm-tla-evaluation-2025/).
 - **SysMoBench (ICLR 2026):** 11 real systems (Etcd and Redis Raft, ZooKeeper leader election, Asterinas OS spinlock/mutex/ringbuffer). Phased checks cover syntax, runtime (TLC), conformance to code, and invariants. Syntax is nearly solved (most LLMs near 100%), runtime ranges 30–92%, and invariants range from 16% (weakest) to 81% (Gemini 3.1). The characteristic error is merging multi-step operations into one atomic guard. The authors report TLA+ as the most practical target language for current LLMs within their framework — [SysMoBench arXiv 2509.23130](https://arxiv.org/pdf/2509.23130); [ICLR 2026 poster](https://iclr.cc/virtual/2026/poster/10009427); [SIGOPS blog 2026](https://sigops.org/2026/can-llms-model-real-world-systems-in-tla) (verified via search summaries; the blog's numbers come from a later round than the paper tables).
 - **Code → TLA+ (Model-Bench, 2026):** LLMs modeling Python programs (HumanEval/MBPP/LiveCodeBench) as TLA+ reached 66.25% runnable and 49.55% state similarity in-context — [arXiv 2604.01851](https://arxiv.org/html/2604.01851v1) (verified via search summary).
@@ -168,6 +190,7 @@ Evidence consistently shows that LLMs get *syntax* right far more often than *se
 - **BPMN / Petri nets:** ProMoAI has the LLM write POWL (a partially-ordered workflow language), which converts soundly to BPMN or Petri nets. On a 20-process benchmark, models that needed fewer attempts to produce a valid model also produced higher-quality ones, and self-optimization helped weaker models most — [Kourani et al., arXiv 2412.00023](https://arxiv.org/html/2412.00023v1). BEF4LLM scores BPMN on syntactic, pragmatic, semantic and validity dimensions on 105 text–BPMN pairs, and finds that larger parameter count does not guarantee better BPMN — [arXiv 2601.21787](https://arxiv.org/abs/2601.21787v1). Five LLM BPMN tools often showed missing steps, inconsistent logic or rule violations — [Computation, Jan 2026 (DOAJ)](https://doaj.org/article/c069a771222d4faea99bbfb2eddeb04a) (verified snippets).
 
 ### Inferences
+
 - Across formalisms, the reliable pattern is: **an LLM emits a constrained, programming-language-like or simple DSL, a checker validates it (parser, model checker, well-formedness), and the loop repairs it**. Raw mathematical notations (TLA+ from prose) are worst, while code-grounded modeling (SysMoBench, Model-Bench) is much better. Our source-code producer is the favorable case.
 - Our format should be a *small, closed, JSON/YAML-schema DSL* (like the checkpoint's step format), not SysML v2 textual or TLA+. That avoids the "v1 syntax / invented keyword" failure mode and lets a schema validator catch syntax errors. The lesson from ProMoAI is to pick an intermediate that is *sound by construction* (POWL cannot express unsound nets). For us, scripts should be pomsets with nesting by construction (well-formed `after` edges, acyclic, every step's actor an existing entity instance, every message entering through a declared port).
 - Expect the same semantic error classes as in the literature: wrong atomicity (SysMoBench), missing transitions/guards (state-machine studies), and missing steps or inconsistent logic (BPMN). Our validators should target these specifically: port coverage, happens-before consistency with message send/receive, and atomicity flags on collapsed segments touching shared state.
@@ -175,6 +198,7 @@ Evidence consistently shows that LLMs get *syntax* right far more often than *se
 - Exporting to TLA+ or P for checking (e.g., races in a behavior pack) is plausible as an *optional backend*, since SysMoBench shows code→TLA+ is tractable with a checker. Keep it off the critical path.
 
 ### Gaps
+
 - I found no head-to-head study comparing LLM accuracy across *different* formalisms (TLA+ vs P vs statecharts vs Mermaid) under one protocol. Cross-formalism comparisons above are inferences across different benchmarks with incomparable metrics.
 - I found no published accuracy evaluation of LLM-generated P programs or of PeasyAI.
 - Most state-machine and SysML studies use 2024-era models (GPT-4o, Claude 3.5). Results for late-2026 frontier models are mostly absent, except SysMoBench's later rounds (Gemini 3.1).
@@ -183,10 +207,13 @@ Evidence consistently shows that LLMs get *syntax* right far more often than *se
 ## Q7. Recommendation: minimal semantic core for entities/ports/delegation, scenario graphs, scripts, states and races
 
 ### Takeaway
+
 Borrow structure from SysML v2/UML composite structures (typed ports, conjugation, binding-as-delegation) plus AADL-style allocation for the second facet. Borrow behavior from communicating extended state machines (P/SCXML) for packs and from HMSC/MPST global types for scenario graphs. Give scripts pomset (happens-before) semantics, and view forks as an event structure with conflict. Make zoom sound with refinement mappings and stuttering (TLA+/Event-B) plus Lipton reduction for collapse under concurrency. Use a closed, schema-validated DSL as the surface so LLM output can be checked.
 
 ### Cited Findings
+
 (Each element below cites the formalism it borrows from; see Q1–Q6 for details.)
+
 - Typed ports with direction and conjugation-based compatibility — [SysML v2 cheat sheet](https://www.sodiuswillert.com/hubfs/Downloadables/SodiusWillertSysMLv2CheatSheet.pdf); [Verified-MBSE Port](https://chantakan.github.io/verified-mbse/VerifiedMBSE/Core/Port.html).
 - Delegation = forwarding (UML) or binding/equality of outer and inner port (SysML v2) — [uml-diagrams.org](https://www.uml-diagrams.org/composite-structure-diagrams/connector.html); [SysML v2 cheat sheet](https://www.sodiuswillert.com/hubfs/Downloadables/SodiusWillertSysMLv2CheatSheet.pdf).
 - First-class connectors with role/glue, and port-refines-role compatibility checking — [Allen & Garlan 1997](https://doi.org/10.1145/258077.258078).
@@ -200,6 +227,7 @@ Borrow structure from SysML v2/UML composite structures (typed ports, conjugatio
 - Checker-in-the-loop as the condition for LLM success — [arXiv 2606.05792](https://arxiv.org/abs/2606.05792); [SysMoBench](https://arxiv.org/pdf/2509.23130); [ProMoAI](https://arxiv.org/html/2412.00023v1).
 
 ### Inferences
+
 Proposed minimal core (a synthesis by this researcher, not from any single source):
 
 1. **Entity** = (type, instance id, boundary ports, interior parts, connectors), as in a UML/SysML part definition and usage.
@@ -220,6 +248,7 @@ Proposed minimal core (a synthesis by this researcher, not from any single sourc
 Mapping to visualization: ports and connectors → edges on frames. Delegation chains → camera path inward. Pomset → lanes (chains) with cross-lane arrows. Conflict → faint forks. Segments → nested timeline rows. Statechart states → entity activity and lifecycle badges.
 
 ### Gaps
+
 - No existing language combines all of: two containment facets, port-level message transformation, a global/local behavior split, pomset scripts and sound collapse. The recommendation is a synthesis, and no single source endorses it.
 - Soundness checking of collapse and zoom on LLM-generated, code-derived models is untested in the literature found here. Its practicality, especially computing movers for DB-level shared state, is an open engineering question.
 - I did not evaluate Alloy, Rebeca (actor-based), Reo connectors, or BIP (Behavior-Interaction-Priority). These are plausible additional sources for connector and composition semantics that were not covered in this session.

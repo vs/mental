@@ -1,0 +1,8 @@
+# report-jobs sample system's local dev database URL (reports/reports), fixture data, not a real secret (review 2027-05-18)
+examples/report-jobs/src/docker-compose.yml:generic-credential-uri:8
+# report-jobs sample system's local dev Postgres password, fixture data, not a real secret (review 2027-05-18)
+examples/report-jobs/src/docker-compose.yml:generic-password:34
+# type signature `password: bytes` of bcrypt.hashpw in mealie's code, recorded as a resolved site, not a secret (review 2027-05-18)
+docs/research/type-checkers-as-libraries/experiments/results/sites-mealie.jsonl.gz:generic-password:8004
+# type signature `password: bytes` of bcrypt.checkpw in mealie's code, recorded as a resolved site, not a secret (review 2027-05-18)
+docs/research/type-checkers-as-libraries/experiments/results/sites-mealie.jsonl.gz:generic-password:8014

@@ -22,9 +22,11 @@ Source note: every bullet under "Cited Findings" carries a link to a source open
 ## 1. Event-B and the Rodin platform
 
 ### Takeaway
+
 An Event-B development is an authored chain of machines. Each refinement step gets a fixed, mechanically generated set of proof obligations: invariant preservation including the gluing invariant, guard strengthening, action simulation, witness feasibility, and, for events that are new at the lower level, variant obligations. The standard obligations establish trace (safety) refinement only. Rodin does not generate a deadlock-freedom obligation, and liveness results do not carry across refinement unless something stronger is checked. Automation is high but not complete, and changing a model high in the chain is expensive.
 
 ### Cited Findings
+
 - Rodin's obligation names per refinement step are: `INV` (invariant establishment and preservation, per event and invariant), `GRD` (guard strengthening), `MRG` (guard strengthening when one concrete event merges several abstract events), `SIM` (action simulation), `EQL` (a variable kept from the abstract machine keeps its value), `FIS` (feasibility of a nondeterministic action), `WWD` and `WFIS` (well-definedness and feasibility of a witness), `VWD`, `FIN`, `NAT` and `VAR` (variant obligations), plus `WD` and `THM`. The page also states that generation of deadlock-freeness obligations "is currently missing" — [Rodin User Manual, Proof Obligation Names](https://wiki.event-b.org/index.php/Proof_Obligation_Names_(Rodin_User_Manual))
 - A gluing invariant is an invariant that mentions variables of both machines and relates concrete states to abstract states. Guard strengthening means a concrete event may occur only when its abstract event can. A concrete event that refines no abstract event refines `skip`: its guard obligation is trivial, but it must still preserve the gluing invariant with the abstract variables unchanged — [Rodin Handbook, refinement tutorial](https://stups.hhu-hosting.de/handbook/rodin/current/html/tut_refinement.html)
 - A witness is needed when an abstract event parameter has no concrete counterpart, or when the abstract event assigns nondeterministically to a variable the concrete machine no longer has. The witness is a predicate labelled with the parameter name or primed variable, and its feasibility (`WFIS`) must be proved — [Rodin Handbook, machine reference](https://stups.hhu-hosting.de/handbook/rodin/current/html/machine.html)
@@ -42,6 +44,7 @@ An Event-B development is an authored chain of machines. Each refinement step ge
 - A small independent implementation exists: pyeb encodes Event-B machines as Python classes, generates the invariant, feasibility, guard-strengthening, simulation and variant obligations, and sends them to Z3 — [pyeb, arXiv 2505.13454](https://arxiv.org/abs/2505.13454)
 
 ### Inferences
+
 - The Rodin obligation list is the most complete written checklist for "what must hold between two adjacent levels". Mental can turn each obligation into a check on explored states instead of a proof: `GRD` becomes "whenever a lower step mapped to upper step U fires, U's guard holds on the projected state"; `SIM` becomes "the projected after-state is one U allows"; `INV` on the gluing invariant becomes "the abstraction relation holds in every explored configuration"; `WFIS` becomes "a value for each upper parameter with no lower counterpart can be computed from the lower step".
 - ProB shows that refinement between two levels can be checked by exploration alone, with no gluing invariant and no prover. This is the direct precedent for Mental's interpreter-based check, and it is stronger than the draft report's citation of TLC because ProB works on event systems with guards, which is Mental's model.
 - The standard Event-B obligations do not stop a lower level from doing less than the upper level promised: guards may be strengthened until nothing is enabled, and no deadlock-freedom obligation is generated. Mental should treat "upper step is never realizable below" as its own finding kind, separate from safety refinement.
@@ -50,6 +53,7 @@ An Event-B development is an authored chain of machines. Each refinement step ge
 - Industrial practice moved toward shallow, separate, page-sized models. That is evidence against making every Mental level part of one long proof-like chain, and for keeping each adjacent pair independently checkable and readable.
 
 ### Gaps
+
 - Abrial's book and the Rodin STTT 2010 paper were not opened; the formal statements of the obligations are taken from the handbook and wiki.
 - No published automation rate for a full industrial Event-B development with deep refinement (as opposed to a mixed sample) was found.
 - The current state of multi-level animation in released ProB was not confirmed.
@@ -58,9 +62,11 @@ An Event-B development is an authored chain of machines. Each refinement step ge
 ## 2. Classical B and Atelier B
 
 ### Takeaway
+
 Classical B refines an abstract machine through intermediate refinements to an implementation in B0, a code-like subset, from which Ada or C is generated. It is the strongest industrial evidence that a proved refinement chain reaches running code at scale. The same evidence shows that the chain is short in practice (most components have a specification and an implementation and nothing between), that the proof is semi-automatic, and that the method covers sequential, cyclic control software only.
 
 ### Cited Findings
+
 - Paris Météor line 14 is the first reference application: "over 110,000 lines of B models, translated into 86 000 lines of Ada", with no bugs detected after proof completion in functional validation, integration validation, on-site testing or operation since October 1998 — [Lecomte et al., arXiv 2005.07190](https://arxiv.org/abs/2005.07190). The primary paper is Behm, Benoit, Faivre, Meynadier, "Météor: A Successful Application of B in a Large Project", FM 1999 — [bibliographic record](https://bibtex.github.io/FM-v1-1999-BehmBFM.html) (paper itself not opened)
 - Shape of a typical automatic-train-protection project: 233 machines (50 kloc), 46 intermediate refinements (6 kloc) and 213 implementations (45 kloc), plus 110 kloc of handwritten code for non-safety parts. 23,000 proof obligations, 83% proved automatically, 17% interactively. 3,000 mathematical rules were added by users to ease proof, 85% of which were themselves proved automatically — [arXiv 2005.07190](https://arxiv.org/abs/2005.07190)
 - The top-level specification is kept deliberately abstract and "different from the implementation" so that the proof is not a proof of a copy — [arXiv 2005.07190](https://arxiv.org/abs/2005.07190)
@@ -71,21 +77,25 @@ Classical B refines an abstract machine through intermediate refinements to an i
 - In classical B, a `REFINEMENT` or `IMPLEMENTATION` component states its gluing invariant in its `INVARIANT` clause, and the obligation for each operation is that the concrete operation, started in a state related to an abstract state, ends in a state related to some abstract after-state (training knowledge; not re-fetched).
 
 ### Inferences
+
 - The ratio 233 machines : 46 refinements : 213 implementations says that in industrial B the usual "chain" has two levels, and a third is the exception. Mental's six-rung ladder should not assume that every entity has content at every rung; most pairs will be trivial or absent.
 - The phrase "non-threaded" is the limit that matters for Mental. Classical B's success is with sequential cyclic code. It provides no precedent for checking refinement of concurrent services, where Mental's main findings (races) live.
 - User-added proof rules that themselves need proving are the B analogue of LLM-proposed facts: accepted only after an independent check, with the unproved remainder reviewed by people and listed in the safety case. The same split fits Mental's tiers.
 - Per-line traceability from obligation to model text is worth copying: every failed level check in Mental should point at the abstraction entry, the upper step and the lower anchors involved.
 
 ### Gaps
+
 - The FM 1999 Météor paper and Abrial's ICSE 2006 paper (which gives per-project proof counts) could not be opened; the widely quoted per-project lemma counts are therefore not reported here.
 - No source on the cost of re-proving after a specification change in B projects was found.
 
 ## 3. TLA+ refinement: TLC, Apalache, auxiliary variables, trace validation
 
 ### Takeaway
+
 In TLA+ a level is an authored specification, and the link to the level above is an authored refinement mapping: an expression over lower variables for each upper variable. TLC checks "lower spec implies upper spec under the mapping" as a temporal property on small finite instances. When no mapping exists, auxiliary variables (history, prophecy, stuttering) are added to the lower spec. What industry actually uses to tie code to a spec is trace validation, which is weaker than refinement by design.
 
 ### Cited Findings
+
 - The standard way to show spec S implements a more abstract spec T is to find a refinement mapping "that expresses the values of T's variables as functions of the values of S's variables". In TLA+ this is written `M == INSTANCE T WITH x <- expr, ...` and the theorem is `Spec => M!Spec`. It can be proved with TLAPS or checked by TLC on a model that makes the state space finite — [Lamport and Merz, Auxiliary Variables in TLA+, arXiv 1703.05121](https://arxiv.org/abs/1703.05121)
 - "The most general form of correctness that TLC can check is that one specification implies another"; invariance is a special case — [arXiv 1703.05121](https://arxiv.org/abs/1703.05121)
 - When each kind of auxiliary variable is needed: a history variable when the upper spec "remembers previous events longer than it has to"; a prophecy variable when the upper spec "makes decisions before it has to"; a stuttering variable when the upper spec takes steps the lower spec does not have. The paper's example: an hour clock implements an hour-minute clock with the minutes hidden only after adding a variable that inserts 59 stuttering steps per hour tick — [arXiv 1703.05121](https://arxiv.org/abs/1703.05121)
@@ -100,6 +110,7 @@ In TLA+ a level is an authored specification, and the link to the level above is
 - AWS's 2025 account of its practices lists TLA+, the P language, property-based testing, fault injection and simulation, and PObserve, which validates production logs after the fact against a P specification — [Brooker and Desai, Systems Correctness Practices at Amazon Web Services, CACM 2025](https://cacm.acm.org/practice/systems-correctness-practices-at-amazon-web-services) (search snippet)
 
 ### Inferences
+
 - The draft report's per-run check ("every fine step is an allowed upper step or a stutter") covers only the case where the lower level takes at least as many steps as the upper. Lamport and Merz's stuttering variable, and the action composition that the CCF team needed, show the opposite case occurs in practice: one lower step corresponds to two or more upper steps. Mental's step map must allow a lower step to map to a finite *sequence* of upper steps.
 - The draft treats TLA+ trace validation as a per-run refinement check. The primary source says it is not: it is an existence check (some upper behavior matches), it accepts wrong traces when logging is imprecise, and it gives no counterexample on failure. Mental's projection check is stronger, because the interpreter sees every lower variable and every lower step. The draft should say so, and should not lean on trace validation as evidence that per-run refinement checking "works in production".
 - MongoDB's failure is a preview of Mental's finding class (b) in the draft: the upper level assumed atomicity the code does not have. In MongoDB's case this was not a bug; it was a spec written at the wrong grain. Mental must give the user a way to say "this non-atomicity is intended" and split the upper step, otherwise every such case shows up as a race.
@@ -108,6 +119,7 @@ In TLA+ a level is an authored specification, and the link to the level above is
 - A separate, small "trace spec" per level pair (CCF: about a third of the size of the main spec) is the real maintenance cost of this style. For Mental the analogue is the abstraction function plus step map; expect it to be a noticeable fraction of the upper level's size and to change as often.
 
 ### Gaps
+
 - Abadi and Lamport's paper was not opened; its conditions are quoted from secondary notes.
 - No source was found for refinement checking with Apalache; whether it handles `INSTANCE ... WITH` refinement as an action property is unverified.
 - Lamport and Merz, "Prophecy Made Simple" (TOPLAS 2022), was not opened.
@@ -116,9 +128,11 @@ In TLA+ a level is an authored specification, and the link to the level above is
 ## 4. Abstract State Machines and KIV
 
 ### Takeaway
+
 ASM refinement is the most liberal precedent: the designer chooses which states on each side are "of interest" and how they correspond, and a segment of m abstract steps is matched to a segment of n concrete steps. The proof method is a coupling invariant plus a forward-simulation condition over three diagram shapes. The two one-sided shapes each need a well-founded order so they cannot repeat forever, which is a termination measure outside Event-B.
 
 ### Cited Findings
+
 - Defining an ASM refinement means choosing: the abstract and refined states; the states of interest and their correspondence; the abstract and refined computation segments (m and n steps) that lead between corresponding states of interest; the locations of interest; and the equivalence of data in corresponding locations — [Börger, The ASM Refinement Method (lecture slides)](https://modelingbook.informatik.uni-ulm.de/downloads/Refinement.pdf)
 - Correctness: for each run of the refined machine there is a run of the abstract machine and two index sequences picking corresponding states of interest, such that the picked states are equivalent pairwise, and either both runs terminate at a last corresponding pair or both runs and both sequences are infinite — [Börger slides](https://modelingbook.informatik.uni-ulm.de/downloads/Refinement.pdf)
 - m and n may depend on the state (in the Java exception-handling proof, m is the number of statements skipped while searching for a handler). By a theorem of Schellhorn, every (m,n)-refinement with n > 1 can be reduced to (m,1)-refinements, "typically at the price of having more involved equivalence notions" — [Börger slides](https://modelingbook.informatik.uni-ulm.de/downloads/Refinement.pdf)
@@ -129,6 +143,7 @@ ASM refinement is the most liberal precedent: the designer chooses which states 
 - Largest KIV use found: Flashix, a flash file system developed as a refinement tower from an abstract POSIX specification to generated C and Scala code, with functional correctness and crash safety verified per component — [Flashix: Formal Models and Proofs](https://kiv.isse.de/projects-v8/flash.html) (search snippet)
 
 ### Inferences
+
 - The draft report says variants "exist only in Event-B and its relatives". That is wrong: Schellhorn's `<0n` is the same obligation (concrete-only steps must be bounded) and `<m0` is its mirror (abstract-only steps must be bounded). Mental needs both. The mirror case arises when an LLM-written upper level contains steps with no lower counterpart, such as bookkeeping steps in a business process.
 - "States of interest" is the concept Mental's projection check is missing. The upper level should be compared with the lower level only at designated lower configurations (for example, quiescent points where no mechanism is mid-operation), not after every lower step. Between them the lower run may pass through states that have no upper meaning at all. This removes a large class of spurious failures that a step-or-stutter check would raise.
 - A non-functional correspondence (0:1 and 1:0 diagrams) means the abstraction must in general be a *relation* checked at states of interest, not a function evaluated everywhere. Mental can still author it as a function, which is the common case, but must not assume a function always exists.
@@ -136,6 +151,7 @@ ASM refinement is the most liberal precedent: the designer chooses which states 
 - The ASM correctness definition is over runs, so it can be checked per run exactly as stated: given one lower run and the candidate upper run produced by projection at states of interest, check the pairwise equivalence and the termination clause.
 
 ### Gaps
+
 - Börger's journal paper (Formal Aspects of Computing 15, 2003) was not opened; the slides by the same author were used.
 - The draft's citation "Schellhorn, TCS 2005" for completeness was not confirmed. The sources found place the proof method in JUCS 2001 and completeness in ENTCS 2008; a 2005 TCS paper by Schellhorn compares ASM refinement with data refinement (training knowledge; not re-fetched).
 - No proof-effort figures for Flashix were found.
@@ -143,9 +159,11 @@ ASM refinement is the most liberal precedent: the designer chooses which states 
 ## 5. Z and VDM data refinement
 
 ### Takeaway
+
 Z and VDM refine one abstract data type into a more concrete one, operation by operation, linked by a retrieve relation (Z) or retrieve function (VDM). The checks are per operation: applicability (the concrete operation works wherever the abstract one does) and correctness (its result maps back to an allowed abstract result). Forward simulation alone is not complete; backward simulation covers the cases where the abstract level resolves a choice earlier than the concrete level, and even the pair is incomplete in one interpretation.
 
 ### Cited Findings
+
 - Downward (forward) and upward (backward) simulations are "the standard method to verify that a refinement holds" for relational specifications, valued for soundness and joint completeness. In a simulation, each operation is compared step by step and the concrete and abstract states are related by a retrieve relation — [Boiten and Derrick, Incompleteness of relational simulations in the blocking paradigm, SCP 2010](https://eprints.whiterose.ac.uk/42816/1/Derrick_42816.pdf)
 - Joint completeness holds for total relations and for partial relations in the non-blocking interpretation. In the blocking interpretation, where an operation's domain acts as a guard, downward and upward simulations "are not jointly complete", contradicting earlier claims in the literature — [Boiten and Derrick 2010](https://eprints.whiterose.ac.uk/42816/1/Derrick_42816.pdf)
 - The original joint-completeness result is He, Hoare and Sanders (1986), on which the standard refinement theory of Z is based — [Boiten and Derrick 2010](https://eprints.whiterose.ac.uk/42816/1/Derrick_42816.pdf) (as cited there; original not opened)
@@ -153,12 +171,14 @@ Z and VDM refine one abstract data type into a more concrete one, operation by o
 - Tooling: the Overture VDM tool generates proof obligations from a model; a workshop proposal describes generating refinement obligations once the user designates a retrieve function — [Overture workshop, Operation POG](https://www.overturetool.org/workshops/23/Operation%20POG.pdf) (search snippet)
 
 ### Inferences
+
 - VDM's adequacy obligation has no counterpart in the draft's level record. It asks whether every upper state the level's vocabulary can express is represented by some lower state. For an LLM-proposed level this is a cheap sanity check: an upper state with no lower representative is either unreachable or invented.
 - VDM's retrieve *function* is the simple case Mental should default to: many lower states, one upper state. The Z retrieve *relation* is needed when one lower state stands for several upper states, which is rare when the lower level is the more detailed one, but appears with caches and lazily materialised data.
 - Guards in Mental are blocking (a step with a false guard does not fire). That is the interpretation in which forward and backward simulation together are still incomplete. A per-run forward projection can therefore report a refinement failure that no simulation argument would repair. Such cases should be labelled "not shown" rather than "violated" unless a concrete upper-inadmissible trace is exhibited.
 - Backward simulation is the data-refinement form of a prophecy variable. If the upper level commits to an outcome earlier than the code does (for example, "courier assigned" at the moment of the offer, where the code only commits on acceptance), a forward check fails. The practical fix for an LLM-written level is to move the upper step later, not to implement backward simulation.
 
 ### Gaps
+
 - Woodcock and Davies, *Using Z*, was not opened; the Z rules are taken from Boiten and Derrick's summary.
 - Jones's rules are stated from background knowledge.
 - No industrial evidence for Z or VDM refinement proofs at scale was collected in this session.
@@ -166,9 +186,11 @@ Z and VDM refine one abstract data type into a more concrete one, operation by o
 ## 6. CSP and FDR
 
 ### Takeaway
+
 In CSP both levels are processes. The lower level, with its internal events hidden, must refine the upper level in one of three semantic models: traces (it does nothing the upper cannot), failures (it also refuses nothing the upper cannot refuse) and failures-divergences (it also cannot run internal steps forever unless the upper can). FDR checks this fully automatically on finite-state processes and returns a shortest counterexample. This is the only family here in which hidden livelock is found by the tool instead of excluded by an authored variant.
 
 ### Cited Findings
+
 - FDR compiles both processes to labelled transition systems, normalises the specification, and explores pairs (specification state, implementation state) breadth-first. When the implementation performs an internal `tau` step, the specification component stays the same. A violation is: the implementation performs an event the specification cannot (traces); or refuses a set of events the specification cannot (failures); or "the implementation is divergent but the specification is not" (failures-divergences). Because the search is breadth-first, a returned counterexample is minimal in trace length — [FDR manual, Refinement Checking](https://cocotec.io/fdr/manual/implementation/refinement_checking.html)
 - Divergence means a process can "perform an infinite amount of internal work (this is also known as a livelock freedom check)". FDR turns the check into a refinement assertion against the most general non-diverging process over the same alphabet. Hiding events can create divergence, and the debugger shows the divergence as a loop — [FDR manual, PDF](https://dl.cocotec.io/fdr/fdr-manual.pdf)
 - Cost: checks in the failures-divergences model are slower than in the failures model, which are slower than in the traces model; the failures-divergences model "is actually particularly slow and does not scale as well as the number of cores increases". The manual advises checking livelock freedom separately and then using the cheaper model — [FDR manual, PDF](https://dl.cocotec.io/fdr/fdr-manual.pdf)
@@ -178,6 +200,7 @@ In CSP both levels are processes. The lower level, with its internal events hidd
 - The same three-model ladder now exists for Event-B inside ProB (see section 1) — [arXiv 2505.19069](https://arxiv.org/abs/2505.19069)
 
 ### Inferences
+
 - FDR's product exploration is the algorithm Mental's bounded exhaustive mode should run for a level pair: walk pairs (upper state, lower configuration); a lower hidden step keeps the upper component; a lower visible step must be matched by the upper. Normalising the upper level first (making it deterministic) is what makes the check a simple walk instead of a search, and it is cheap for the same reason FDR gives: upper levels are small.
 - The three models are a ready-made grading for Mental findings. *Traces*: the lower level did something the upper forbids (the race finding). *Failures*: the lower level can refuse something the upper promises (the "upper step never realizable" finding missing from Event-B). *Divergence*: hidden steps can cycle forever (the hidden-livelock finding).
 - On a finite explored graph, divergence is a cycle of hidden steps. No authored variant is needed to *detect* it. A variant is needed only to *justify* dismissing a detected cycle (a retry bounded by a counter the abstraction of data lost). So the order of work for Mental is: detect cycles of hidden steps automatically, then look for a bound in code or a pack, then fall back to an assumption record. The draft has the three sources of a bound but presents the variant as a field to author up front.
@@ -185,35 +208,42 @@ In CSP both levels are processes. The lower level, with its internal events hidd
 - A breadth-first product gives the shortest counterexample, which is what a UI wants to show.
 
 ### Gaps
+
 - The FDR manual's sections on the failures and failures-divergences algorithms are unwritten, so the divergence-detection algorithm is not cited here. Roscoe's books were not opened.
 - No recent, quantified industrial case study of FDR was found.
 
 ## 7. mCRL2
 
 ### Takeaway
+
 mCRL2 treats abstraction as hiding followed by reduction: rename chosen actions to the internal action `tau`, then minimise or compare the transition system modulo an equivalence that ignores `tau` where it changes no choice (branching bisimulation). A divergence-preserving variant keeps `tau`-loops visible. The toolset also offers refinement preorders, including failures-divergence.
 
 ### Cited Findings
+
 - `ltscompare` decides, for two labelled transition systems, equivalences including strong bisimilarity, branching bisimilarity, divergence-preserving branching bisimilarity, weak bisimilarity and its divergence-preserving variant, simulation, ready simulation, trace and weak-trace equivalence; and preorders including simulation, trace, weak trace, failures, weak failures, failures-divergence ("automatically weak") and impossible futures. `--tau=ACTNAMES` treats the listed actions as internal before comparing. A counterexample is a Hennessy-Milner formula true in one system and false in the other, implemented and tested only for strong bisimulation, branching bisimulation and trace equivalence — [mCRL2 user manual, ltscompare](https://www.mcrl2.org/web/user_manual/tools/release/ltscompare.html)
 - `ltsconvert` minimises a transition system modulo the same equivalences, with the same `--tau` option — [ltsconvert man page](https://manpages.org/ltsconvert) (search snippet)
 - Plain branching bisimulation ignores livelocks; the divergence-preserving variant (also called divergence-sensitive, or branching bisimulation with explicit divergence) distinguishes them and is used in CADP, µCRL and mCRL2 — [de Frutos Escrig, Keiren, Willemse, Games for Bisimulations and Abstraction, arXiv 1611.00401](https://arxiv.org/abs/1611.00401) (search snippet)
 
 ### Inferences
+
 - mCRL2 offers a different way to get an upper level: compute it. Hide the lower steps the upper vocabulary does not name, minimise modulo divergence-preserving branching bisimulation, and show the quotient. The LLM then only has to choose what to hide and how to name what is left. A derived level cannot disagree with the level below, so there is nothing to check for that pair.
 - This fits levels whose pattern is "hide" in the draft's sense. It does not fit levels that introduce new vocabulary with a different state space (business steps), where an abstraction function is still required.
 - The choice between plain and divergence-preserving reduction is the choice between hiding and showing a retry loop at the upper level. Mental should default to divergence-preserving, so a hidden loop survives as a visible self-loop on the upper state.
 - Branching bisimulation is an equivalence: it preserves the branching structure, meaning the points at which choices are made. That is stricter than the trace refinement ProB checks. Using it to *derive* a view is safe; requiring it between an LLM-written upper level and the code would reject most reasonable summaries.
 
 ### Gaps
+
 - The mCRL2 language reference for the `hide` operator and the mCRL2 book (Groote and Mousavi) were not opened.
 - No industrial-scale evidence was collected for mCRL2 in this session.
 
 ## 8. LLMs that produce or check refinement chains (2025–2026)
 
 ### Takeaway
+
 Since 2025 there are published systems in which an LLM proposes the levels, the gluing invariants or the abstraction choices, and a model checker or prover accepts or rejects them. Event-B Agent does this for Event-B refinement chains from requirements. Specula does it for TLA+ models from source code, with agents choosing the abstraction level. Both report that the LLM's output is unreliable without the checker, and Specula documents that agents overfit the model to whatever check rewards them.
 
 ### Cited Findings
+
 - Event-B Agent (FSE 2026) takes natural-language requirements. An LLM plans a *refinement strategy* that distributes the requirements over n refinement steps and proposes gluing invariants between consecutive steps, first in natural language and then formalised. Because "LLM-based generation offers no correctness guarantee", each gluing invariant is validated in two steps: counterexample and contradiction search with the ProB model checker, then proof attempts on the obligations that involve it, before other proofs. Only then is it accepted — [Event-B Agent, arXiv 2605.17475](https://arxiv.org/abs/2605.17475)
 - Results: 27 systems, on average 182.41 proof obligations each; overall proof-obligation discharge rate 97.86% with GPT-5; an average of 74.45 minutes per system for synthesis and repair. In the ablation, a variant with refinement planning but without proof-repair guidance reached a refinement-obligation discharge rate of only 46.53% on the complex systems, and the authors warn that without validated refinement steps the requirement-level scores are "inflated and unreliable" — [arXiv 2605.17475](https://arxiv.org/abs/2605.17475)
 - Specula (2026) generates TLA+ models from existing system code with coding agents and checks them against code-level traces. Agents "autonomously determine the abstraction levels of different parts of system code based on the correctness properties": the model must describe all behavior relevant to each invariant and omit the rest. From one immutable reference model it derives scenario models by three projection operations: selecting actions, coarsening a multi-step process into one atomic action, and serialising two actions into one with action composition. The projection is described as sound in principle: a violation found in the projected model is a violation in the reference model — [Specula, arXiv 2607.25333](https://arxiv.org/abs/2607.25333)
@@ -224,6 +254,7 @@ Since 2025 there are published systems in which an LLM proposes the levels, the 
 - No work was found in this session in which an LLM writes a TLA+ refinement mapping or a simulation relation between two existing levels, and none for classical B and Atelier B.
 
 ### Inferences
+
 - The draft's claim that Mental "would be the first to have an LLM propose a refinement level and a mechanical checker validate it" no longer holds as written. Event-B Agent does it from requirements with provers; Specula has agents choose abstraction levels from code and validates by traces and model checking. What remains unclaimed is narrower: a ladder of several named levels extracted from code, each adjacent pair linked by an explicit abstraction function and checked by projection in an interpreter.
 - Specula's overfitting result applies directly to Mental. A projection check that only asks "is every lower step allowed above?" rewards a permissive upper level, and the most permissive upper level (anything may happen) passes every time. Mental needs the opposite pressure in the same loop: upper-level invariants that a too-permissive level would violate, the failures-style check that upper steps are realizable below, and a size or determinism preference for the upper level.
 - Event-B Agent's order of validation is worth copying exactly: search for a counterexample to the proposed abstraction first (cheap, by exploration), and spend further effort only on abstractions that survive. In Mental there is no second phase with a prover, so the surviving abstraction is recorded as "holds within bounds".
@@ -232,6 +263,7 @@ Since 2025 there are published systems in which an LLM proposes the levels, the 
 - SysMoBench shows that an LLM is reliable at mapping names between a model and a log. That supports letting the LLM write the *naming* part of an abstraction (which lower field is "the courier of the order") while keeping the *checking* deterministic.
 
 ### Gaps
+
 - The Event-B Agent and Specula papers were read in the passages cited, not in full; dataset composition and cost in tokens were not extracted.
 - The 2026 papers found only as search snippets (IC3Syn, the natural-language-to-TLA+ evaluation, TraceFix, an ASE 2026 paper on LLM-generated protocol refinements) were not opened.
 - No independent replication of Event-B Agent's or Specula's numbers was found.
@@ -239,6 +271,7 @@ Since 2025 there are published systems in which an LLM proposes the levels, the 
 ## Recommendations for Mental
 
 ### Corrections to the draft report
+
 1. **Variants are not unique to Event-B.** ASM generalized forward simulation requires well-founded orders on both one-sided diagram shapes; CSP/FDR and mCRL2 detect divergence automatically; ProB now does the same for Event-B. Replace "variants exist only in Event-B and its relatives" with: termination of hidden steps is either *proved* with an authored measure (Event-B, ASM) or *detected* as a cycle of hidden steps on a finite graph (FDR, mCRL2, ProB).
 2. **Step-or-stutter is not general enough.** The per-run check in the draft handles a lower level that takes more steps. Lamport and Merz's stuttering variables, ASM's (m,n) diagrams and the action composition used in the CCF work all exist because one lower step can stand for several upper steps. The step map must allow a finite sequence of upper steps.
 3. **TLA+ trace validation is not a refinement check.** Its authors say so. It asks whether some upper behavior matches a log, accepts wrong traces when logs are imprecise, and failed outright at MongoDB. Cite it as weaker than Mental's projection check, not as the same thing.
@@ -249,6 +282,7 @@ Since 2025 there are published systems in which an LLM proposes the levels, the 
 8. **Industrial chains are short.** A typical B train-protection project has 233 machines, 46 intermediate refinements and 213 implementations; ClearSy's system-level Event-B work uses separate page-sized models, not "tens of refinement levels". The draft's recommendation "prefer many thin levels" rests on CertiKOS; the B and Event-B evidence points the other way for human-maintained levels.
 
 ### What to build, in order
+
 1. **Product walk per adjacent pair (from FDR and ProB).** In bounded exhaustive mode, explore pairs of (upper state, lower configuration). A hidden lower step keeps the upper state. A mapped lower step must be matched by its upper step or sequence of upper steps from the current upper state. Report the shortest violating run. Make the upper level deterministic before the walk.
 2. **Three graded findings (from CSP's three models).** *Trace violation*: the lower level does what the upper forbids. *Refusal*: an upper step enabled in the upper state has no lower realization from the corresponding lower configuration. *Divergence*: a reachable cycle of hidden lower steps. Run them as separate passes, cheapest first.
 3. **Compare at states of interest (from ASM).** Let the abstraction declare at which lower configurations the upper state is defined (for example, no mechanism mid-operation). Evaluate the abstraction and invariants there only. Between them, lower steps are grouped into the segment that realizes one upper step.

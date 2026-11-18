@@ -2,3 +2,20 @@
 docs/local/
 .mental/
 __pycache__/
+
+# alpha
+.claude/alpha/state/
+.claude/alpha/notes/
+.claude/settings.local.json
+.claude/worktrees/
+.claude/alpha/hooks/__pycache__/
+.claude/alpha/checks/__pycache__/
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+/target/
+model/**/coverage.xml
+extract/**/coverage.xml
+mentalc/**/coverage.xml

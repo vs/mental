@@ -31,11 +31,13 @@ Researched 2026-11-16. Evidence labels: no label = read by me in the source (cod
 ## Which interface shapes stayed small and stable, which grew, and what drove the growth?
 
 ### Takeaway
+
 The read-only interfaces with one required method (Go `fs.FS`) or a handful (Buck2 `FileOps`: 5) stayed small and stable for years. Everything that grew was carrying write support, attributes and permissions, a live or remote backend (URIs, auth, retries), async, or change watching. In the Rust crates the growth shows up as dependency weight: opendal's core requires tokio, object_store is async-only, and the `zip` crate pulls in crypto by default.
 
 ### Cited Findings
 
-**Go: small and stable**
+#### Go: small and stable
+
 - `fs.FS` is one method, `Open(name string) (File, error)`. `File` is `Stat`, `Read` and `Close`; `ReadDirFile` adds `ReadDir(n)`; `DirEntry` has 4 methods (`Name`, `IsDir`, `Type`, `Info`). — [io/fs/fs.go](https://github.com/golang/go/blob/master/src/io/fs/fs.go)
 - The optional extension interfaces are `ReadFileFS.ReadFile`, `ReadDirFS.ReadDir`, `StatFS.Stat`, `SubFS.Sub`, `GlobFS.Glob` and `ReadLinkFS{ReadLink, Lstat}`, each 1 or 2 methods. — [readfile.go](https://github.com/golang/go/blob/master/src/io/fs/readfile.go), [readdir.go](https://github.com/golang/go/blob/master/src/io/fs/readdir.go), [stat.go](https://github.com/golang/go/blob/master/src/io/fs/stat.go), [sub.go](https://github.com/golang/go/blob/master/src/io/fs/sub.go), [glob.go](https://github.com/golang/go/blob/master/src/io/fs/glob.go), [readlink.go](https://github.com/golang/go/blob/master/src/io/fs/readlink.go)
 - In 5 years only one extension was added. `ReadLinkFS` was filed 2021-11-14 and closed 2025-02-03 after 101 comments, and it landed in Go 1.25 ("a new API that would be safe to land in the next upcoming major Go release, Go 1.25"). — [golang/go#49580](https://github.com/golang/go/issues/49580)
@@ -47,10 +49,12 @@ The read-only interfaces with one required method (Go `fs.FS`) or a handful (Buc
 - `fstest.TestFS(fsys fs.FS, expected ...string) error` "walks the entire tree of files in fsys, opening and checking that each file behaves correctly", so one generic test checks any backend. — [testing/fstest/testfs.go](https://github.com/golang/go/blob/master/src/testing/fstest/testfs.go)
 - `embed.FS` implements `Open`, `ReadDir` and `ReadFile`; `fstest.MapFS` is a `map[string]*MapFile`. (unverified)
 
-**Buck2: a small read-only input trait**
+#### Buck2: a small read-only input trait
+
 - `pub trait FileOps: Send + Sync` has 5 methods: `read_file_if_exists(CellPath) -> Option<String>`, `read_dir(CellPath)`, `is_ignored(CellPath)`, `read_path_metadata_if_exists(...)` and `buildfiles(CellName)`. All are async; there is no write. — [buck2 file_ops/trait_.rs](https://github.com/facebook/buck2/blob/main/app/buck2_common/src/file_ops/trait_.rs)
 
-**Interfaces that grew: Java, IDEs, Commons VFS, fsspec, Bazel**
+#### Interfaces that grew: Java, IDEs, Commons VFS, fsspec, Bazel
+
 - Java NIO.2 `FileSystemProvider` has 19 `public abstract` methods (`getScheme`, `newFileSystem`, `getFileSystem`, `getPath`, `newByteChannel`, `newDirectoryStream`, `createDirectory`, `delete`, `copy`, `move`, `isSameFile`, `isHidden`, `getFileStore`, `checkAccess`, `getFileAttributeView`, 2× `readAttributes`, `setAttribute`...). `java.nio.file.FileSystem` has 13 abstract methods and `Path` about 40 methods. — [FileSystemProvider.java](https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/nio/file/spi/FileSystemProvider.java), [FileSystem.java](https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/nio/file/FileSystem.java), [Path.java](https://github.com/openjdk/jdk/blob/master/src/java.base/share/classes/java/nio/file/Path.java)
 - `jdk.zipfs` is 13 source files totalling about 253 KB, and `ZipFileSystem.java` alone is 141 KB. It is a read-write zip file system, so it carries in-place update logic. — [jdk.zipfs sources](https://github.com/openjdk/jdk/tree/master/src/jdk.zipfs/share/classes/jdk/nio/zipfs)
 - IntelliJ `VirtualFile.java` is 739 lines with 59 public methods, 15 of them abstract. `VirtualFileSystem.java` has 8 abstract methods. — [VirtualFile.java](https://github.com/JetBrains/intellij-community/blob/master/platform/core-api/src/com/intellij/openapi/vfs/VirtualFile.java), [VirtualFileSystem.java](https://github.com/JetBrains/intellij-community/blob/master/platform/core-api/src/com/intellij/openapi/vfs/VirtualFileSystem.java)
@@ -61,7 +65,7 @@ The read-only interfaces with one required method (Go `fs.FS`) or a handful (Buc
 - fsspec is pulled in by pandas, dask, Hugging Face `datasets` and others. (unverified)
 - Bazel `vfs/FileSystem.java` is 939 lines with 25 abstract methods. Read-side methods include `stat`, `getDirectoryEntries`, `getInputStream`, `readSymbolicLink` and `getFileSize`. Half (12) change state: `createDirectory`, `createDirectoryAndParents`, `delete`, `setLastModifiedTimeNanos`, `createSymbolicLink`, `setReadable/Writable/Executable`, `getOutputStream`, `createReadWriteByteChannel`, `renameTo`, `createFSDependentHardLink`. It also has capability probes (`supportsModifications`, `supportsSymbolicLinksNatively`, `mayBeCaseOrNormalizationInsensitive`). — [bazel vfs/FileSystem.java](https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/vfs/FileSystem.java)
 
-**Rust crates: measured weight**
+#### Rust crates: measured weight
 
 | Crate (version) | Downloads total / recent 90d | Lines | Required / optional normal deps | Notes |
 |---|---|---|---|---|
@@ -78,11 +82,13 @@ The read-only interfaces with one required method (Go `fs.FS`) or a handful (Buc
 | `async_zip` 0.0.19 | 8.1M / 2.6M | 4,566 | 5 (`binrw, crc32fast, futures-lite, pin-project, thiserror`) / 5 (tokio...) | [crates.io](https://crates.io/crates/async_zip) |
 
 ### Inferences
+
 - The things that drove growth, in order of evidence: (1) **write and mutation**: 11 of 15 `vfs` methods, 12 of 25 Bazel abstract methods, and zipfs's 141 KB file. (2) **attributes and permissions**: NIO `readAttributes`/`setAttribute`/`checkAccess`, Bazel `setExecutable`. (3) **remote services**: opendal's 50+ services, object_store's reqwest/ring/quick-xml, and Commons VFS's 3 HTTP generations. (4) **async**: object_store and opendal are async-first, and `vfs` and fsspec carry parallel async paths. (5) **live-FS coherence**: IntelliJ refresh and events. (6) **capability negotiation** once backends differ: opendal's 91-field `Capability`, Bazel's `supports*`.
 - Method count alone misleads. opendal's public surface is small per call, but its weight sits in features and services. Measure dependency closure and lines, not only methods.
 - For mentalc: a read-only trait with 2 or 3 methods (`read(path) -> Option<bytes>`, `list(dir) -> sorted entries`, maybe `stat`) matches what stayed stable (Go, Buck2). Every crate in the table except `tar`, `rc-zip` and `zip` with `default-features = false` breaks G16 (async or tokio) or brings far more than the reading mentalc needs.
 
 ### Gaps
+
 - I did not run `cargo tree`, so the numbers above are direct dependencies only, not transitive closure. For opendal with default features the closure clearly includes tokio and reqwest, but the total crate count is unmeasured.
 - I did not count the methods of opendal's internal `Access` trait (the grep missed it); the RFC excerpt below shows its shape.
 - I did not read the history of Eclipse EFS or Commons VFS releases to date when their surfaces grew.
@@ -92,9 +98,11 @@ The read-only interfaces with one required method (Go `fs.FS`) or a handful (Buc
 ## Read-only immutable snapshot vs mutable live FS: how much simpler is the read-only case?
 
 ### Takeaway
+
 It is much simpler. The read-only snapshot designs need 1 to 5 methods and no coherence machinery. The mutable live designs need 15 to 83 methods plus refresh, events, locking and capability probes, and the Go team declined to standardize writes even after 157 comments because the semantics (open modes) are not portable. Pain from a live FS concentrates in cache staleness (IntelliJ) and cache concurrency (fsspec).
 
 ### Cited Findings
+
 - Go deliberately excluded writing: "Although the initial interface is limited to read-only file systems, the design can be extended to support write operations later, even from third-party packages", and "The `FS` in this design also provides no way to open a file for writing." — [draft-iofs.md](https://go.googlesource.com/proposal/+/master/design/draft-iofs.md)
 - The writable-interfaces proposal was **declined** on 2023-08-30 after 157 comments. rsc: "the very first interface poses a problem: what are the open modes and where are they defined? ... io/fs is meant to be a completely portable API, independent of 'os'... it's a sign that maybe we don't have the right answers yet. I still haven't seen a compelling reason this needs to be in the standard library now." — [golang/go#45757](https://github.com/golang/go/issues/45757)
 - IntelliJ's VFS is a live snapshot with a cache. "the VFS manages a persistent snapshot of some of the user's hard disk contents"; "All VFS access operations go through the snapshot", "which may not always match the disk's actual contents"; "deleted files can still be visible in the UI for some time"; "There is currently no facility for removing files from the snapshot"; "Refresh operations are based on file timestamps", so a change without a timestamp change "will not pick up the updated contents"; "In some cases, synchronous refreshes can cause deadlocks"; "a refresh operation fires events only for changes in files that have been loaded in the snapshot." — [IntelliJ Platform SDK: Virtual File System](https://plugins.jetbrains.com/docs/intellij/virtual-file-system.html)
@@ -106,11 +114,13 @@ It is much simpler. The read-only snapshot designs need 1 to 5 methods and no co
 - The `rc-zip` reader is 3.3k lines, against 20k for the read-write `zip` crate. — [crates.io rc-zip](https://crates.io/crates/rc-zip), [crates.io zip](https://crates.io/crates/zip)
 
 ### Inferences
+
 - A git commit, a zip and a published package artifact are all immutable once identified. For mentalc the whole coherence layer (refresh, watch, events, staleness, locking) simply disappears, which removes IntelliJ's and fsspec's main failure modes.
 - Read-only also removes the "open modes" question that stalled Go's writable proposal, plus permissions, attribute setters, and the half of Bazel's abstract methods that change state.
 - The only place "live" shows up for mentalc is the working tree (uncommitted files), if it is ever supported. Keeping it as one more backend that takes a snapshot once (read and hash every file up front) keeps the layer free of live semantics.
 
 ### Gaps
+
 - I found no published measurement such as "read-only cut N% of code" for any single project. The evidence is comparative: different projects, similar scope.
 
 ---
@@ -118,9 +128,11 @@ It is much simpler. The read-only snapshot designs need 1 to 5 methods and no co
 ## Composition: overlay/union, sub-tree, mount table, chained URL. Which does "repo commit + submodules + dependency archives" need?
 
 ### Takeaway
+
 Go offers only `Sub` (go into a subtree), and that has been enough. Buck2 composes with a mount table of named cells (`CellPath = cell + relative path`). fsspec and Commons VFS compose by chaining URL schemes, and Rust `vfs` offers overlay and alt-root. A repo commit with submodules and dependency archives needs a mount table, meaning disjoint prefixes or named roots, each backed by one immutable tree. Overlay and union are not needed, since nothing shadows anything, and chained URLs add a parsing language without adding capability.
 
 ### Cited Findings
+
 - Go `SubFS.Sub(dir string) (FS, error)` is the only built-in composition; `fs.Sub` gives a view rooted at a subdirectory. — [io/fs/sub.go](https://github.com/golang/go/blob/master/src/io/fs/sub.go)
 - Buck2 `FileOps` takes `CellPath` everywhere and `buildfiles(cell: CellName)`. Inputs are addressed as (cell, path), and the cell acts as the mount table. — [buck2 file_ops/trait_.rs](https://github.com/facebook/buck2/blob/main/app/buck2_common/src/file_ops/trait_.rs)
 - Rust `vfs` backends are `physical, memory, overlay, altroot, embedded`. Overlay is layered and writable-on-top, and altroot is a chroot. — [vfs 0.13.0 src/impls](https://docs.rs/vfs/0.13.0/src/vfs/impls/mod.rs.html) (layering semantics unverified)
@@ -130,12 +142,14 @@ Go offers only `Sub` (go into a subtree), and that has been enough. Buck2 compos
 - IntelliJ also uses a layered syntax: `jar://<path to jar>!/<path inside jar>`. (unverified)
 
 ### Inferences
+
 - **Submodules**: in git a submodule is a tree entry of type gitlink (mode 160000) pointing to a commit in another repository (unverified, standard git). The natural model is a mount: the outer commit's tree has a node at `path/to/sub` that resolves to (repo B, commit X). This is Merkle-style placement (REAPI `DirectoryNode`), not overlay.
 - **Dependency archives**: each is its own root (a zip or tarball by digest), mounted under a named prefix or cell such as `deps/<name>@<version>`. They never merge with the repo tree.
 - **Overlay/union** matters only for "commit plus uncommitted edits". That is out of scope for the snapshot input layer and better handled as a separate snapshot backend.
 - **Chained URLs** (`zip::s3://`) are the source of fsspec's and Commons VFS's parsing and nesting complexity. A typed enum (`Source::GitCommit{..} | Source::Zip{digest} | Source::Tarball{digest}`) plus a mount table gives the same reach with no string grammar.
 
 ### Gaps
+
 - I did not read the `OverlayFS` source in the `vfs` crate to confirm its write and whiteout semantics.
 - I did not verify fsspec chaining syntax against its docs this session.
 
@@ -144,9 +158,11 @@ Go offers only `Sub` (go into a subtree), and that has been enough. Buck2 compos
 ## Identity: path vs URI vs content hash. Who uses hashes for caching, and what did it buy?
 
 ### Takeaway
+
 Build systems that must cache (Bazel REAPI, Nix) identify files and trees by content digest and treat paths as names inside a Merkle directory. IDE and general VFSs (IntelliJ, NIO, EFS, Commons VFS, fsspec) identify by path or URI and pay for it with staleness, refresh and equality puzzles. A git commit already is a Merkle tree with content ids, so mentalc gets hash identity for free on its main input and only needs to hash archives once.
 
 ### Cited Findings
+
 - REAPI `Digest` is `{ string hash; int64 size_bytes }`. `Directory` is a message of named file, directory and symlink nodes plus `NodeProperties` (which can carry `mtime`). `Tree` is `root` plus all `children` directories, and "Servers SHOULD ensure that these are ordered consistently such that two actions producing equivalent output directories ... also produce Tree messages with matching digests." — [remote_execution.proto](https://github.com/bazelbuild/remote-apis/blob/main/build/bazel/remote/execution/v2/remote_execution.proto)
 - Bazel's path-based `FileSystem` still exposes `getDigest(PathFragment)` and `getFastDigest(PathFragment)` (non-abstract), so the local path FS is fitted with digest hooks for caching. — [bazel FileSystem.java](https://github.com/bazelbuild/bazel/blob/master/src/main/java/com/google/devtools/build/lib/vfs/FileSystem.java)
 - Nix store paths are pairs of "A 20-byte digest for identification" and "A symbolic name for people to read", as in `/nix/store/a040m110amc4h71lds2jmr8qrkj2jhxd-git-2.38.1`; "A store path will always reference exactly one store object." "Exactly how the digest is calculated depends on the type of store path" (input-addressed vs content-addressed). — [Nix manual: Store Path](https://nix.dev/manual/nix/2.28/store/store-path)
@@ -155,11 +171,13 @@ Build systems that must cache (Bazel REAPI, Nix) identify files and trees by con
 - Go module zips identify a module by (path, version) and checksum it in `go.sum`. `x/mod/zip` enforces `MaxZipFile = 500 << 20`, `MaxGoMod = 16 << 20`, `MaxLICENSE = 16 << 20` and errors such as `"file is in vendor directory"`, so archive content is validated, not trusted. — [golang.org/x/mod/zip/zip.go](https://github.com/golang/mod/blob/master/zip/zip.go) (the go.sum hash part is unverified)
 
 ### Inferences
+
 - What hashes bought: cache hits across machines and runs (REAPI), sharing and immutability guarantees (Nix), and cheap equality of whole trees (compare root digests). IntelliJ shows what happens without them: timestamp-based refresh that misses same-timestamp edits.
 - For mentalc: identify each mounted root by a digest (git commit or tree oid; blake3 of the archive bytes per G7) and each file by (root digest, normalized path) or by its blob id. The git blob oid is SHA-1 or SHA-256 (git's choice, unverified), while mentalc's own stored hashes are blake3, so keep "source-native id" and "mentalc cache key" as distinct fields.
 - Go's path rules (unrooted, slash-separated, no `.` or `..`, root is `.`) are worth adopting verbatim as the normalized path inside every root. They remove Windows and zip-slip ambiguity at the edge.
 
 ### Gaps
+
 - I did not fetch the Buck2 DICE docs to confirm how it keys file-ops results (digest vs path plus invalidation). I believe DICE invalidates by path on file-watcher events, which would be path identity plus explicit invalidation. (unverified)
 - I did not fetch Pants' docs; it reportedly uses a REAPI-compatible CAS with `Digest`/`Snapshot` types. (unverified)
 
@@ -168,9 +186,11 @@ Build systems that must cache (Bazel REAPI, Nix) identify files and trees by con
 ## Concrete warnings: regrets, rewrites, deprecations
 
 ### Takeaway
+
 The documented regrets are about supporting two execution models at once (opendal removed native blocking and now needs tokio even for blocking calls), churning remote transports (Commons VFS's deprecated HTTP providers), Go's early optional-interface mistake (`http.Hijacker`), and the cost of live snapshots (IntelliJ). The steady pattern is that the minimal read-only design (Go) was never rewritten, and only one interface was added.
 
 ### Cited Findings
+
 - **opendal RFC 6189 "remove_native_blocking"** (2025-05-15): offering both native async and blocking carried a "Huge maintenance burden: We need to maintain two versions of the same code" and "Increased complexity". "Only a few services have native blocking support, such as `fs`, `memory` and `moka`", and the result is that "An async runtime is now required to use the blocking APIs." All `blocking_*` methods were removed from `Access`. — [apache/opendal#6189](https://github.com/apache/opendal/pull/6189) (read in `opendal-core-0.59.5/src/docs/rfcs/6189_remove_native_blocking.md`)
 - opendal ships 91 RFCs. Many are interface churn: `0409_accessor_capabilities`, `0627_split_capabilities`, `2852_native_capability`, `7700_capability_api`, `1477_remove_object_concept`, `5314_remove_metakey`, `3017_remove_write_copy_from`, `0203_remove_credential`, `0112_path_normalization`, `7799_path_normalization_and_secure_hardening`, and list-API RFCs 2774/2779/3232/3243/3526/3574/5495. (titles only) — [opendal RFC index](https://github.com/apache/opendal/tree/main/core/core/src/docs/rfcs) (directory listing read from the crate source; GitHub path unverified)
 - **Commons VFS**: `provider/http/HttpFileProvider` is `@Deprecated` with "Use {@link org.apache.commons.vfs2.provider.http5}", and `http4`/`http4s`/`http5`/`http5s` sit next to it. That is three HTTP client generations kept side by side. — [HttpFileProvider.java](https://github.com/apache/commons-vfs/blob/master/commons-vfs2/src/main/java/org/apache/commons/vfs2/provider/http/HttpFileProvider.java), [provider dir](https://github.com/apache/commons-vfs/tree/master/commons-vfs2/src/main/java/org/apache/commons/vfs2/provider)
@@ -183,9 +203,11 @@ The documented regrets are about supporting two execution models at once (openda
 - **Plan 9 / 9P and FUSE (contrast)**: 9P2000 has about 13 request types (version, auth, attach, flush, walk, open, create, read, write, clunk, remove, stat, wstat). The protocol is tiny, yet a 9P or FUSE server must implement a live, mutable, permissioned, concurrent file system, and FUSE's low-level ops table runs to dozens of callbacks. A small protocol does not give small semantics. (unverified)
 
 ### Inferences
+
 - For mentalc, the warnings point one way. Do not take opendal, object_store, fsspec-style URLs, or a general VFS crate. Write a closed set of 3 or 4 backends in its own edge files (G4): git commit (with gitlink mounts), zip, tarball, and maybe directory snapshot. Put them behind a sync read-only trait of 2 or 3 methods, a typed mount table, and one conformance test in the style of `fstest.TestFS` that every backend must pass.
 - If a backend later needs network access (fetching another repository or a package), do the fetch as a separate step that produces an immutable local artifact by digest, then read it with the same zip, tar or git backend. That is the Nix and REAPI split between fetching and reading, and it keeps auth, retries and HTTP out of the file-access layer. opendal's and Commons VFS's history shows those concerns are what bloats it.
 
 ### Gaps
+
 - I did not find a written post-mortem for IntelliJ's persistent VFS cache (for example index-corruption bugs) or for Eclipse EFS; the pain evidence for them is limited to the official limitation statements above.
 - I did not read the IntelliJ `jar://` handler (`ArchiveFileSystem`) source to compare archive-handling size with Go's.

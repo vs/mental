@@ -4,11 +4,11 @@ Mental compiles a repository into a **model of the system that you can run**. Yo
 
 **Status:** design only; nothing is built yet. **Current focus:** building the model from one repository.
 
-```
+```text
 source code, infrastructure files, docs ─► mentalc ─► MODEL ─► mentalvm ─► TRACES ─► mentaldbg ─► viewer / agent
 ```
 
-![Three tools and what connects them. mentalc compiles a repository and packs into a model, asking an LLM backend for judgment. mentalvm runs the model and produces traces and findings. mentaldbg holds the debug session and serves the viewer, the coding agent and the terminal. Products named Mental wrap all three tools and the viewer.](docs/images/components.png)
+![Three tools and what connects them. mentalc compiles a repository and packs into a model, asking an LLM backend for judgment. mentalvm runs the model and produces traces and findings. mentaldbg holds the debug session and serves the viewer, the coding agent and the terminal. Products named Mental wrap all three tools and the viewer.](docs/images/components.svg)
 
 ## The three tools
 
@@ -21,6 +21,37 @@ source code, infrastructure files, docs ─► mentalc ─► MODEL ─► menta
 The LLM is a setting of the compiler: by default your own coding agent answers the compiler's questions, and an API or a local model can be plugged in instead. Every answer is checked against the code before it counts as fact.
 
 Products built on the tools are called Mental: Mental for Claude Code, Mental for Codex, Mental Desktop.
+
+## Setup, test and run
+
+### model (`model/`)
+
+```sh
+cd model
+cargo fetch
+cargo test
+# run: add the command once the entry point exists
+```
+
+### extract (`extract/`)
+
+```sh
+cd extract
+cargo fetch
+cargo test
+# run: add the command once the entry point exists
+```
+
+### mentalc (`mentalc/`)
+
+```sh
+cd mentalc
+cargo fetch
+cargo test
+# run: add the command once the entry point exists
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before your first commit.
 
 ## Documentation
 
@@ -35,6 +66,7 @@ Products built on the tools are called Mental: Mental for Claude Code, Mental fo
 | [`examples/report-jobs`](examples/report-jobs/) | The sample system used in every example, and the first target | you want to see the code being modeled |
 
 Research reports:
+
 - [Static analysis and LLM system models](docs/research/static-analysis-llm-system-models/report.md): who should do what: extractors, the LLM or checkers.
 - [Model interpreter semantics](docs/research/model-interpreter-semantics/report.md): how to run a model and find races.
 - [Abstraction levels](docs/research/abstraction-levels/report.md): how other fields relate levels of description and check them.

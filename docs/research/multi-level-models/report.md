@@ -10,7 +10,6 @@
 4. **Levels are admitted by tests, not listed in advance.** A fixed skeleton of seven kinds of level (outcome, stage, goal, exchange, activation, move, effect) is instantiated per project. A candidate level is kept when it changes vocabulary, does not merely restate its neighbour, has a finding or a decision that can only be named there, and reads as a story in its own words.
 5. **A trace is shown as a cut, not as a level.** People stay at the highest level that works and go down where something breaks. A trace view should do the same: high everywhere, opened where the anomaly is, with the steps on the causal chain kept and bookkeeping folded.
 6. **The LLM gets eight small tasks with typed answers**: name the subjects, the actors, the steps and their goals, write the charters, group lifecycle states into stages, propose intent invariants, and narrate a given cut. Every answer is checked. It is never asked to choose a boundary, drop a step or invent a level's structure.
-
 7. **The experiment supports the core and corrects one rule.** We ran the closing rules on 2,097 explored runs of rq, with the specification's fixed ladder and a free-form LLM ladder beside them (section 8). The rules cut every run without an author. Every one of the 554 anomalous runs shows its symptom at the outcome or goal level, and its cause at the move or activation level in 490 of them, in a cut of at most 6 lines. A stand-in reader answered all manager questions from 2 to 3 lines, all product questions from 3 to 4 lines and all developer questions from 9 to 15 lines; under the fixed ladder the developer needed 24 to 43 lines. A free-form LLM ladder disagreed with itself on where steps end and never reused a step name. The rule that failed is the grain band: on rq most pairs of levels have about two lower steps per upper step or fewer, in both designs. It is replaced by a weaker merge test.
 
 The design in sections 4 to 7 is an inference from the sources. Section 8 reports what was then measured on one library, with an LLM standing in for the human reader; no person has been tested.
@@ -53,8 +52,8 @@ The [abstraction-function report](../abstraction-function/report.md) recorded a 
 
 At the lowest level the run reads like this (steps 11 to 25 of 42):
 
-```
-11 w1  HSET rq:job:j1                      18 w1  EXEC[…HSET rq:job:j1; XADD rq:results:j1; ZADD rq:finished; … ZREM rq:wip …]
+```text
+11 w1  HSET rq:job:j1                      18 w1  EXEC[… XADD rq:results:j1; ZADD rq:finished; … ZREM rq:wip …]
 12 w1  WATCH rq:job:j1:dependents          19 w1  WATCH rq:job:j1:dependents
 13 w1  SMEMBERS rq:job:j1:dependents       20 w1  SMEMBERS rq:job:j1:dependents
 14 c   WATCH rq:job:j1                     21 w1  EXEC[HGETALL rq:job:j2]
@@ -246,7 +245,7 @@ The cut is chosen by a degree of interest, after Furnas: a step's importance min
 
 The 42-step witness, grouped by hand for this report by applying the closing rules of 5.2. No tool produced this grouping; it shows what the architecture is meant to yield.
 
-```
+```text
 OUTCOME  both jobs finished                                              ⚠ cause below
 │
 ├─ GOAL  client: submit j2, to run after j1                              (5 effects)

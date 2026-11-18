@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 430" width="1000" height="430" role="img" aria-labelledby="t d">
+  <title id="t">Three tools and what connects them</title>
+  <desc id="d">mentalc compiles a repository and packs into a model, asking an LLM backend for judgment. mentalvm runs the model and produces traces and findings. mentaldbg holds the debug session and serves the viewer, the coding agent and the terminal. Products named Mental wrap all three tools and the viewer.</desc>
+  <style>
+    .h { font-family: 'Fixel Display', system-ui, sans-serif; font-weight: 600; font-size: 15px; letter-spacing: -0.025em; fill: #262521; }
+    .m { font-family: 'Cascadia Mono', 'SF Mono', ui-monospace, monospace; font-weight: 500; font-size: 12px; fill: #696960; }
+    .box { fill: #ffffff; stroke: #d8d5d0; stroke-width: 1; }
+    .subject { fill: #f6ebe3; stroke: #b35017; stroke-width: 1.5; }
+    .flow { fill: none; stroke: #696960; stroke-width: 1.25; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0,0 L8,4 L0,8 z" fill="#696960"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="430" fill="#fdfcfa"/>
+
+  <text class="m" x="20" y="118">inputs</text>
+  <rect class="box" x="20" y="128" width="170" height="74" rx="12"/>
+  <text class="h" x="34" y="152">Repository</text>
+  <text class="m" x="34" y="172">code · build files</text>
+  <text class="m" x="34" y="190">infra · docs</text>
+  <rect class="box" x="20" y="222" width="170" height="56" rx="12"/>
+  <text class="h" x="34" y="246">Packs</text>
+  <text class="m" x="34" y="266">models of libraries</text>
+
+  <rect x="210" y="40" width="770" height="370" rx="16" fill="#f3f2f0" stroke="#d8d5d0"/>
+  <text class="h" x="230" y="68">Mental products</text>
+  <text class="m" x="230" y="88">Mental for Claude Code · Mental for Codex · Mental Desktop: thin shells over the tools</text>
+
+  <rect class="box" x="230" y="120" width="170" height="86" rx="12"/>
+  <text class="h" x="244" y="144">mentalc</text>
+  <text class="m" x="244" y="164">the compiler</text>
+  <text class="m" x="244" y="181">source → model</text>
+  <text class="m" x="244" y="198">checks every answer</text>
+
+  <rect class="subject" x="430" y="120" width="150" height="86" rx="12"/>
+  <text class="h" x="444" y="144">Model</text>
+  <text class="m" x="444" y="164">.mental/model/</text>
+  <text class="m" x="444" y="181">records · anchors</text>
+  <text class="m" x="444" y="198">findings</text>
+
+  <rect class="box" x="610" y="120" width="160" height="86" rx="12"/>
+  <text class="h" x="624" y="144">mentalvm</text>
+  <text class="m" x="624" y="164">the interpreter</text>
+  <text class="m" x="624" y="181">runs → traces</text>
+  <text class="m" x="624" y="198">explores</text>
+
+  <rect class="box" x="800" y="120" width="160" height="86" rx="12"/>
+  <text class="h" x="814" y="144">mentaldbg</text>
+  <text class="m" x="814" y="164">the debugger</text>
+  <text class="m" x="814" y="181">shared session</text>
+  <text class="m" x="814" y="198">terminal · MCP</text>
+
+  <path class="flow" d="M190,165 H228" marker-end="url(#a)"/>
+  <path class="flow" d="M190,250 H210 V185 H228" marker-end="url(#a)"/>
+  <path class="flow" d="M400,163 H428" marker-end="url(#a)"/>
+  <path class="flow" d="M580,163 H608" marker-end="url(#a)"/>
+  <path class="flow" d="M770,163 H798" marker-end="url(#a)"/>
+  <path class="flow" d="M505,206 V230 H840 V208" marker-end="url(#a)"/>
+  <text class="m" x="672" y="224" text-anchor="middle">model</text>
+
+  <rect class="box" x="230" y="290" width="170" height="74" rx="12"/>
+  <text class="h" x="244" y="314">LLM backend</text>
+  <text class="m" x="244" y="334">agent (default)</text>
+  <text class="m" x="244" y="351">API · replay</text>
+  <path class="flow" d="M315,208 V288" marker-start="url(#a)" marker-end="url(#a)"/>
+  <text class="m" x="325" y="244">tasks out</text>
+  <text class="m" x="325" y="260">answers in</text>
+
+  <path class="flow" d="M900,206 V255 M505,255 H900"/>
+  <path class="flow" d="M505,255 V288" marker-end="url(#a)"/>
+  <path class="flow" d="M690,255 V288" marker-end="url(#a)"/>
+  <path class="flow" d="M880,255 V288" marker-end="url(#a)"/>
+
+  <rect class="box" x="430" y="290" width="150" height="70" rx="12"/>
+  <text class="h" x="444" y="314">Viewer</text>
+  <text class="m" x="444" y="334">the debugger UI</text>
+  <rect class="box" x="610" y="290" width="160" height="70" rx="12"/>
+  <text class="h" x="624" y="314">Coding agent</text>
+  <text class="m" x="624" y="334">MCP tools</text>
+  <text class="m" x="624" y="351">writes code</text>
+  <rect class="box" x="800" y="290" width="160" height="70" rx="12"/>
+  <text class="h" x="814" y="314">Terminal</text>
+  <text class="m" x="814" y="334">terminal debugger</text>
+  <text class="m" x="814" y="351">IDE · scripts</text>
+
+  <path class="flow" d="M505,360 V378 H690 V362" stroke-dasharray="4 4" marker-end="url(#a)"/>
+  <text class="m" x="597" y="398" text-anchor="middle">what is in view is the agent's context</text>
+</svg>

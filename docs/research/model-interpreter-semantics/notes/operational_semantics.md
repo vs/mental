@@ -9,9 +9,11 @@ Reading notes for the writer:
 ## 1. SOS basics and executable semantics frameworks
 
 ### Takeaway
+
 Every language studied defines its meaning as a labeled transition relation over *configurations* (small-step SOS), and the modern executable-semantics frameworks (K, Redex, DynSem, GEMOC) all make that one definition directly runnable and reuse it for debugging, exploration and symbolic execution. Small-step is the right base for us because interleaving, stuck states and non-termination are only expressible there; big steps should be *derived* (as macro steps), never primitive.
 
 ### Cited Findings
+
 - [B] Plotkin's Structural Operational Semantics defines behavior by inference rules over a transition relation between configurations (program fragment plus state), with labels for observable actions; concurrency is modeled as interleaving of component transitions. Foundational, 1981, still the standard. — [Plotkin, "A Structural Approach to Operational Semantics"](https://homepages.inf.ed.ac.uk/gdp/publications/sos_jlap.pdf)
 - [V] Terminology clash to avoid: in programming-language theory "big-step semantics" means natural semantics relating a program to its final result; in the modeling-language literature a "big step" is a model's reaction to one environmental input, made of a sequence of small steps. The search results for "big-step semantics" mix both senses. — [Esmaeilsabzali & Day, FASE 2010 (Springer)](https://link.springer.com/doi/10.1007/978-3-642-12029-9_12); [PL-sense example: "A meta-theory for big-step semantics"](https://ar5iv.labs.arxiv.org/html/2104.05558)
 - [V] K: an operational semantics written once is used for symbolic execution and verification. The K prover "uses the semantics for symbolic execution", reasons over patterns and calls Z3 for constraint satisfiability. — [Runtime Verification blog, K vs Coq part 3](https://runtimeverification.com/blog/k-vs-coq-as-language-verification-frameworks-part-3-of-3)
@@ -25,22 +27,26 @@ Every language studied defines its meaning as a labeled transition relation over
 - [V] GEMOC also maps execution of a compiled (translational) target model back to source-level steps through a feedback manager — a precedent for lifting co-simulation results back into the model. — [Domain-level debugging for compiled DSLs (MODELS 2017 demo)](https://se.jku.at/domain-level-debugging-for-compiled-dsls-with-the-gemoc-studio-tool-demo/)
 
 ### Inferences
+
 - The checkpoint's roles (model = program, engine = interpreter, script = trace, UI = debugger) are exactly the GEMOC architecture: an xDSML whose semantics *is* the engine's step function, with step-begin/step-end notifications feeding generic debugger services. The step granularity the engine reports is the debugger's stepping unit, so the semantics must name its steps.
 - K's cell structure and "one semantics, many tools" result justify defining a single `enabled`/`step` pair and deriving all three run modes from it (section 6).
 - Prototyping the rules in Redex or K before writing the Rust engine is cheap insurance: random testing of "macro step agrees with small steps" is precisely what Redex's property testing is for.
 
 ### Gaps
+
 - DynSem and Redex primary papers were not opened; claims are background knowledge.
 - No source was found comparing these frameworks on trace-recording cost for reverse stepping at our scale.
 
 ## 2. Concrete language semantics compared
 
 ### Takeaway
+
 The languages split into three families: (a) statechart family, where a macro step is a chain of micro steps and the variants differ on a small set of orthogonal choices; (b) actor/communicating-machine family (P, Rebeca, Erlang), where the atomic unit is "dequeue one message and run its handler to completion" and nondeterminism lives in the scheduler; (c) coordination-layer family (BIP, Ptolemy II, Lingua Franca, KPN), where composition glue or a director fixes the scheduling discipline, in the limit making the model deterministic. Our record model (per-port guarded automata, wires, stores) sits in family (b) with a BIP-like explicit glue layer for wires and adapters.
 
 ### Cited Findings
 
-**Statechart family**
+#### Statechart family
+
 - [V] STATEMATE (Harel & Naamad, TOSEM 1996) was the first executable statechart semantics. A *step* moves the system from one status to the next; reactions to events generated in a step are sensed only after the step completes, and events live for only the following step. STATEMATE offers both a synchronous time model and an asynchronous one (in which steps chain into a superstep before the environment is sampled again). Old but foundational. — [Harel & Naamad paper copy](https://chess.eecs.berkeley.edu:443/design/2009/discussion/Pdf/p293-harel.pdf); [Finn's presentation of the paper](https://chess.eecs.berkeley.edu/design/2010/discussions/slides/john_finn_statecharts.pdf)
 - [V] The Harel–Naamad description is informal and imprecise in places; slides citing von der Beeck note about 20 statechart variants with no official semantics. — [search-result summary of secondary sources incl. Roscoe et al.](https://cs.ox.ac.uk/oucl/work/bill.roscoe/publications/115.pdf); [Statemate slides](https://chess.eecs.berkeley.edu/design/2010/discussions/slides/Statemate.pdf)
 - [V] Esmaeilsabzali, Day, Atlee, Niu, "Deconstructing the semantics of big-step modelling languages", Requirements Engineering 15(2):235–265, 2010: a big step is deconstructed into orthogonal semantic aspects that capture the main differences among most BSMLs; a BSML is a language where a model reacts to an environmental input via a sequence of small steps, each possibly a set of concurrent transitions. — [dblp record](https://dblp1.uni-trier.de/rec/journals/re/EsmaeilsabzaliDAN10.html); [author PDF](https://cs.uwaterloo.ca/%7Ejmatlee/Papers/REJ10c.pdf); [FASE 2010 companion](https://link.springer.com/doi/10.1007/978-3-642-12029-9_12)
@@ -52,7 +58,8 @@ The languages split into three families: (a) statechart family, where a macro st
 - [V] Even the "precise" semantics has open ambiguity: OMG issues PSSM11-22 (order of transitions in RTC steps) and PSSM11-21 (atomicity of transition, entry behavior and state completion — which parallel transition fires first determines which completion event enters the pool first). — [OMG PSSM issue tracker](https://issues.omg.org/issues/spec/PSSM)
 - [V] A 2023 ACM Computing Surveys article covers 1997–2021 work on formalizing UML state machine semantics, mostly by translation to PROMELA, automata or Petri nets — evidence that the informal standard needed many competing formalizations. — [André et al., doi 10.1145/3579821](https://unpaywall.org/10.1145%2F3579821)
 
-**Actor / communicating-machine family**
+#### Actor / communicating-machine family
+
 - [V] P: "Each P state machine has an unbounded FIFO buffer"; sends are "asynchronous and non-blocking" and add the event to the target's buffer; after its entry function a machine "tries to dequeue an event from its input buffer or blocks if the buffer is empty". Dequeue "removes the first event that is not deferred in its current state, keeping rest of the buffer unchanged"; an ignored event is dropped. — [P manual: state machines](https://p-org.github.io/P/manual/statemachines/); [P manual: statements](https://p-org.github.io/P/manual/statements/)
 - [V] P: by default a machine must handle every event that can arrive in every state, and the checker reports violations (unhandled event = error); deferral is the explicit escape, with a liveness check that an event is not deferred forever. `receive` blocks for listed events and auto-defers all others. `raise` ends the current function and handles the event immediately; `new` creates a machine and passes a payload to its start state's entry function. `$` gives controlled nondeterministic choice. — [Desai et al., PLDI 2013 (MSR page)](https://www.microsoft.com/en-us/research/publication/p-safe-asynchronous-event-driven-programming-2/); [P manual: statements](https://p-org.github.io/P/manual/statements/)
 - [V] In P's systematic testing, context switches happen only at machine creation, sends and receives; the delay-bounded scheduler is a deterministic scheduler plus a "delay" operation and prioritizes schedules following the causal order of events. — [P presentation (UIUC CS524)](https://courses.grainger.illinois.edu/cs524/fa2020/p-presentation.pdf); [MSR tech report](https://microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-8.pdf)
@@ -60,7 +67,8 @@ The languages split into three families: (a) statechart family, where a macro st
 - [V] Rebeca is "an operational interpretation of the actor model with formal semantics and model-checking tools"; messages go into the receiver's buffer; in Timed Rebeca "messages are executed atomically and are not preempted"; the semantics is given in SOS. Two state-space semantics coexist for the same language: Timed Transition System (states at time points) and the coarser Floating-Time Transition System (one transition per message-server execution), the latter used for event-based properties and state-space reduction. — [Sirjani et al., "Timed Actors and Their Formal Verification", arXiv 2309.07302](https://arxiv.org/pdf/2309.07302); [Timed Rebeca SOS, arXiv 1108.0228](https://ar5iv.labs.arxiv.org/html/1108.0228)
 - [V] Erlang: the only ordering guarantee is pairwise — signals from one sender to one destination keep their order; nothing is promised across senders. Fredlund's semantics delivers atomically (instant global order), which is stricter than the real guarantee; a 2024 formalization separates send from arrival; selective receive consumes messages out of arrival order. — [erlang-questions thread](https://erlang.org/pipermail/erlang-questions/2013-January/072133.html); [Cloud Haskell semantics draft](https://haskell-distributed.github.io/static/semantics.pdf); [Core Erlang formal semantics, Computers 2024](https://www.mdpi.com/2073-431x/13/11/276); [reversible Erlang debugging, arXiv 2112.12869](https://arxiv.org/pdf/2112.12869v2)
 
-**Coordination-layer family**
+#### Coordination-layer family
+
 - [V] BIP has three layers: atomic components (behavior), connectors (interactions) and priorities (choosing among enabled interactions). The semantics is given as LTSs with SOS rules. The reference implementation uses *global-state* semantics: an Engine computes enabled interactions, selects a maximal one under priorities, then lets the involved components move. — [Basu, Bozga, Sifakis, "Modeling Heterogeneous Real-time Components in BIP" (SEFM 2006)](https://typeset.io/pdf/modeling-heterogeneous-real-time-components-in-bip-1ta614nln6.pdf); [Rigorous component-based system design using the BIP framework (IEEE Software 2011)](https://infoscience.epfl.ch/record/170496/files/ieee-software.pdf?version=1)
 - [V] BIP *partial-state* semantics drops the assumption that an interaction plus its internal computation is atomic. The translation from global-state to partial-state does **not** in general preserve observational equivalence; it is restored by adding an oracle (a predicate over a dependency relation between interactions) to the rule premises. — [Basu, Bidinger, Bozga, Sifakis, "Distributed Semantics and Implementation for Systems with Interaction and Priority" (FORTE 2008)](https://springerlink.bibliotecabuap.elogim.com/doi/10.1007/978-3-540-68855-6_8)
 - [B] BIP composition rule in one line: an interaction *a* (a set of ports) is enabled in global state (q1..qn) iff each participating component has an enabled transition labeled with its port in *a*; firing moves exactly the participants and leaves the rest unchanged; with priorities, *a* fires only if no higher-priority interaction is enabled. Connectors may carry data-transfer functions executed as part of the interaction. — [SEFM 2006 paper](https://typeset.io/pdf/modeling-heterogeneous-real-time-components-in-bip-1ta614nln6.pdf)
@@ -70,6 +78,7 @@ The languages split into three families: (a) statechart family, where a macro st
 - [B] Kahn process networks: deterministic processes connected by unbounded FIFO channels with blocking reads and non-blocking writes compute a unique result (channel histories) independent of scheduling — determinism bought by forbidding "test for empty" and merge. 1974; foundation for dataflow MoCs. — [Kahn process networks (overview)](https://en.wikipedia.org/wiki/Kahn_process_networks)
 
 ### Inferences
+
 - Comparative table (derived from the findings above):
 
 | Language | Configuration | Small step | Macro step | Queue discipline | Who resolves nondeterminism |
@@ -91,6 +100,7 @@ The languages split into three families: (a) statechart family, where a macro st
 - The PSSM open issues show that "orthogonal regions inside one RTC step" is where precise semantics goes wrong. Having no intra-entity parallel regions (parallelism only between activations/entities, and explicit `par` nodes) avoids this entire class.
 
 ### Gaps
+
 - The Rhapsody semantics (Harel & Kugler 2004) and Crane & Dingel's UML/Rhapsody/Stateflow comparison were not found in this session; known from background only: Rhapsody uses one event queue per active object and RTC, with inner-first priority like UML and unlike STATEMATE's outer-first.
 - BIP's formal rules could not be read in the primary PDF (extraction failed); the one-line rule above is background knowledge.
 - P's documentation does not state any loss/duplication/reordering model for messages; unreliable networks are modeled explicitly by the user (background knowledge, not confirmed on the pages read).
@@ -99,9 +109,11 @@ The languages split into three families: (a) statechart family, where a macro st
 ## 3. Message-passing semantics, request/response, timeouts, adapters
 
 ### Takeaway
+
 The safest general semantics is asynchronous send into an explicit in-transit buffer with ordering guaranteed only per (sender, receiver) channel; synchronous call is derived as send + blocked activation + reply, and a timeout is just another enabled transition that races the reply. No studied language has a first-class "message changes form at a boundary" construct; the closest precedents are BIP connectors with data transfer, SCXML `<invoke>`/`<finalize>`, and UML/SysML delegation (pure forwarding), so adapters are our own small extension and should be defined as glue transitions, not as hidden magic.
 
 ### Cited Findings
+
 - [V] Queue granularity varies: one FIFO per machine (P), one pool per active object plus a deferred pool (PSSM), internal + external queue per session (SCXML), per-actor buffer (Rebeca), per-process mailbox with selective receive (Erlang). — [P manual](https://p-org.github.io/P/manual/statemachines/); [arXiv 2309.14884](https://arxiv.org/pdf/2309.14884); [W3C SCXML](https://www.w3.org/TR/scxml/); [arXiv 2309.07302](https://arxiv.org/pdf/2309.07302); [arXiv 2112.12869](https://arxiv.org/pdf/2112.12869v2)
 - [V] Ordering: Erlang guarantees order only between one sender and one destination; a semantics that delivers atomically at send time (Fredlund) imposes a global order the real system does not have, and a semantics with an unordered "ether" can violate even the pairwise guarantee. — [erlang-questions](https://erlang.org/pipermail/erlang-questions/2013-January/072133.html); [Computers 2024](https://www.mdpi.com/2073-431x/13/11/276)
 - [V] Message-passing race detection needs a precise happens-before for sends, deliveries, spawns and selective receives; Concuerror's had not been formally defined until recent work proposed a trace notion for it. — [arXiv 2210.03026](https://www.arxiv.org/pdf/2210.03026)
@@ -112,6 +124,7 @@ The safest general semantics is asynchronous send into an explicit in-transit bu
 - [V] The prior project report already notes that UML/SysML delegation is pure forwarding and that a typed transformer on the wire is the project's own extension; and that layered messages follow nested session protocols. — [UML connector](https://www.uml-diagrams.org/composite-structure-diagrams/connector.html); [Demangeon & Honda, nested protocols](https://mrg.cs.ox.ac.uk/publications/nested-protocols-in-session-types/subsessioncam.pdf)
 
 ### Inferences
+
 - Define channels per *wire* (one FIFO per wire instance, i.e. per sender-port/receiver-port pair), and let a provided port's inbox be the nondeterministic merge of its incoming wires. This is exactly Erlang's pairwise guarantee, it is what TCP connections and broker partitions actually give, and it exposes cross-sender races that a single global FIFO would hide. Channel properties (`fifo | bag`, `lossy`, `duplicating`, `bounded(n)`) should be attributes of the wire/pack so that "at-least-once redelivery" is a transition of the channel, not prose.
 - Sync call = `send(req, corr)` + activation moves to `await(corr)` + matching `reply(corr)` resumes it. The "port stays visibly held while the call is pending" in the checkpoint is the `await` position of the lane. Timeout = a timer transition enabled while in `await`; reply-vs-timeout is an ordinary race the exhaustive mode finds.
 - Adapter semantics, three cases:
@@ -122,15 +135,18 @@ The safest general semantics is asynchronous send into an explicit in-transit bu
 - Unhandled message policy: follow P (stuck/error) because the checkpoint says "a stuck configuration is a model gap"; allow `ignore`/`defer` only when declared by the behavior.
 
 ### Gaps
+
 - No primary source was found that formalizes message *transformation at delegation boundaries* for component models; this is an inference from adjacent mechanisms.
 - Session-typed request/response pairing (multiparty session types as a typing discipline for wires) was not researched here beyond the prior report's citation.
 
 ## 4. Macro steps, refinement and atomicity
 
 ### Takeaway
+
 "Macro step" has two distinct meanings that must be kept apart: a *language-defined* run-to-completion unit (always atomic by fiat, as in SCXML/P/Rebeca) and a *view-defined* collapsed segment (atomic only if a reduction argument holds). The standard correctness notions are stuttering refinement for hiding invisible steps and Lipton/mover reduction for collapsing steps under concurrency; BIP's partial-state result is the cautionary tale for getting it wrong.
 
 ### Cited Findings
+
 - [V] Run-to-completion as macro step: SCXML macrostep ends when the internal queue is empty and no eventless transition is enabled; UML dequeues the next event only after the previous RTC step completes; Rebeca executes a message server atomically without preemption. — [W3C SCXML §3.13](https://www.w3.org/TR/scxml/); [UML §15.3.12](https://site.uottawa.ca/~tcl/gradtheses/mnojoumian/ThesisFiles/FinalSpec/UML/15.3.12.html); [arXiv 2309.07302](https://arxiv.org/pdf/2309.07302)
 - [V] Rebeca's coarse FTTS is used for event-based properties and state-space reduction, while the fine TTS is needed for properties about variable values at given times — i.e. the coarse semantics is only sound for a restricted observation. — [arXiv 2309.07302](https://arxiv.org/pdf/2309.07302)
 - [B] Abadi & Lamport: an implementation refines a specification if a refinement mapping sends each low-level step to a high-level step *or a stuttering step* (no change in the high-level state); specifications must therefore be stuttering-invariant. This is the standard account of "many small steps implement one big step". 1991, still the basis of TLA+ refinement. — [Abadi & Lamport, "The Existence of Refinement Mappings"](https://lamport.azurewebsites.net/pubs/abadi-existence.pdf)
@@ -143,6 +159,7 @@ The safest general semantics is asynchronous send into an explicit in-transit bu
 - [V] Ptolemy's actor interface separates `fire` (compute outputs, no state change) from `postfire` (commit state) so a director can iterate to a fixed point within one iteration before committing — a hierarchical model exposes one composite `fire/postfire` to its parent. — [Extending Ptolemy II](https://ptolemy.berkeley.edu/projects/embedded/concurrency/lectures/ExtendingPtolemyII.pdf); [Tripakis et al.](https://ptolemy.berkeley.edu/projects/chess/pubs/999/TripakisEtAl_Semantics_03.pdf)
 
 ### Inferences
+
 - Three macro-step relations are needed, each with its own obligation:
   1. **Activation RTC** (language-level): from dequeue/resume to the next blocking point (`await`, end). This is a *scheduling unit*, not automatically an atomic unit: its internal sends and store accesses are still individually visible to other activations unless reduction applies. (P makes context switches only at send/receive/create — the same idea: internal local steps are both-movers, so only communication points matter.)
   2. **Summary vs full** (level-of-detail): the report's obligation "every path through the full graph maps to exactly one case with the same effects at ports" is a stuttering simulation where the observation is the sequence of port-visible labels (sends, store reads/writes, reply) and all other nodes map to stutter steps.
@@ -152,6 +169,7 @@ The safest general semantics is asynchronous send into an explicit in-transit bu
 - BIP's lesson: if a segment is declared atomic at the coarse level, then at the fine level the scheduler must be *constrained* so no conflicting step interleaves, or the levels diverge. Since we cannot constrain the real system, the direction must be the other way: atomicity is *computed from* the fine level, never asserted.
 
 ### Gaps
+
 - The explicit statement "send is a left mover, receive is a right mover for unbounded FIFO/bag channels" was not located in a fetched source this session; it is background knowledge from the reduction literature (Lipton 1975; Kragl et al.) and should be verified against [the PLDI 2020 paper](https://www.lix.polytechnique.fr/~cenea/papers/pldi20is.pdf) before being quoted.
 - No source was found on *presentation-oriented* collapse (a debugger that auto-collapses reducible segments); this appears to be novel to the project.
 - Branching bisimulation / weak bisimulation literature for hiding (van Glabbeek & Weijland) was not researched; it is the precise equivalence for "closed entity looks the same from outside".
@@ -159,9 +177,11 @@ The safest general semantics is asynchronous send into an explicit in-transit bu
 ## 5. Symbolic semantics
 
 ### Takeaway
+
 Symbolic execution is not a second semantics: it is the same rules run over configurations that carry a path condition, with a rule firing whenever its guard is *satisfiable* rather than *true*. K-line work proves this construction generically (feasible symbolic runs and concrete runs mutually simulate). Because our guards range over a finite named predicate vocabulary, the "solver" is propositional and forking is cheap.
 
 ### Cited Findings
+
 - [B] King (1976): symbolic execution runs a program on symbolic inputs, maintaining a symbolic store and a path condition; a branch whose condition is not decided by the path condition forks into two states, each conjoining one outcome. — [King, CACM 1976](https://doi.org/10.1145/360248.360252)
 - [V] Arusoaie, Lucanu, Rusu: from a language's operational semantics a *symbolic* semantics is generated automatically (same syntax, rules rewrite over formulas denoting sets of states); "the symbolic execution of concrete programs is, by definition, the execution of the same programs with the symbolic semantics"; feasible symbolic executions and concrete executions mutually simulate each other. Prototype in K; SLE 2013, journal version J. Symbolic Computation 2017. — [HAL hal-01238696](https://hal.umontpellier.fr/CRISTAL-DREAMPAL/hal-01238696v2); [SLE 2013 chapter](https://springerlink.bibliotecabuap.elogim.com/content/pdf/10.1007/978-3-319-02654-1_16.pdf)
 - [V] K's prover uses the semantics for symbolic execution with Z3 for constraints; for deterministic languages one-path and all-path reachability coincide, for concurrent ones all-path is needed. — [RV blog](https://runtimeverification.com/blog/k-vs-coq-as-language-verification-frameworks-part-3-of-3); [arXiv 1810.10826](https://arxiv.org/abs/1810.10826v2)
@@ -169,6 +189,7 @@ Symbolic execution is not a second semantics: it is the same rules run over conf
 - [V] The project's prior report grounds guards in control-flow automata with assume edges and symbolic automata over a Boolean algebra of predicates. — [lazy abstraction](https://dl.acm.org/doi/10.1145/503272.503279); [D'Antoni & Veanes](https://link.springer.com/chapter/10.1007/978-3-319-63387-9_3)
 
 ### Inferences
+
 - Give every configuration a path condition `φ` = a partial valuation of named predicates (plus optional relations between predicates, e.g. mutual exclusion declared by an input characteristic). A guarded transition with guard `g` is enabled iff `φ ∧ g` is satisfiable; firing sets `φ := φ ∧ g`. Then:
   - *Concrete run* = `φ0` is total (all predicates bound) so at most one branch of each decision is satisfiable; no fork ever happens.
   - *Symbolic run* = `φ0` is partial; when both `g` and `¬g` are satisfiable the configuration forks; the default policy "take the base choice and record an assumption" is a *search strategy* over the fork tree, not a different semantics. An assumption record is exactly the conjunct added to `φ`.
@@ -178,15 +199,18 @@ Symbolic execution is not a second semantics: it is the same rules run over conf
 - Symbolic stores: when a state variable's value is unknown, treat `var = v` as a predicate and case-split lazily on first read (lazy initialization), keeping one mechanism.
 
 ### Gaps
+
 - No source specific to symbolic execution of *actor/queue* models with symbolic queue contents was found; our queues hold concrete message kinds with symbolic payload predicates, which avoids the problem but was not validated against literature.
 - State merging/subsumption techniques for fork explosion were not researched.
 
 ## 6. Nondeterminism and schedulers
 
 ### Takeaway
+
 Best practice (P, Coyote, GEMOC, BIP's Engine, Ptolemy's directors) is to keep the semantics as a nondeterministic relation and make the *resolver* of nondeterminism an explicit, replaceable component whose decisions are recorded; a run is then a deterministic function of (model, binding, schedule). Lingua Franca shows the alternative — remove nondeterminism by logical time — which is right for specifying a design but wrong for a tool whose job is to expose the races in someone else's system.
 
 ### Cited Findings
+
 - [V] Coyote "takes over the non-determinism in your program", including "the delivery of timeouts"; a bug comes with a trace of "the global order of all scheduling decisions and nondeterministic choices", and "the trace can be replayed reliably over and over again"; exploration uses a portfolio of strategies and is heuristic, not a proof. — [Coyote: how it works](https://microsoft.github.io/coyote/overview/how); [Coyote: concurrency unit testing](https://microsoft.github.io/coyote/concepts/concurrency-unit-testing)
 - [V] P: scheduling points only at create/send/receive; a delaying scheduler = deterministic default scheduler + bounded number of "delay" deviations, prioritizing causal order. — [P presentation](https://courses.grainger.illinois.edu/cs524/fa2020/p-presentation.pdf); [MSR TR](https://microsoft.com/en-us/research/wp-content/uploads/2016/02/tr-8.pdf)
 - [V] BIP: the Engine computes the enabled interaction set, filters by priorities and picks one; priorities are a declarative way to restrict nondeterminism. — [IEEE Software 2011](https://infoscience.epfl.ch/record/170496/files/ieee-software.pdf?version=1)
@@ -197,6 +221,7 @@ Best practice (P, Coyote, GEMOC, BIP's Engine, Ptolemy's directors) is to keep t
 - [V] GEMOC's generic engine supports concurrent semantics by exposing the set of possible next steps to a pluggable decider and supports omniscient debugging over it. — [SoSyM 2022](https://link.springer.com/content/pdf/10.1007/s10270-022-01073-2.pdf)
 
 ### Inferences
+
 - Split the engine API into `enabled(C) → set of choices` and `fire(C, choice) → C'` with `fire` a pure function. A *schedule* is the sequence of choices. Sources of choice are exactly four and should be typed: (1) which enabled activation/channel moves (scheduling), (2) which branch of an undetermined predicate (data), (3) environment actions — external inputs, timer expiry, channel faults such as loss/duplication, crash (environment), (4) explicit `choose` in a behavior (e.g. LB replica pick). Recording all four gives Coyote-style replay; "fix check: same binding and schedule, diff the traces" follows.
 - Because choices must stay meaningful across model edits, a schedule entry should name the choice by *semantic id* (activation's causal id + transition id), not by index into the enabled set; otherwise "re-run the same schedule after the fix" breaks when the enabled set changes.
 - Default scheduler for concrete runs: a deterministic, human-plausible policy — run the activation caused by the most recent event to its next blocking point (depth-first causal order; P's default), ties broken by semantic id. It should be documented as a *strategy*, and the script should mark steps where `|enabled| > 1` so the UI can show "another order was possible here".
@@ -205,6 +230,7 @@ Best practice (P, Coyote, GEMOC, BIP's Engine, Ptolemy's directors) is to keep t
 - Priorities (BIP) are the right mechanism for modeling real deterministic schedulers inside packs (e.g. the JS event loop: microtasks before macrotasks) without hard-coding them in the engine.
 
 ### Gaps
+
 - PCT and other probabilistic strategies in Coyote could not be confirmed from Coyote's own docs (only from a third-party README), so no claim is made.
 - Fairness (needed for liveness properties such as "the retry eventually succeeds") was not researched; P checks liveness with fair schedules but details were not fetched.
 - State-space bounds appropriate for interactive use (how many schedules can be explored in < 1 s for models of our size) have no source.
@@ -212,9 +238,11 @@ Best practice (P, Coyote, GEMOC, BIP's Engine, Ptolemy's directors) is to keep t
 ## 7. Dynamic structure
 
 ### Takeaway
+
 All actor-family languages treat creation as an ordinary transition that extends the configuration with a fresh identity and an initial local state, and treat termination as either a special event or the removal of the component; statically-structured coordination languages (BIP, LF, classic Ptolemy) mostly avoid dynamic structure or bound it. For us, the entity tree is mostly static while *activations* and *replica instances* are dynamic, which keeps the hard part small.
 
 ### Cited Findings
+
 - [V] P: `new` creates a machine instance and passes the constructor payload to the entry function of its start state; creation is one of the three scheduling points. — [P statements](https://p-org.github.io/P/manual/statements/); [P presentation](https://courses.grainger.illinois.edu/cs524/fa2020/p-presentation.pdf)
 - [V] SCXML: `<invoke>` "causes an instance of the external service to be created" after the state's `<onentry>`, and invocations are cancelled when the state is exited — lifetime tied to a state. — [W3C SCXML §6.1, §3.13](https://www.w3.org/TR/scxml/)
 - [V] Erlang/Concuerror-style semantics must include dynamic process spawning in the happens-before relation (a process's first step depends on its spawn). — [arXiv 2210.03026](https://www.arxiv.org/pdf/2210.03026)
@@ -223,29 +251,33 @@ All actor-family languages treat creation as an ordinary transition that extends
 - [B] Rebeca fixes the set of rebecs statically (known rebecs declared up front) to keep model checking finite; dynamic creation exists only in extensions. — [Rebeca](https://rebeca-lang.org/)
 
 ### Inferences
+
 - Put topology in the configuration: `E` = set of live entity instances with lifecycle status (`absent | starting | running | stopping | dead`). `spawn` adds an instance of a declared *type* under a declared parent with an id that is a semantic path plus an instance index minted deterministically from the spawning step's id (so replay and diff are stable). `kill` / crash moves it to `dead`; a message delivered to a dead instance's port is a defined outcome (drop, error reply, or connection-reset per channel attribute), never undefined.
 - Replicas (`×3`) are instances of one type created at initialization; the LB's choice among them is a typed `choose`. Symmetry between identical replicas is a natural state-space reduction for exhaustive mode.
 - Wires to dynamic instances are created by *templates* on the type (a port of every instance of type T is wired to X), evaluated at spawn.
 - Bounding: exhaustive mode needs a bound on instances per type and on activations per port, declared in the exploration config and reported when hit ("bound reached" is a result, not a silent truncation).
 
 ### Gaps
+
 - Dy-BIP's actual rules were not read.
 - No source was found on stable identity for dynamically created entities across model regeneration; the semantic-path scheme is the project's own.
 
 ## 8. Recommendation: a small semantic definition for the model language
 
 ### Takeaway
+
 Adopt a P/Rebeca-style asynchronous core (per-port behaviors as message servers, run to the next blocking point) with BIP-style explicit glue (wires, adapters, channel attributes), per-wire FIFO channels (Erlang's pairwise guarantee), an external recorded scheduler (Coyote), a path condition in every configuration (K-style single semantics for concrete and symbolic), and computed, never asserted, atomicity (Lipton/CIVL) for macro steps. Pin every Esmaeilsabzali aspect explicitly. Everything in this section is a design inference built on the cited findings above; the citations here point to the precedent each choice rests on.
 
 ### Cited Findings
+
 - [V] Precedent for each borrowed element: P handler/queue/defer semantics — [P manual](https://p-org.github.io/P/manual/statemachines/); atomic message servers and two-granularity state spaces — [Rebeca, arXiv 2309.07302](https://arxiv.org/pdf/2309.07302); glue as a separate layer with an Engine and priorities — [BIP, IEEE Software 2011](https://infoscience.epfl.ch/record/170496/files/ieee-software.pdf?version=1); pairwise ordering — [Erlang](https://erlang.org/pipermail/erlang-questions/2013-January/072133.html); recorded schedule + replay — [Coyote](https://microsoft.github.io/coyote/overview/how); symbolic semantics derived from the concrete one with mutual simulation — [Arusoaie et al.](https://hal.umontpellier.fr/CRISTAL-DREAMPAL/hal-01238696v2); R*L* atomicity — [CIVL slides](https://fmcad.org/FMCAD21/slides/civl.pdf); macrostep/microstep with internal queue — [SCXML](https://www.w3.org/TR/scxml/); superdense tags — [LF, arXiv 2301.02444](https://arxiv.org/pdf/2301.02444); semantics as an execution engine with generic debugger services — [GEMOC](https://hal.archives-ouvertes.fr/hal-01355391); log conformance against the model — [PObserve](https://p-org.github.io/P/advanced/pobserve/pobserve); one interleaving per Mazurkiewicz trace — [Optimal DPOR](https://user.it.uu.se/~parosha/publications/papers/popl2014.pdf).
 - [V] Hazards each pin avoids: 20 statechart variants — [Statemate slides](https://chess.eecs.berkeley.edu/design/2010/discussions/slides/Statemate.pdf); unresolved order/atomicity inside UML RTC steps — [OMG PSSM issues](https://issues.omg.org/issues/spec/PSSM); atomic-vs-non-atomic levels diverging — [BIP FORTE 2008](https://springerlink.bibliotecabuap.elogim.com/doi/10.1007/978-3-540-68855-6_8); atomic-delivery semantics hiding real orderings — [Computers 2024](https://www.mdpi.com/2073-431x/13/11/276).
 
 ### Inferences
 
-**8.1 Configuration**
+#### 8.1 Configuration
 
-```
+```text
 C = ⟨ E, S, Ch, A, T, φ, now ⟩
 
 E   : instance-id ⇀ (type, parent per facet, status)        -- live topology (dynamic part only)
@@ -284,7 +316,7 @@ The static model (types, ports, wires, behaviors, machines, adapters) is the pro
 
 A configuration is *terminal* if `A`, `Ch`, `T` are empty; *stuck* if non-terminal and nothing is enabled except possibly ENV-IN with no input left (deadlock or model gap — distinguished by whether some activation sits at an unmodeled node or an unaccepted message heads a channel).
 
-**8.3 Pinned choices (Esmaeilsabzali checklist)**
+#### 8.3 Pinned choices (Esmaeilsabzali checklist)
 
 | Aspect | Pin | Why |
 | --- | --- | --- |
@@ -298,9 +330,9 @@ A configuration is *terminal* if `A`, `Ch`, `T` are empty; *stuck* if non-termin
 | Priority | none in the core; packs may declare priorities between their own transitions (event-loop phases) | BIP |
 | Unhandled message | stuck/error unless behavior declares `ignore` or `defer` | P; "stuck = model gap" |
 
-**8.4 Scheduler and the three modes over one relation**
+#### 8.4 Scheduler and the three modes over one relation
 
-```
+```text
 enabled : C → Set<Choice>            Choice = (rule, activation-or-wire id, branch?)   -- semantic ids
 fire    : C × Choice → C × Label     -- pure
 ```
@@ -310,7 +342,7 @@ fire    : C × Choice → C × Label     -- pure
 - **Exhaustive exploration:** DFS/BFS over all `enabled` choices (optionally also over data forks and enabled environment faults), with DPOR using independence = disjoint footprints (stores read/written, channels pushed/popped, instances spawned/killed), visited-set on canonical `C`, symmetry over replicas, and explicit bounds. Output: equivalence classes of schedules (one pomset each), races (dependent co-enabled pairs from different lanes), stuck and error configurations.
 - **Trace conformance (PObserve-style):** the observed event stream acts as the scheduler — at each observed event pick the enabled choice whose label matches; no match = divergence ("surprise"), unmatched enabled obligations = "contradicted/missing". Internal steps without log evidence are taken eagerly (τ-closure).
 
-**8.5 Macro steps**
+#### 8.5 Macro steps
 
 - Script step = label of one `fire`. The pomset's `after` relation = causal dependence between steps (same activation order, send→receive, write→later dependent access), computed, not authored.
 - **RTC macro step** of activation `a`: maximal sequence of `a`'s steps between blocking points. Used as the default stepping unit ("step over").
@@ -318,7 +350,7 @@ fire    : C × Choice → C × Label     -- pure
 - **Collapsed segment:** a set of steps closed under "between" in one lane (or a closed entity's internal steps). Its `atomicity` is computed from footprints against every activation that can be co-enabled anywhere in the segment: `stutter` (no store effect, no branch, 1:1 adapters only → maps to stutter steps at the viewed layer), `isolated` (all steps both-movers), `guarded` (right-movers · ≤1 non-mover · left-movers, typically lock/transaction-delimited), else `non-atomic`. Only the first three may be auto-collapsed; the macro step's effect is the composition of the small steps' effects, and by reduction every fine schedule has a coarse schedule with the same observation.
 - **Spatial projection:** hiding = relabel steps internal to a closed entity as τ and lift port events to the deepest visible ancestor; the closed view is a correct abstraction iff the hidden steps are `stutter`/`isolated`/`guarded` w.r.t. everything outside.
 
-**8.6 Pitfalls to avoid**
+#### 8.6 Pitfalls to avoid
 
 1. *Treating a summary case as atomic.* A case's effects are still separate small steps; the worked example's claim-without-row-lock race (read `PENDING` … write `RUNNING`) only appears if another activation can interleave between them.
 2. *Global FIFO or atomic delivery.* Hides cross-sender races and redelivery; use per-wire channels with explicit attributes.
@@ -334,6 +366,7 @@ fire    : C × Choice → C × Label     -- pure
 12. *Late replies and dead receivers.* Give orphan replies, messages to dead instances and timer cancellation defined outcomes; these are where real systems' bugs live.
 
 ### Gaps
+
 - This sketch has not been validated by mechanizing it (Redex/K/TLA+) or by running the three gold models; the mover classification per rule (which rules are left/right/both movers under which channel attributes) needs a careful table and proof sketch, which no single source provides for this combination.
 - Timed semantics is deliberately minimal (timers only). If durations become first-class, Timed Rebeca's FTTS/TTS pair and DEVS (assigned to another researcher) are the references to consult.
 - Interaction between `guarded` atomicity and database isolation levels (a "transaction" is not serializable under READ COMMITTED) is not covered by the reduction literature surveyed; pack-level modeling of isolation is an open design item.

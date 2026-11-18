@@ -4,7 +4,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-17 (link gi
 
 ## One line per source
 
-**Business processes**
+### Business processes
 
 | Source | What it says in one line |
 |---|---|
@@ -19,7 +19,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-17 (link gi
 | Object-centric process mining (OCEL) | An event can belong to several objects; forcing one case notion duplicates events (convergence) or merges unrelated repetitions (divergence). |
 | Fuzzy Miner | Process models from logs drawn like road maps: significant activities kept, correlated minor ones aggregated into clusters, the rest dropped. |
 
-**Mathematics**
+### Mathematics
 
 | Source | What it says in one line |
 |---|---|
@@ -31,7 +31,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-17 (link gi
 | Thurston, *On proof and progress* | One idea (the derivative) is understood through many different views; understanding is not one definition. |
 | Tao, pre-rigorous / rigorous / post-rigorous | Readers mature through three stages; the post-rigorous reader uses intuition backed by rigour. |
 
-**Engineering and design**
+### Engineering and design
 
 | Source | What it says in one line |
 |---|---|
@@ -41,7 +41,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-17 (link gi
 | Alexander, *A Pattern Language* | Each of 253 patterns names the larger patterns it helps complete and the smaller ones that complete it. |
 | Agrawala et al., assembly instructions (2003) | People conceive assembly hierarchically, with steps separated by new parts; instructions built on that cut assembly time by about a third and errors by half. |
 
-**Science**
+### Science
 
 | Source | What it says in one line |
 |---|---|
@@ -54,7 +54,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-17 (link gi
 | Noble's biological relativity | No privileged level of causation in biology; a critic answers that levels are privileged relative to a question. |
 | Coarse-graining and effective theories in physics | Each scale has its own variables and laws; details below a scale enter only through a few parameters. |
 
-**Operations, safety and command**
+### Operations, safety and command
 
 | Source | What it says in one line |
 |---|---|
@@ -65,7 +65,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-17 (link gi
 | STAMP / STPA (Leveson) | A system is a hierarchy of controllers, each constraining the level below and receiving feedback from it. |
 | FRAM, work-as-imagined and work-as-done (Hollnagel) | Written procedures and actual practice differ, and the difference is what the analysis looks at. |
 
-**Explaining and teaching**
+### Explaining and teaching
 
 | Source | What it says in one line |
 |---|---|
@@ -74,7 +74,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-17 (link gi
 | Bret Victor, *Up and Down the Ladder of Abstraction* | Go up by abstracting over a variable (all runs at once), go down to one concrete run; understanding moves between them. |
 | Rhetorical Structure Theory | A text is a tree of nucleus–satellite relations; with satellites deleted the text still makes sense, not the other way round. |
 
-**Music and maps**
+### Music and maps
 
 | Source | What it says in one line |
 |---|---|

@@ -21,6 +21,7 @@ Most examples come from the sample repository in [`examples/report-jobs`](../exa
 ## Structure
 
 **Entity.** Anything that has a boundary and can take part in an interaction. An entity has ports on its boundary and, optionally, an interior made of smaller entities.
+
 - *Examples:* the `api` service, a worker process, the Postgres server, the `reports` table, the user, the function `create_report`, a lock.
 - *Test:* if you can ask "what goes in and out of it?", it is an entity.
 
@@ -31,6 +32,7 @@ Most examples come from the sample repository in [`examples/report-jobs`](../exa
 **Port.** A named point on an entity's boundary through which one kind of interaction passes. See [Ports in depth](#ports-in-depth).
 
 **Wire.** A connection between two ports. Two kinds:
+
 - An **assembly wire** joins a required port of one entity to a provided port of another entity beside it. *Example:* the API's `db` port to Postgres's `sql` port.
 - A **delegation wire** joins a port on an entity's boundary to a port of something inside it. *Example:* host port 8000 to the container's port 8000, and that to the route `POST /reports`.
 
@@ -51,6 +53,7 @@ A wire also carries a **channel**: how messages travel on it. A channel is order
 ## Ports in depth
 
 **Definition.** A port is a named point on an entity's boundary through which exactly one kind of interaction passes. A port has:
+
 - an **owner**: the entity it belongs to;
 - a **direction**: *provided* (others start interactions here; the entity answers) or *required* (the entity starts interactions here; someone else answers);
 - a **protocol**: the rules of the interaction, such as an HTTP route, SQL, a Celery task, a function call;
@@ -59,6 +62,7 @@ A wire also carries a **channel**: how messages travel on it. A channel is order
 Everything that enters or leaves an entity passes through one of its ports. There is no other way in or out.
 
 **Why the model needs ports.** Without ports, "the worker talks to the database" is a line between two boxes, and nothing says where that line attaches, what flows through it or what replaces the database when it is missing. Ports give each interaction a fixed attachment point with a name. That makes four things possible:
+
 1. **Behavior has a home.** What an entity does is described per provided port: "when a message arrives *here*, this happens".
 2. **Wiring can be checked.** A required port must be wired to a provided port with a matching protocol, or it is reported as open.
 3. **Parts can be swapped.** Replace Postgres with a stub, or put a load balancer in front of a service: the ports stay, only the wires change.
@@ -67,12 +71,13 @@ Everything that enters or leaves an entity passes through one of its ports. Ther
 **Why this word.** The term comes from component models in software and systems engineering: UML 2 and SysML call the interaction points of a component *ports*, hardware modules have ports, and "ports and adapters" (hexagonal architecture) uses the word the same way. It is *not* a network port number. A TCP port such as 5432 is one detail of one protocol; in Mental it would be an attribute of a port, not the port.
 
 **Rules of thumb for what counts as a port.**
+
 - A **provided port** per entry point: one per HTTP route, per task a worker consumes, per CLI command, per scheduled job, per public function of a library.
 - A **required port** per distinct thing the code calls outside itself: one per database, per queue-and-task, per bucket, per external API.
 
 **Examples.**
 
-![Ports on a service. A client reaches the service through its provided port POST /reports. The service reaches the outside only through four required ports: a database port wired to the SQL port of Postgres, a storage port wired to the object API of an S3 bucket, a queue port wired to a Redis queue, and a repository port wired to the files of a Git repository.](images/ports.png)
+![Ports on a service. A client reaches the service through its provided port POST /reports. The service reaches the outside only through four required ports: a database port wired to the SQL port of Postgres, a storage port wired to the object API of an S3 bucket, a queue port wired to a Redis queue, and a repository port wired to the files of a Git repository.](images/ports.svg)
 
 | What the code does | Required port (on the caller) | Provided port (on the other side) | Wire | Message |
 |---|---|---|---|---|
@@ -86,6 +91,7 @@ Everything that enters or leaves an entity passes through one of its ports. Ther
 In the Git example the repository is an entity even though it is "just a directory". It has a boundary (the files tools agree to touch), state (refs, objects) and rules (a ref changes through a lock file). Modeling access as a port is what lets two tools writing the same ref show up as a race.
 
 **Related terms.**
+
 - **Open port:** a required port that nothing in the model is wired to. Closing the model gives it a stub.
 - **Exposure:** whether a provided port can be reached from outside the system (`external`) or only from inside (`internal`). It is decided from infrastructure files and framework rules, never guessed.
 - **Slot:** a place in a framework's model where the framework calls your code. FastAPI owns the socket and the router; your handler fills the slot for `POST /reports`. Slots are how provided ports are found.
@@ -105,6 +111,7 @@ In the Git example the repository is an entity even though it is "just a directo
 ## Behavior
 
 **Behavior.** What one provided port does when a message arrives. Every provided port has exactly one behavior. It exists at two levels of detail:
+
 - **Summary:** a list of cases.
 - **Full:** a graph of nodes joined by guarded edges, close to the statements of the code.
 
@@ -232,6 +239,8 @@ The summary must agree with the full graph; a check enforces it.
 
 **Diagnostic.** One reported item from a build: a failed check, a gap, an assumption made, a finding.
 
+**Reference model.** The hand-written records of an example system, in `examples/<system>/model/`, that a build is compared against. It is a specification, never rewritten by a tool, and it grows by milestone: each milestone writes, before its code, the records of the kinds it is the first to produce. *Example:* milestone 1 writes report-jobs' build unit, pins, artifacts, launches and configuration inputs.
+
 ## Running
 
 **Interpreter.** The program that runs the model one step at a time (`mentalvm`). It never reads source code.
@@ -264,7 +273,7 @@ The summary must agree with the full graph; a check enforces it.
 
 **Footprint.** What a node or step reads and writes.
 
-**Atomicity.** Whether a group of steps can be treated as one. Computed from footprints and evidence. *Stutter:* only forwards, touches no state. *Isolated:* touches nothing another activation can touch at the same time. *Guarded:* protected by a lock, a sufficient transaction or one conditional update. *Non-atomic:* none of these; another activation can get in between.
+**Atomicity.** Whether a group of steps can be treated as one. Computed from footprints and evidence, never declared. For a move it is the move's verdict, *atomic*, *guarded* or *non-atomic* (see *Verdict of a move* above and [spec 8.1](specification.md#81-moves-and-verdicts)); in a non-atomic one, another activation can get in between.
 
 **Race.** Two activations touch the same state, at least one writes, and no evidence orders them. A non-atomic check-then-act is the commonest form.
 

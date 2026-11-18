@@ -7,9 +7,11 @@ Source-quality note: links to classic papers point to DOI or publisher pages I a
 ## 1. Explicit-state model checking (SPIN, TLC, P, Murphi): reductions, bounding, swarm, practical sizes
 
 ### Takeaway
+
 Explicit-state checkers enumerate reachable states breadth- or depth-first. They dedupe states by storing 64-bit fingerprints or bitstate hashes instead of full states, and shrink the space with symmetry and partial-order reduction. For our interpreter the standard design works: BFS for shortest counterexamples, fingerprint dedup, symmetry over identical replicas and requests, POR over independent transitions, and small bounds (2 to 3 concurrent requests, a few replicas). Tools that target industrial models (P, Coyote) default to randomized, bounded schedule sampling rather than full enumeration, because full enumeration does not scale to real designs.
 
 ### Cited Findings
+
 - **TLC dedups by fingerprint, not by full state.** It stores only 64-bit hashes, so two distinct states can collide and some reachable states may be missed. It prints collision-probability estimates at the end of a run, and a fingerprint seed index selects one of 64 hash functions so a run can be repeated with another one — [TLC options page](https://nightly.tlapl.us/doc/model/tlc-options-page.html).
 - **TLC symmetry reduction is implemented in fingerprinting.** TLC permutes a state and keeps the smallest fingerprint, but computes successors from the actual state, so every state it examines is reachable — [TLA+ codebase architecture](https://docs.tlapl.us/codebase:architecture); [Lamport on the TLA+ list](https://discuss.tlapl.us/msg00388.html). A 2015 user report says permutation overhead sometimes cancelled the gain from reduction — [tlaplus Google group](https://groups.google.com/g/tlaplus/c/LlUYtAG8OyE/m/PJttvGBiDAAJ).
 - **TLC simulation mode samples behaviors instead of enumerating states.** It generates random behaviors up to a maximum length, and the only statistic reported is States Found — [TLC advanced options (older Toolbox doc)](https://course.ccs.neu.edu/cs3650/parent/tla+/toolbox/plugins/org.lamport.tla.toolbox.doc_1.5.4.201710061831/html/model/advanced-page.html). A 2026 list post says the simulator estimates distinct states with a per-worker HyperLogLog, and that exact counts need `-Dtlc2.tool.Simulator.extendedStatistics.naive=true` (single forum post) — [TLA+ list, 2026](https://discuss.tlapl.us/msg06757.html).
@@ -23,11 +25,13 @@ Explicit-state checkers enumerate reachable states breadth- or depth-first. They
 - **Fest (NSDI '26, CMU and AWS) replaces random sampling of P schedules with grey-box-fuzzing-style, feedback-guided adaptive schedule generation.** On 94 model configurations (5 open-source models, including DeepSeek's distributed file system, and 14 AWS industrial models) it reports up to 41x (1.5x average) more behavioral coverage, up to 278x (15x average) more scenario coverage, and 33% more bugs than existing methods (authors' own evaluation) — [Li, Padhye, Desai, NSDI '26](https://www.usenix.org/conference/nsdi26/presentation/li).
 
 ### Inferences
+
 - **Our state is a configuration:** state variables plus messages in flight per port or queue plus the position of each lane. It should get a canonical, order-independent encoding, so that fingerprinting and symmetry work: replicas `×3` and N identical concurrent requests are scalarsets.
 - **Default exhaustive mode should be BFS with fingerprint dedup**, because BFS gives shortest counterexamples, which are the easiest scripts to watch. For large models, fall back to swarm-style parallel bounded searches or a Fest-style coverage-guided sampler, and say so in the UI ("explored N of about M states, no proof").
 - **Industrial practice favours randomized sampling over enumeration once models are large** (P's default, Fest's NSDI '26 result). Our "exhaustive" mode should really be two modes: exhaustive within explicit bounds, and coverage-guided sampling without a guarantee.
 
 ### Gaps
+
 - I found no primary 2025–2026 benchmark giving practical explicit-state sizes. Folklore says TLC handles about 10^8 to 10^10 distinct states on one large machine, but I found no citable primary source; treat it as unverified.
 - The exact current relationship between PSym and PEx (rename or separate tool) is not stated on the PSym page.
 - I could not open the Fest PDF (binary fetch), so its feedback metric ("behavioral coverage" definition) is unverified.
@@ -35,9 +39,11 @@ Explicit-state checkers enumerate reachable states breadth- or depth-first. They
 ## 2. Stateless model checking, controlled concurrency testing and deterministic simulation
 
 ### Takeaway
+
 Stateless model checkers (CHESS, Nidhugg, GenMC) re-execute the program from the start under a controlled scheduler and store no visited states. They rely on DPOR (optimal variants explore one execution per equivalence class) and on bounds on preemptions or delays. Controlled concurrency testing (Coyote, P, Shuttle) samples schedules with randomized strategies: PCT gives a probabilistic guarantee per depth-d bug. Deterministic simulation testing (FoundationDB, TigerBeetle VOPR, Antithesis, Turmoil and madsim) applies the same idea to whole systems: every source of nondeterminism comes from one seeded generator. All of them reproduce a bug from (seed or schedule, code version). This is exactly the "(binding, schedule)" determinism the checkpoint asks for.
 
 ### Cited Findings
+
 - **CHESS (classic, 2008).** It systematically tests multithreaded programs by taking control of thread scheduling, and introduced iterative context bounding to make the search tractable — [Musuvathi et al., OSDI 2008](https://www.usenix.org/legacy/event/osdi08/tech/full_papers/musuvathi/musuvathi.pdf).
 - **Iterative context bounding (classic, 2007).** It explores executions in order of increasing preemption count. The number of executions is polynomial in program size for a fixed bound, and the paper reports that many bugs show up with very few (≤2) preemptions — [Musuvathi & Qadeer, PLDI 2007](https://dl.acm.org/doi/10.1145/1250734.1250785).
 - **PCT (classic, 2010).** It assigns random thread priorities and d−1 random priority-change points. For a program with n threads and k steps, it finds a bug of depth d with probability at least 1/(n·k^(d−1)) per run — [Burckhardt et al., ASPLOS 2010](https://dl.acm.org/doi/10.1145/1736020.1736040) ([PDF](https://www.cse.iitd.ac.in/~sbansal/csl862-soft/readings/pct.pdf)).
@@ -57,6 +63,7 @@ Stateless model checkers (CHESS, Nidhugg, GenMC) re-execute the program from the
 - **Themis (NSDI '26)** detects distributed concurrency bugs by RPC-driven, race-directed test generation and fuzzing. It reports 198 new violations corresponding to 52 new bugs across eight systems (per search summary of the abstract) — [Themis, NSDI '26](https://www.usenix.org/conference/nsdi26/presentation/cao).
 
 ### Inferences
+
 - **Our interpreter is in the best possible position for stateless exploration.** The model is the program, so every scheduling point is explicit: a scheduler picks an enabled transition. We need no binary rewriting or hypervisor. A DST-style "one seeded chooser for all nondeterminism" interface gives concrete runs, random sampling, PCT and DPOR as strategies behind one `choose(enabled)` hook.
 - **Pick strategies by goal:**
   - DPOR when the step count is small and we want "all distinct orderings of the conflicting DB accesses".
@@ -65,15 +72,18 @@ Stateless model checkers (CHESS, Nidhugg, GenMC) re-execute the program from the
 - **Branch from saved configurations, as Antithesis does.** It matches the checkpoint's "reverse stepping: states can be stored or recomputed" and makes "flip an assumption mid-run, continue" cheap.
 
 ### Gaps
+
 - No public 2026 head-to-head benchmark compares DPOR and PCT-style sampling on actor or message-passing models of web systems. The TOPC 2016 study is on C/pthreads.
 - How Antithesis guides exploration (its scoring and fuzzing heuristics) is not described in the hypervisor post.
 
 ## 3. Symbolic execution and symbolic model checking for EFSM-style models
 
 ### Takeaway
+
 Two families fit our symbolic run. Symbolic execution (KLEE-style) forks on unbound predicates, keeps a path condition per branch, and asks an SMT solver which branches are feasible; this is exactly "unbound predicates fork, choices become assumptions". Symbolic model checking (BDD, SAT/SMT-based BMC, IC3/PDR, k-induction; Apalache for TLA+) encodes all paths of bounded length as one formula. It is good for "is a bad state reachable within k steps" and for invariant proofs, but it yields one counterexample at a time, not a browsable tree. State merging trades fewer paths for harder solver queries and loses the per-path "script" view.
 
 ### Cited Findings
+
 - **KLEE (classic, 2008).** It forks execution at branches on symbolic values and uses a constraint solver to check feasibility and generate concrete inputs per path — [Cadar, Dunbar, Engler, OSDI 2008](https://www.usenix.org/legacy/event/osdi08/tech/full_papers/cadar/cadar.pdf).
 - **Path explosion and state merging (classic, 2012).** Merging paths at join points turns path conditions into disjunctive formulas. "Query count estimation" decides when merging pays off, and the paper reports large speedups on GNU Coreutils — [Kuznetsov et al., PLDI 2012](https://dl.acm.org/doi/10.1145/2254064.2254088). Veritesting switches between dynamic symbolic execution and static merging of bounded regions — [Avgerinos et al., ICSE 2014](https://dl.acm.org/doi/10.1145/2568225.2568293).
 - **Bounded model checking (classic, 1999)** unrolls the transition relation k times into a SAT formula, and finds shortest counterexamples up to k — [Biere, Cimatti, Clarke, Zhu, TACAS 1999](https://link.springer.com/chapter/10.1007/3-540-49059-0_14).
@@ -83,21 +93,25 @@ Two families fit our symbolic run. Symbolic execution (KLEE-style) forks on unbo
 - **P's PSym** uses a symbolically instrumented IR for its exhaustive mode, i.e. symbolic techniques inside an explicit-schedule checker — [P docs: PSym](https://p-org.github.io/P/advanced/psym/whatisPSym).
 
 ### Inferences
+
 - **The symbolic run is symbolic execution over predicates, not BMC.** Most of our predicates are named, uninterpreted Booleans ("token expired", "user exists"), so the "solver" is often just propagating Boolean assignments and checking consistency, cheap enough to run interactively. Use SMT only where predicates have arithmetic or relational structure (`balance >= amount`) or link to each other (one implies another).
 - **Each fork is an assumption record** (predicate, bound value, alternatives). A path is a conjunction of bindings, which matches the checkpoint's assumption format directly. Keep a symbolic execution tree (one node per fork, labelled by the predicate) as the data structure behind "untaken branches appear faintly".
 - **Do not merge states in the user-facing tree;** merging destroys per-path scripts. Merging or BMC can serve as a backend query: "is there any binding that reaches `report.status = failed`?" → one witness binding → replay it concretely to get a script.
 - **k-induction or IC3 are later, "prove it" features** (invariant holds for all depths). They are not needed for the first interpreter.
 
 ### Gaps
+
 - I found no study of symbolic execution over LLM-extracted EFSM models with named uninterpreted predicates; this framing is our own.
 - I did not verify any 2025–2026 advance in symbolic execution of message-passing models beyond the tools above.
 
 ## 4. Counterexample traces: generation, minimization, explanation and visualization
 
 ### Takeaway
+
 Shortest counterexamples come for free from BFS (TLC) or BMC. Random or PCT runs give long traces that need shrinking. Delta debugging over schedule differences, trace simplification that reduces context switches, DEMi's domain-aware minimization, and Hypothesis's internal reduction over the choice sequence are the main techniques. Minimization must preserve "the same bug". Explanation works best when the trace is presented in domain terms: Elle names the anomaly cycle and the transactions; TLA+ and P show per-step state.
 
 ### Cited Findings
+
 - **Delta debugging (classic, 2002)** systematically narrows a failure-inducing difference to a 1-minimal subset — [Zeller & Hildebrandt, IEEE TSE 2002](https://doi.org/10.1109/32.988498). Applied to thread schedules, it isolates the failure-inducing difference between a passing and a failing schedule, often down to a single pair of switching points — [Choi & Zeller, ISSTA 2002](https://dl.acm.org/doi/10.1145/566172.566211).
 - **Trace simplification for concurrency (2010)** reduces the number of thread context switches in a buggy trace while preserving the bug, making it easier to read — [Jalbert & Sen, FSE 2010](https://dl.acm.org/doi/10.1145/1882291.1882296).
 - **DEMi (NSDI 2016)** minimizes faulty executions of distributed systems (Akka; tested on akka-raft and Spark). It cuts execution length by up to 97% within a small time budget and lands within 1x–4.6x (median 1.6x) of the smallest possible bug-triggering execution. It is about 14k lines of Scala — [Scott et al., NSDI 2016](https://usenix.org/conference/nsdi16/technical-sessions/presentation/scott); [PDF](https://people.eecs.berkeley.edu/%7Enecula/Papers/faulty_executions_nsdi16.pdf).
@@ -108,21 +122,25 @@ Shortest counterexamples come for free from BFS (TLC) or BMC. Random or PCT runs
 - **TLA+ trace tooling.** The VS Code extension runs TLC and shows error traces as per-state variable values — [tlaplus/vscode-tlaplus](https://github.com/tlaplus/vscode-tlaplus).
 
 ### Inferences
+
 - **Minimize at two levels.** (a) Drop whole inputs, requests or faults with delta debugging or DEMi-style removal. (b) Reduce preemptions and context switches with Jalbert–Sen-style simplification, so the race shows as "A reads, B reads, B writes, A writes" with no noise.
 - **Representing the schedule as a choice sequence over enabled transitions** gives Hypothesis-style internal shrinking for free: every shrunk schedule is valid by construction. The bug predicate is "same violated invariant at the same step kind".
 - **Explanations should name the conflict in model terms,** as Elle does: "two `POST /checkout` lanes read `stock` before either writes (rw anti-dependency cycle)". It should not be a raw step list. This maps directly onto the checkpoint's `non-atomic` segment marker.
 - **The minimal schedule becomes the default script for a race;** the unminimized one stays available as provenance.
 
 ### Gaps
+
 - I found no primary documentation of a dedicated P trace visualizer (sometimes called "PeasyViz") on the fetched P pages.
 - I found no published user study comparing counterexample visualization styles (sequence diagram vs. state table vs. animation) for concurrency bugs.
 
 ## 5. Race and anomaly detection at the model level for web systems
 
 ### Takeaway
+
 Web-system races fall into two classes, both detectable on a model. The first is database-mediated: check-then-act across requests under weak isolation or with no transaction at all. ACIDRain, IsoDiff, Elle and Feral concurrency control describe it. The second is event-loop ordering races: NodeRacer, Node.fz, NRace, NodeRT, NACD. ACIDRain's key finding is that most real vulnerabilities come from wrong transaction scoping, not weak isolation levels. That is a model-level property: which reads and writes share a transaction and a guard.
 
 ### Cited Findings
+
 - **ACIDRain (SIGMOD 2017)** defines attacks that send concurrent requests to exploit non-serializable behavior in database-backed web apps. Using "Abstract Anomaly Detection" (2AD) over traces of database activity, the authors found 22 vulnerabilities in self-hosted eCommerce apps spanning over 2M websites — [Warszawski & Bailis, SIGMOD 2017](https://dl.acm.org/doi/10.1145/3035918.3064037); [summary](https://blog.acolyer.org/2017/08/07/acidrain-concurrency-related-attacks-on-database-backed-web-applications/). Per a presentation summary, 17 of the 22 were due to incorrect transaction usage and 5 to weak isolation (secondary source) — [Rahmani defense slides](https://kiarahmani.github.io/files/defense.pdf).
 - **Feral concurrency control (2015)** shows that Rails apps enforce invariants such as uniqueness and associations in application code (validations) rather than in the database, which is unsafe under concurrency — [Bailis et al., SIGMOD 2015](https://dl.acm.org/doi/10.1145/2723372.2737784).
 - **IsoDiff (PVLDB 2020)** helps developers find anomalies caused by weak isolation (Snapshot Isolation, Read Committed). It was applied to TPC-C and seven open-source applications (per search summary; URL is the NSF PAR copy identified by search, not opened) — [Gan et al., NSF PAR](https://par.nsf.gov/servlets/purl/10227054).
@@ -132,21 +150,25 @@ Web-system races fall into two classes, both detectable on a model. The first is
 - **Other Node.js race detectors.** NRace (ASE 2021) models happens-before across events and multi-priority queues (nextTick, promises, timers, I/O) — [NRace PDF](https://changxiaoning.github.io/files/2021-ase-nrace.pdf). NodeRT (ISSTA 2023) is a more practical dynamic detector — [NodeRT](https://2023.issta.org/details/issta-2023-technical-papers/98/NodeRT-Detecting-Races-in-Node-js-Applications-Practically). Node.fz fuzzes event-loop schedules — [Davis et al., EuroSys 2017](https://dl.acm.org/doi/10.1145/3064176.3064188).
 
 ### Inferences
+
 - **Model-level check-then-act detection is a DPOR dependency question.** Two lanes (requests) touch the same row-level state variable, at least one writes, and the read that feeds a guard is not in the same atomic region (transaction with a sufficient isolation level, or a lock) as the write. Annotate DB access transitions with `{store, key-class, txn-id, isolation}`, and the explorer only needs to reorder conflicting accesses across lanes.
 - **Isolation level should be a per-store or per-transaction assumption record** (`reason: config-default`). The user flips Read Committed to Serializable and re-runs the same schedule: under Serializable the anomalous schedule becomes infeasible (abort or block), and the diff shows it.
 - **The event loop belongs in a platform pack:** V8/Node queue semantics (microtasks before macrotasks, nextTick priority), following NRace's multi-priority queue model. Event-loop races then become ordinary schedule nondeterminism among enabled callbacks.
 - **Report anomalies in Elle's vocabulary** (G-single, lost update, write skew), plus an ACIDRain-style label ("non-transactional check-then-act").
 
 ### Gaps
+
 - I could not verify PolySI, Plume or IsoVista (2023–2025 isolation checkers) with fetched primary pages; the search returned unrelated results. They are omitted from findings.
 - I found no tool that detects check-then-act on an abstract model, as opposed to traces or code; this appears to be open.
 
 ## 6. Determinism and replay: schedules as first-class values, re-running after a change, trace diffing
 
 ### Takeaway
+
 Every tool surveyed reproduces bugs from (seed or schedule, code version): P `.schedule`, Coyote replay traces, TigerBeetle seed plus commit, FoundationDB seed, Antithesis branch points. Re-running a schedule against changed code is much weaker. A seed reproduces nothing after a change, and an index-based schedule drifts as soon as the enabled set changes. DEMi and Hypothesis show the two workarounds: match events by domain identity, or treat the schedule as a choice sequence that the generator re-interprets. I found no mature trace-diffing tool for concurrent executions.
 
 ### Cited Findings
+
 - **P replay** takes the `.schedule` file and test-case name — `p check --replay <buggy>.schedule -tc <testcase> -v` — [P docs](https://p-org.github.io/P/advanced/debuggingerror).
 - **Coyote** records every nondeterministic choice; `coyote replay` re-executes it under a debugger — [Coyote sample](https://microsoft.github.io/coyote/samples/actors/failure-detector).
 - **TigerBeetle VOPR** determinism is "seed number and the Git commit"; the seed alone does not reproduce on other code — [VOPR docs](https://docs.tigerbeetle.com/about/vopr).
@@ -156,6 +178,7 @@ Every tool surveyed reproduces bugs from (seed or schedule, code version): P `.s
 - **PCT schedules are fully determined by the algorithm's random choices,** which makes them replayable — [Thomson et al., TOPC 2016](https://www.doc.ic.ac.uk/~afd/papers/2016/TOPC.pdf).
 
 ### Inferences
+
 - **Represent a schedule as a list of semantic choices, not indexes or seeds.** Each entry is `{lane-id, transition-id (semantic path), binding of choose()}`, plus a hash of the configuration it was taken from. On a changed model, replay greedily:
   - if the recorded transition is enabled, take it;
   - if it no longer exists, mark the step `diverged` and fall back to a policy (skip, or nearest equivalent by anchor);
@@ -167,15 +190,18 @@ Every tool surveyed reproduces bugs from (seed or schedule, code version): P `.s
 - **Store a checkpoint of the configuration every N steps** so step-back is "restore checkpoint plus replay ≤N steps" (rr-style). This follows from determinism; rr does the equivalent for real processes — [rr](https://rr-project.org/).
 
 ### Gaps
+
 - I found no published algorithm or tool for diffing concurrent traces (pomsets) across program versions; this looks open. Differential testing tools compare outputs, not executions.
 - None of the tools document how replay behaves on a changed program, beyond "seed plus commit".
 
 ## 7. Recommendations for our interpreter
 
 ### Takeaway
+
 Build a single step function plus a pluggable chooser. Ship concrete runs and symbolic forking first. Add bounded exhaustive exploration with DPOR and fingerprinting only over conflicting shared-state accesses, plus PCT-style sampling for larger models. Represent every result as a replayable (model version, binding, schedule) triple, minimize counterexamples before showing them, and explain races in Elle and ACIDRain vocabulary.
 
 ### Cited Findings
+
 - Real tools already put random, prioritization (PCT) and portfolio strategies behind one controlled scheduler — [Coyote](https://microsoft.github.io/coyote/overview/how); [P docs](https://p-org.github.io/P/advanced/debuggingerror); [Shuttle](https://docs.rs/crate/shuttle/latest/source/tests/basic/pct.rs).
 - Coverage-guided schedule generation beats random sampling on industrial P models (authors' NSDI '26 result) — [Fest](https://www.usenix.org/conference/nsdi26/presentation/li).
 - DPOR needs only a dependency relation between operations, available from shared-object accesses — [Flanagan & Godefroid 2005](https://dl.acm.org/doi/10.1145/1040305.1040315). Optimal DPOR in polynomial memory is available as a design to copy — [TruSt](https://plv.mpi-sws.org/wmc/popl2022-trust-full.pdf); [POP](https://arxiv.org/abs/2405.11128).
@@ -184,9 +210,10 @@ Build a single step function plus a pluggable chooser. Ship concrete runs and sy
 - Most ACIDRain vulnerabilities were wrong transaction scoping (secondary source) — [slides](https://kiarahmani.github.io/files/defense.pdf); [ACIDRain](https://dl.acm.org/doi/10.1145/3035918.3064037).
 
 ### Inferences (the recommendations)
+
 1. **Core API.** The model gets one entry point:
 
-   ```
+   ```text
    step(config, choice) -> (config', events)
    enabled(config) -> [choice]
    ```
@@ -228,5 +255,6 @@ Build a single step function plus a pluggable chooser. Ship concrete runs and sy
 9. **Diffing.** Align runs by semantic step ID, then anchor, then lane order. Report the first divergence, inserted and removed steps, and changed state writes. "Fix verified" = the violation is gone under the same schedule, and a fresh exploration within the same bounds finds no other violating schedule.
 
 ### Gaps
+
 - None of the recommendations have been validated on hand-written gold models yet. Checkpoint build-order step 2 (gold models plus a minimal interpreter) is the place to measure state-space sizes and the payoff of DPOR and symmetry for the login and queue-worker models.
 - No surveyed source covers the UX of flipping a schedule choice (as opposed to a value choice) in a debugger; this is a novel interaction to prototype.

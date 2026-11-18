@@ -24,16 +24,16 @@ A rule that only a reviewer can check is kept only when it prevents real bloat o
 | [testing.md](testing.md) | the testing playbook: layers, the `check` helper, fixtures, snapshots, properties, fuzzing, fault injection, mutants, coverage, determinism, speed, tidy tests (T1-T21) |
 | [model.md](model.md) | record types, semantic IDs, canonical JSONL, guards, checks, diagnostics (M1-M25) |
 | [extract.md](extract.md) | Python and compose to facts: parser, stages, packs, control flow, fixtures (X1-X22) |
-| [mentalc.md](mentalc.md) | the compiler: pipeline, LLM loop, backends, cache, ledger, MCP, CLI (C1-C25) |
+| [mentalc.md](mentalc.md) | the compiler: pipeline, LLM loop, backends, cache, ledger, MCP, CLI, the one outside process (C1-C26) |
 | [mentalvm.md](mentalvm.md) | the interpreter: step, choices, replay, search, minimizer, WebAssembly (V1-V25) |
 
 ## The workspace at a glance
 
 One Cargo workspace at the repository root, with flat top-level crate folders:
 
-```
+```text
 model/      library   record format, IDs, guards, JSONL, checks, Diagnostic     deps: serde, serde_json, blake3
-extract/    library   build files, Python source, compose JSON -> build model and facts, no LLM   deps: model, ruff parser and ty crates, ...
+extract/    library   build files, Python, compose JSON -> build model, facts; no LLM   deps: model, ruff, ty, ...
 mentalc/    binary    pipeline, LLM tasks and backends, cache, ledger, checks, MCP; packs/ and prompts/ embedded
 mentalvm/   library + thin binary   step, run, explore, replay; core does no I/O and compiles to WebAssembly
 
@@ -44,6 +44,7 @@ model <- mentalvm                 mentalc and mentalvm never depend on each othe
 Already decided by the owner: no async runtime in version one; clap derive; thiserror in libraries and context in binaries; JSON or JSONL for tool output, TOML for human-written input, no YAML; unit tests in a `tests.rs` beside each module and public-API tests in `tests/`; insta for snapshots; proptest with committed regressions; cargo-mutants on the PR diff; 100% diff line and branch coverage; the hand-written reference model at `examples/report-jobs/model/` as the golden file.
 
 Also decided by the owner on 2026-11-14, when these guidelines were accepted:
+
 - `extract` does no I/O: `mentalc` reads the repository and runs `docker compose config`, then hands `extract` strings;
 - `model` uses no `thiserror`: its two error types have hand-written `Display`, so its allowlist stays `serde`, `serde_json`, `blake3` (an exception to the "thiserror in libraries" rule);
 - `blake3` is the only hash in the workspace;
@@ -59,7 +60,7 @@ Also decided by the owner on 2026-11-14, when these guidelines were accepted:
 |---|---|
 | `model` | none |
 | `extract` | none (`mentalc` hands it file contents and the compose JSON) |
-| `mentalc` | `main.rs`, `cli.rs`, `repo.rs`, `cache.rs`, `ledger.rs`, `backend/*.rs` |
+| `mentalc` | `main.rs`, `cli.rs`, `repo.rs`, `cache.rs`, `ledger.rs`, `backend/api.rs` |
 | `mentalvm` | `main.rs` |
 
 Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixture files.
@@ -69,18 +70,21 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 ### Architecture
 
 #### G1. Fixed crate graph
+
 - **Rule:** the workspace has exactly the edges `model <- extract <- mentalc` and `model <- mentalvm`; `model` depends on no workspace crate, and `mentalc` and `mentalvm` exchange only files in the model format.
 - **Why:** each tool can be built, tested and replaced alone (spec 3).
 - **Source:** [rust-analyzer style.md, "scale of changes"][ra-style-scale]; spec 3.
 - **Enforced by:** tidy test `crate_graph`, parsing each member's `Cargo.toml`.
 
 #### G2. Small public surface
+
 - **Rule:** items are private or `pub(crate)` unless another crate uses them; no crate re-exports another crate's items with `pub use`; a new `pub` item or workspace edge is reviewed as an API change.
 - **Why:** "adding an innocent-looking `pub use` is a very simple way to break encapsulation".
 - **Source:** [rust-analyzer style.md L16-L52][ra-style-scale].
 - **Enforced by:** rustc lint `unreachable_pub`; tidy test `no_foreign_reexports`; reviewer.
 
 #### G3. Functions over frameworks
+
 - **Rule:** write the flow as plain function calls over typed data: no doer objects (`ThingDoer::new(..).do()`), no pass managers, registries or plugin systems, and no trait with a single implementation; the LLM `Backend` trait is the one allowed exception.
 - **Why:** the data flow stays visible in one place, and one human can follow it.
 - **Source:** [rust-analyzer "Functions Over Objects", style.md L350-L404][ra-style-fn]; [typst `compile_impl`][typst-compile].
@@ -89,12 +93,14 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 ### Side effects
 
 #### G4. I/O and ambient inputs only at named edges
-- **Rule:** only the edge files listed above call the file system, processes, network, environment, clock, threads or stdio; everywhere else these calls are clippy errors, and an edge file opts out with `#[expect(clippy::disallowed_methods, reason = "...")]`.
+
+- **Rule:** only the edge files listed above call the file system, processes, network, environment, clock, threads or stdio; everywhere else these calls are clippy errors, and an edge file opts out with `#[expect(clippy::disallowed_methods, reason = "...")]`. Each edge file, and test code, has a row in the Exceptions table of [CONTRIBUTING.md](../../CONTRIBUTING.md#exceptions) naming the path, the lint and why; a new edge is a new row there and in the list above.
 - **Why:** pure code is testable from a string fixture and reproducible, and the boundary is machine-checked rather than remembered.
 - **Source:** [rust-analyzer architecture.md L451-L457][ra-arch-core]; [typst `World` trait][typst-world].
 - **Enforced by:** clippy `disallowed-methods` in `clippy.toml`; tidy test `edges_are_listed`.
 
 #### G5. Input problems are data
+
 - **Rule:** analyses return `(T, Vec<Diagnostic>)` and keep going after a problem in their input; `Result` is reserved for failures of the tool itself (I/O, config, backend, a cache miss offline).
 - **Why:** the user sees every problem at once, and the core cannot fail.
 - **Source:** [rust-analyzer architecture.md L88 and L451-L457][ra-arch-core]; [typst `Warned<SourceResult<T>>`][typst-compile-fn].
@@ -103,18 +109,21 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 ### Determinism
 
 #### G6. Ordered collections only
+
 - **Rule:** no `HashMap` or `HashSet` anywhere; use `BTreeMap`, `BTreeSet` or a sorted `Vec`, and sort every list before it reaches output.
 - **Why:** hash iteration order leaks into files, IDs and schedules; Stateright had to add sorting after it broke path rebuilding.
 - **Source:** [Stateright `actor/model.rs` L342-L386][sr-sort]; [ruff lint `iter_over_hash_type`][ruff-lints].
 - **Enforced by:** clippy `disallowed-types`; determinism tests ([T18](testing.md#t18-deterministic-and-hermetic)).
 
 #### G7. Stable hashes
+
 - **Rule:** every hash that is stored, printed or compared across processes is blake3 over canonical bytes (sorted keys, no floats), never `std::hash::Hash`, `DefaultHasher` or ahash.
 - **Why:** `Hash` output is not portable across platforms and Rust versions, and ahash says its output differs by machine.
 - **Source:** [ruff `cache_key.rs`][ruff-cachekey]; [Stateright "stable" ahash fingerprint, `lib.rs` L344-L390][sr-fp].
 - **Enforced by:** clippy `disallowed-types` (`DefaultHasher`); tidy test `lockfile_allowlist` (blake3 is the only hashing crate); property tests in [C12](mentalc.md#c12-the-cache-key-is-content-never-the-llm).
 
 #### G8. Seeds and clocks are parameters
+
 - **Rule:** code that needs time or randomness takes `now` or a `seed` as a parameter; only an edge reads the clock or entropy, and a command that picks a seed prints it.
 - **Why:** runs and tests reproduce bit for bit.
 - **Source:** [Stateright `StdRng` FIXME][sr-rng]; [Shuttle seeded `Pcg64Mcg`][sh-pct]; [typst `World::today`][typst-world].
@@ -123,24 +132,28 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 ### Errors, diagnostics and exit codes
 
 #### G9. Errors by layer
+
 - **Rule:** a library returns its own error enum (thiserror; `model` writes its two by hand, see [model.md](model.md#dependency-allowlist)); a binary adds anyhow context to each error saying what failed and how to fix it; messages start lowercase and do not end with a period; `unwrap` appears only in tests and `expect` only for an invariant it names.
 - **Why:** errors read as a chain of causes and tell the user what to do next.
 - **Source:** [rust-analyzer style.md L853-L864][ra-style-err]; [ruff `main.rs` error chain][ruff-main]; alpha rule `errors-with-context`.
 - **Enforced by:** clippy `unwrap_used` (alpha); reviewer.
 
 #### G10. One diagnostic type, two renderers
+
 - **Rule:** every problem any tool reports is a `model::Diagnostic` with a stable `Code`; it is rendered either as human text or as the model's own JSON lines, and in no other format.
 - **Why:** `mentalvm` and `mentaldbg` read `diagnostics.jsonl`; ruff's twelve output formats are bloat here.
 - **Source:** [ruff `Diagnostic` and `render/`][ruff-diag]; [typst `SourceDiagnostic`][typst-diag].
 - **Enforced by:** exhaustive `match` on `Code` in the renderer; reviewer.
 
 #### G11. Fail rather than degrade
+
 - **Rule:** a missing input or key, an unknown field or format version, a cache miss in offline or `check` mode, and exhausted repairs end the command with an error that says how to fix it; no code path writes a partial model or falls back silently.
-- **Why:** a degraded model is later read as complete (spec 3 and 6.5).
+- **Why:** a degraded model is later read as complete (spec P9).
 - **Source:** [Specula fail-open stop gate][specula-gate] (counterexample); [ruff's silent cache reset][ruff-cache-evict] (deliberately not copied).
 - **Enforced by:** one test per failure path ([T12](testing.md#t12-inject-faults-through-seams-that-already-exist)); reviewer.
 
 #### G12. Exit codes and a thin main
+
 - **Rule:** binaries exit 0 on success, 1 when the command ran and found error-level problems (failed checks, repairs exhausted, a violation found by search), and 2 when the tool itself failed (I/O, config, backend, offline cache miss, bad usage); a broken pipe exits quietly. `main.rs` only parses arguments, calls `run`, and writes the error chain to stderr.
 - **Why:** scripts and agents branch on exit codes, and the library stays testable without a subprocess.
 - **Source:** [ruff `ExitStatus`, `lib.rs` L37-L56][ruff-exit]; [ruff `main.rs`][ruff-main].
@@ -149,12 +162,14 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 ### Formats
 
 #### G13. JSON out, TOML in, no YAML
+
 - **Rule:** tool output is JSON or JSONL; human-written input (config, packs) is TOML; every command has a `--json` form; no YAML crate is used.
 - **Why:** one format per direction, and the spec's text model is JSONL (spec 7.5).
 - **Source:** owner decision; spec 7.5.
 - **Enforced by:** tidy test `banned_crates`.
 
 #### G14. Serializable types are contracts
+
 - **Rule:** `Serialize` and `Deserialize` are derived only on file formats and boundary types: model records, run files, the ledger, cache entries, packs, config, answer types, and CLI and MCP view structs. Phase-internal types never derive them.
 - **Why:** a serializable type is a compatibility promise; keep the promise surface small.
 - **Source:** [rust-analyzer architecture.md L505-L517][ra-arch-serde]; [ruff `JsonDiagnostic` view][ruff-json].
@@ -163,30 +178,35 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 ### Dependencies and size
 
 #### G15. Every dependency justified once
+
 - **Rule:** each dependency appears once in `[workspace.dependencies]` with a one-line comment above it saying why; members name it as `foo.workspace = true`; each crate uses only its allowlist (in its guideline file); a new crate, transitive ones included, is a reviewed change.
 - **Why:** compile time, fewer things to break, and a codebase one person can own.
 - **Source:** [rust-analyzer dependency policy, style.md L55-L62][ra-style-deps]; alpha rule `cargo-for-dependencies`.
 - **Enforced by:** tidy tests `dependencies_justified` and `lockfile_allowlist` (Cargo.lock package names against a checked-in `deps.allow`); `cargo machete` (alpha).
 
 #### G16. Banned weight
-- **Rule:** no `async fn` and none of: `tokio` or any async runtime, `salsa`, `comemo`, `rmcp`, `tree-sitter*`, `ruff_python_semantic`, `ty_*`, `jsonschema`, `reqwest`, `mockall`, `expect-test`, `serde_yaml`, `rand`, `ahash`.
-- **Why:** each solves a problem Mental doesn't have at a cost it can't afford (rmcp: 61 crates and mandatory tokio for 3 tools; Salsa: 27.7k lines; jsonschema: 64 crates).
-- **Source:** [rmcp `Cargo.toml`][rmcp-cargo]; [Salsa `Cargo.toml`][salsa-cargo]; [rust-analyzer dependency policy][ra-style-deps].
-- **Enforced by:** tidy tests `banned_crates` and `no_async`.
+
+- **Rule:** no `async fn` and none of: `tokio` or any async runtime, `salsa`, `comemo`, `rmcp`, `tree-sitter*`, `ruff_python_semantic`, `jsonschema`, `reqwest`, `mockall`, `expect-test`, `serde_yaml`, `rand`, `ahash`. **One exception:** what the pinned commit of ruff's and ty's crates pulls into `extract` ([X1](extract.md#x1-ruffs-parser-and-tys-crates-pinned-to-one-commit)) is accepted there, salsa, rayon and rand included (242 crates in all at ty 0.0.105). The list holds for every other dependency path, and `model` and `mentalvm` stay free of those crates.
+- **Why:** each listed crate solves a problem Mental doesn't have at a cost it can't afford (rmcp: 61 crates and mandatory tokio for 3 tools; Salsa: 27.7k lines; jsonschema: 64 crates). ty's tree is the price of resolving references with a real type checker instead of rules of our own (spec 6.2), and it is paid in one crate.
+- **Source:** [rmcp `Cargo.toml`][rmcp-cargo]; [Salsa `Cargo.toml`][salsa-cargo]; [rust-analyzer dependency policy][ra-style-deps]; owner decision of 2026-11-18.
+- **Enforced by:** tidy tests `banned_crates` (packages in `Cargo.lock` reachable only through ruff's and ty's crates are skipped; the dependency trees of `model` and `mentalvm` must hold none of the list) and `no_async`.
 
 #### G17. Size limits
+
 - **Rule:** functions at most ~60 lines, non-test source files at most ~400 lines, at most 5 parameters; split a function rather than pass a literal `bool` or `Option` to select behavior.
 - **Why:** small units are what one person can hold in their head.
 - **Source:** [rust-analyzer "Prefer Separate Functions Over Parameters", style.md L466-L497][ra-style-params]; [rust-analyzer config structs, style.md L406-L445][ra-style-config].
 - **Enforced by:** clippy `too_many_lines` (threshold 60), `too_many_arguments` (threshold 5), `fn_params_excessive_bools`; tidy test `file_length`; reviewer for literal arguments.
 
 #### G18. One lint configuration
-- **Rule:** lints are set once in the workspace `Cargo.toml` and `clippy.toml` (the alpha baseline plus the settings below); crate-specific lints are inner attributes at a crate or module root; a suppression is `#[expect(lint, reason = "...")]`, never `#[allow]`.
+
+- **Rule:** lints are set once in the workspace `Cargo.toml` and `clippy.toml` (the alpha baseline plus the settings below); crate-specific lints are inner attributes at a crate or module root; a suppression is `#[expect(lint, reason = "...")]`, never `#[allow]`, and has a row in the Exceptions table of [CONTRIBUTING.md](../../CONTRIBUTING.md#exceptions) naming the path, the lint and why.
 - **Why:** one command (`cargo clippy -- -D warnings` plus `cargo test`) checks everything, and a stale suppression fails.
 - **Source:** [rust-analyzer workspace lints, `Cargo.toml` L174-L237][ra-lints]; alpha's Rust recipe.
 - **Enforced by:** CI `cargo clippy --all-targets -- -D warnings`; alpha's generated `tests/setup.rs`.
 
 #### G19. No non_exhaustive inside the workspace
+
 - **Rule:** no `#[non_exhaustive]` on any type.
 - **Why:** it exists for published crates with outside users; inside one workspace it forces `_` arms and hides missing cases.
 - **Source:** [SCIP `SymbolError`][scip-symerr] and cargo-platform's error enum (published crates).
@@ -195,12 +215,14 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 ### Style
 
 #### G20. Plain data and concrete signatures
+
 - **Rule:** a field is public unless an invariant protects it; there are no setters, and getters return borrows; settings travel in a `Config` struct passed explicitly, never stored in long-lived state and without `Default`; functions across crate boundaries take concrete types, not generic parameters or `AsRef` polymorphism.
 - **Why:** less code, local reasoning, and no monomorphization cost at crate edges.
 - **Source:** [rust-analyzer getters and setters, style.md L267-L298][ra-style-getters]; [config, L406-L445][ra-style-config]; [generics, L591-L625][ra-style-generics].
 - **Enforced by:** reviewer.
 
 #### G21. Preconditions in types
+
 - **Rule:** express preconditions as types (`Id`, `Slug`, a sorted `Model`) and parse outside input into them once, at the boundary; push branching up to the caller instead of hiding it in callees; inner code does not re-validate.
 - **Why:** the compiler carries the proof, and each check exists exactly once.
 - **Source:** [rust-analyzer style.md L179-L258][ra-style-pre]; alpha principle `validate-at-edges` and rule `typed-boundaries`.
@@ -254,7 +276,8 @@ Crate-level additions, as inner attributes: `#![deny(clippy::wildcard_enum_match
 ## Mapping to alpha
 
 How each rule would enter the alpha kit. **Goes to** is the main home:
-- `principle:<id>`: a project principle in `docs/principles.toml` (`(alpha)` marks one the kit already has);
+
+- `principle:<id>`: a project principle in [`docs/alpha/principles.toml`](../alpha/principles.toml), where the eight below are registered for alpha's reviewer (`(alpha)` marks one the kit already has);
 - `clippy:<setting>`: a lint in the workspace `Cargo.toml` or a key in `clippy.toml`;
 - `tidy:<test>`: a test in `model/tests/tidy.rs` ([T20](testing.md#t20-tidy-tests-run-inside-cargo-test));
 - `ci:<step>`: a step in the CI workflow (`ci:diff-coverage` and `ci:mutants` are alpha's existing gates);
@@ -348,7 +371,7 @@ Ten principles carry the rules that are statements of intent; the rest stay as r
 | M21 Parser tables through serde | reviewer | ci:diff-coverage |
 | M22 Format frozen by a golden | ci: insta check | |
 | M23 Brute-force guard oracle | reviewer | ci:mutants |
-| M24 Milestone 1 fixture suite | reviewer | completeness test |
+| M24 Reference model fixture suite | reviewer | completeness test |
 | M25 A testkit, not a fifth crate | reviewer | |
 | X1 ruff's parser and ty's crates, pinned | tidy:extract_ruff_ty_pinned, banned_crates | |
 | X2 No ruff type escapes | tidy:crate_graph | clippy:unreachable_pub |
@@ -397,6 +420,7 @@ Ten principles carry the rules that are statements of intent; the rest stay as r
 | C23 Pull protocol at three layers | reviewer | ci:mutants |
 | C24 Golden report-jobs build | ci: debug and release acceptance jobs | |
 | C25 Golden tasks | ci: insta check | |
+| C26 Time limit on the one process | principle:timeouts | reviewer |
 | V1 Configurations are values | principle:pure-core | public-API snapshot |
 | V2 Cheap, ordered clones | clippy:disallowed-types | tidy:mentalvm_no_interior_mutability; property test |
 | V3 The step prunes nothing | principle:semantics-stay-in-the-step | property test |

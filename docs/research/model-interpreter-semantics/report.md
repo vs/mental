@@ -50,7 +50,7 @@ Everything in this section is a design inference. Each choice names the preceden
 
 The static model (types, ports, wires, adapters, behaviors, machines, predicates) is the program and is not part of the state. The trace is output and is not part of the state either; two configurations are equal regardless of how they were reached, which is what makes fingerprinting, snapshots, reverse stepping and search well defined.
 
-```
+```text
 C = ⟨ E, S, L, Ch, A, T, φ, now ⟩
 
 E   : instance-id ⇀ (type, parent per facet, status)     status ∈ starting | running | stopping | dead
@@ -113,7 +113,7 @@ A configuration is *terminal* when `A`, `Ch` and `T` are empty. Otherwise, when 
 
 ### Scheduler interface and the four kinds of choice
 
-```
+```text
 enabled : C → Set<Choice>
 fire    : C × Choice → C' × Label             -- pure and total on enabled choices
 
@@ -227,7 +227,7 @@ The report names the dependent pair (`a1.n:claim` write and `a2.n:load` read on 
 
 The checkpoint's open question, at what depth the interpreter hands off and how results are lifted back, has a structural answer and an unsolved part. The structural answer: the boundary is always a port, never a depth. A behavior whose graph bottoms out (a leaf action the user steps into, an `unknown` node, or a port whose policy says so) is replaced by a *runtime unit* that executes the real code behind that port, while everything the unit calls outward is still a model port. The interpreter is the master and units never advance on their own, which is FMI's division of labor.
 
-```
+```text
 unit.instantiate(entry: port, inputs: concrete values satisfying φ restricted to this port)
 unit.step_until(any outgoing modeled port | limit) → early-return(event, position) | finished(outcome)
 unit.respond(event, value)                  -- the model's or the real dependency's answer

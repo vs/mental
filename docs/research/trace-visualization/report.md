@@ -103,7 +103,8 @@ A sketch, to show the level, not a format proposal:
   "subject": { "message": "<full ID of the POST /reports request>" },
   "select":  [ { "where": "causal-descendant-of-subject", "show": "full" },
                { "where": "otherwise", "show": "dim" } ],
-  "time":    { "base": "one beat per step", "hold": ["fork", "finding", "non-atomic"], "collapse": "runs of forwarding" },
+  "time":    { "base": "one beat per step", "hold": ["fork", "finding", "non-atomic"],
+               "collapse": "runs of forwarding" },
   "shots":   [ { "while": "subject crosses a boundary", "camera": "follow", "zoom": { "layers": "open" } },
                { "when": "step in finding", "camera": { "frame": "entities-in-finding" }, "hold": true } ]
 }

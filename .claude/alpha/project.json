@@ -1,0 +1,828 @@
+{
+  "adoption": {
+    "survey": {
+      "git": {
+        "head": "4937916801f1e4f37111d709ed0882808cca284d",
+        "branch": "main",
+        "default_branch": "main",
+        "clean": true,
+        "dirty": [],
+        "commits": 21,
+        "conventional": {
+          "checked": 21,
+          "matching": 21,
+          "others": []
+        },
+        "hooks_path": "/Users/vs/workspace/mental/.claude/alpha/githooks",
+        "hook_managers": []
+      },
+      "components": [
+        {
+          "path": "docs/research/abstraction-function/experiments",
+          "stack": "python",
+          "markers": [
+            "docs/research/abstraction-function/experiments/requirements.txt"
+          ],
+          "sources": 13,
+          "tests": 0
+        },
+        {
+          "path": "docs/research/type-checkers-as-libraries/experiments/tyharness",
+          "stack": "rust",
+          "markers": [
+            "docs/research/type-checkers-as-libraries/experiments/tyharness/Cargo.toml"
+          ],
+          "sources": 1,
+          "tests": 0
+        }
+      ],
+      "files": {
+        "ci": [],
+        "docs": [
+          "README.md",
+          "docs/findings.md",
+          "docs/glossary.md",
+          "docs/guidelines/README.md",
+          "docs/guidelines/extract.md",
+          "docs/guidelines/mentalc.md",
+          "docs/guidelines/mentalvm.md",
+          "docs/guidelines/model.md",
+          "docs/guidelines/testing.md",
+          "docs/plans/milestone-1-build-model.md",
+          "docs/research/abstraction-function/experiments/README.md",
+          "docs/research/abstraction-function/experiments/results/compare.md",
+          "docs/research/abstraction-function/experiments/results/eval-v2.12.md",
+          "docs/research/abstraction-function/experiments/results/versions.md",
+          "docs/research/abstraction-function/notes/experiments.md",
+          "docs/research/abstraction-function/notes/survey.md",
+          "docs/research/abstraction-function/report.md",
+          "docs/research/abstraction-levels/notes/architecture_and_conformance.md",
+          "docs/research/abstraction-levels/notes/compilers_and_computed_abstractions.md",
+          "docs/research/abstraction-levels/notes/formal_refinement_methods.md",
+          "docs/research/abstraction-levels/notes/hardware_simulation_planning.md",
+          "docs/research/abstraction-levels/notes/layered_verified_systems.md",
+          "docs/research/abstraction-levels/report.md",
+          "docs/research/implementation-guidelines/notes/extract_static_analysis.md",
+          "docs/research/implementation-guidelines/notes/mentalc_architecture.md",
+          "docs/research/implementation-guidelines/notes/mentalc_llm_loop_mcp.md",
+          "docs/research/implementation-guidelines/notes/mentalvm_model_checking.md",
+          "docs/research/implementation-guidelines/notes/model_record_format.md",
+          "docs/research/implementation-guidelines/notes/testing_strategy.md",
+          "docs/research/implementation-guidelines/report.md",
+          "docs/research/levels-in-other-domains/notes/sources.md",
+          "docs/research/levels-in-other-domains/report.md",
+          "docs/research/model-interpreter-semantics/notes/cosimulation_mixed_abstraction.md",
+          "docs/research/model-interpreter-semantics/notes/devs_formalisms.md",
+          "docs/research/model-interpreter-semantics/notes/exploration_modes.md",
+          "docs/research/model-interpreter-semantics/notes/llm_code_to_model.md",
+          "docs/research/model-interpreter-semantics/notes/model_debuggers.md",
+          "docs/research/model-interpreter-semantics/notes/operational_semantics.md",
+          "docs/research/model-interpreter-semantics/report.md",
+          "docs/research/multi-level-models/experiments/README.md",
+          "docs/research/multi-level-models/experiments/results/prompt-name.md",
+          "docs/research/multi-level-models/experiments/results/report-jobs/prompt-name-head.md",
+          "docs/research/multi-level-models/experiments/results/report-jobs/prompt-name.md",
+          "docs/research/multi-level-models/ladder-strategies.md",
+          "docs/research/multi-level-models/ladder-walkthrough.md",
+          "docs/research/multi-level-models/notes/sources.md",
+          "docs/research/multi-level-models/report.md",
+          "docs/research/script-rendering/report.md",
+          "docs/research/source-access/notes/dependency_artifacts.md",
+          "docs/research/source-access/notes/general_vfs_abstractions.md"
+        ],
+        "docs_more": 32,
+        "migrations": [],
+        "task_runners": [],
+        "license": [],
+        "env_examples": []
+      },
+      "tracked": 216
+    },
+    "git_hooks": "alpha",
+    "baselines": [],
+    "steps": [
+      {
+        "id": "p4-ty-banned-crates",
+        "phase": "P4",
+        "title": "Resolve the ty vs banned-crates conflict",
+        "why": "G16's banned_crates tidy test bans ty_*, salsa and rand, but X1 and the extract allowlist need ty's crates, which pull in salsa, rand and rayon (about 240 crates). Milestone 2 could only pass by weakening the check.",
+        "principles": [
+          "never-weaken-checks",
+          "dependency-reasons"
+        ],
+        "acceptance": [
+          {
+            "confirm": "The owner has decided how G16 and X1 fit together, and docs/guidelines/README.md, docs/guidelines/extract.md and docs/specification.md say the same"
+          },
+          {
+            "run": "! grep -nE 'ty_\\*' docs/guidelines/README.md | grep -i ban"
+          }
+        ],
+        "status": "done",
+        "component": "extract",
+        "branch": "alpha/p4-ty-banned-crates"
+      },
+      {
+        "id": "p4-guidelines-refs",
+        "phase": "P4",
+        "title": "Sync guideline and resolution references with the rewritten spec",
+        "why": "model.md cites old spec sections and plan D7/D9 from the deleted model plan and gives milestone 1 the wrong acceptance; G11, C24 and X22 point at old sections or milestones; resolution.md cites an undefined E4 and skips section 15; mentalvm.md names symbolic runs, which are Later.",
+        "principles": [
+          "docs-with-code",
+          "one-vocabulary"
+        ],
+        "acceptance": [
+          {
+            "run": "! grep -nE 'spec (4\\.4|4\\.8)|plan D[79]|rejects seeded errors|ordered-reads rule' docs/guidelines/model.md && ! grep -nE 'spec 3 and 6\\.5|spec 8\\.2 and 6\\.8' docs/guidelines/*.md && ! grep -n '(E4)' docs/resolution.md && ! grep -n 'concrete or symbolic' docs/guidelines/mentalvm.md"
+          }
+        ],
+        "status": "done",
+        "branch": "alpha/p4-guidelines-refs"
+      },
+      {
+        "id": "p4-plan-layout",
+        "phase": "P4",
+        "title": "Fix the milestone 1 plan layout",
+        "why": "mentalc/src/build.rs writes .mental/ but is not an I/O edge under G4; the plan has no mentalc/src/lib.rs with run() (G12); packs have two homes, extract/packs and mentalc/packs, though extract does no I/O.",
+        "principles": [
+          "pure-core",
+          "lean-structure"
+        ],
+        "acceptance": [
+          {
+            "run": "grep -q 'lib.rs' docs/plans/milestone-1-build-model.md && ! grep -q 'extract/packs' docs/plans/milestone-1-build-model.md && ! grep -nE 'build.rs .*write .mental' docs/plans/milestone-1-build-model.md"
+          }
+        ],
+        "status": "done",
+        "component": "mentalc",
+        "depends_on": [
+          "p4-guidelines-refs"
+        ],
+        "branch": "alpha/p4-plan-layout"
+      },
+      {
+        "id": "p4-timeouts",
+        "phase": "P4",
+        "title": "Add timeouts to the mentalc guidelines",
+        "why": "mentalc makes network calls, but C6 sets retries with no request timeout and docker compose config has no time limit, so a stalled daemon or socket hangs mentalc build instead of exiting 2 with a fix.",
+        "principles": [
+          "timeouts",
+          "fail-helpfully"
+        ],
+        "acceptance": [
+          {
+            "run": "grep -qi 'timeout' docs/guidelines/mentalc.md && grep -n 'docker compose config' docs/guidelines/mentalc.md docs/plans/milestone-1-build-model.md | grep -qi 'time'"
+          }
+        ],
+        "status": "done",
+        "component": "mentalc",
+        "branch": "alpha/p4-timeouts"
+      },
+      {
+        "id": "p4-trim-later",
+        "phase": "P4",
+        "title": "Trim Later items from the mentalc guidelines",
+        "why": "C5 lists the local and agent-cli backends and the layout has backend/agent_cli.rs, which spec 9.3 puts in Later; C17 adds an optional mental_build_status tool nobody asked for.",
+        "principles": [
+          "smallest-change"
+        ],
+        "acceptance": [
+          {
+            "run": "! grep -nE 'agent_cli\\.rs|`local`, `agent-cli`|optionally `mental_build_status`' docs/guidelines/mentalc.md"
+          }
+        ],
+        "status": "done",
+        "component": "mentalc",
+        "branch": "alpha/p4-trim-later"
+      },
+      {
+        "id": "p4-golden-model",
+        "phase": "P4",
+        "title": "Settle the golden reference model",
+        "why": "T6, C24, M22 and M24 name a hand-written reference model at examples/report-jobs/model/, and it is a risk path, but it does not exist, so the tests built on it cannot be written.",
+        "principles": [
+          "tests-first-class"
+        ],
+        "acceptance": [
+          {
+            "confirm": "The owner has decided which milestone writes examples/report-jobs/model/, and the guidelines and the milestone plans say so"
+          }
+        ],
+        "status": "done",
+        "branch": "alpha/p4-golden-model"
+      },
+      {
+        "id": "p4-project-principles",
+        "phase": "P4",
+        "title": "Register the project principles and the exceptions rule",
+        "why": "The guidelines define eight project principles (fixed-crate-graph, deterministic-output, fail-rather-than-degrade, no-bloat, one-canonical-form, extractors-never-guess, one-judge-for-every-backend, semantics-stay-in-the-step) that alpha's reviewer does not check; G4, G18 and T16 allow #[expect] and #[mutants::skip] opt-outs scattered in code rather than as rows of CONTRIBUTING.md's Exceptions table.",
+        "principles": [
+          "simplest-architecture",
+          "never-weaken-checks"
+        ],
+        "acceptance": [
+          {
+            "run": "grep -q 'fixed-crate-graph' docs/alpha/principles.toml && grep -q 'deterministic-output' docs/alpha/principles.toml && grep -q 'Exceptions' docs/guidelines/README.md"
+          }
+        ],
+        "status": "done",
+        "branch": "alpha/p4-project-principles"
+      },
+      {
+        "id": "p4-diagrams",
+        "phase": "P4",
+        "title": "Delete unreferenced diagrams and redraw the rest as SVG",
+        "why": "14 of 18 PNGs in docs/images are referenced nowhere; the 4 linked ones have no source, and components.png uses an off-palette blue, overflows a box and shows backends the spec puts in Later.",
+        "principles": [
+          "generated-from-source",
+          "no-dead-code",
+          "design-language"
+        ],
+        "acceptance": [
+          {
+            "run": "test -z \"$(ls docs/images/*.png 2>/dev/null)\" && for f in docs/images/*.svg; do git grep -q \"$(basename $f)\" -- '*.md' || exit 1; done"
+          }
+        ],
+        "status": "done",
+        "depends_on": [
+          "p4-guidelines-refs"
+        ],
+        "branch": "alpha/p4-diagrams"
+      },
+      {
+        "id": "p4-glossary-verdicts",
+        "phase": "P4",
+        "title": "Make the glossary agree with the spec on move verdicts",
+        "why": "Spec 8.1 and the glossary's Verdict of a move give atomic, guarded, non-atomic; the glossary's Atomicity entry gives stutter, isolated, guarded, non-atomic.",
+        "principles": [
+          "one-vocabulary"
+        ],
+        "acceptance": [
+          {
+            "run": "! grep -qE '\\*Stutter:\\*|\\*Isolated:\\*' docs/glossary.md"
+          }
+        ],
+        "status": "done",
+        "branch": "alpha/p4-glossary-verdicts"
+      },
+      {
+        "id": "p5-baseline-typos",
+        "phase": "P5",
+        "title": "Clear the typos baseline",
+        "why": "Legacy typos findings are baselined (alpha baseline show). Fix them, risk paths first, then remove typos from adoption.baselines so the check runs plain again.",
+        "principles": [
+          "docs-with-code"
+        ],
+        "acceptance": [
+          {
+            "no_baseline": "typos"
+          }
+        ],
+        "status": "done",
+        "branch": "alpha/p5-baseline-typos"
+      },
+      {
+        "id": "p5-baseline-markdown",
+        "phase": "P5",
+        "title": "Clear the markdown baseline",
+        "why": "Legacy markdown findings are baselined (alpha baseline show). Fix them, risk paths first, then remove markdown from adoption.baselines so the check runs plain again.",
+        "principles": [
+          "docs-with-code"
+        ],
+        "acceptance": [
+          {
+            "no_baseline": "markdown"
+          }
+        ],
+        "status": "done",
+        "branch": "alpha/p5-baseline-markdown"
+      },
+      {
+        "id": "p5-baseline-links",
+        "phase": "P5",
+        "title": "Clear the links baseline",
+        "why": "Legacy links findings are baselined (alpha baseline show). Fix them, risk paths first, then remove links from adoption.baselines so the check runs plain again.",
+        "principles": [
+          "docs-with-code"
+        ],
+        "acceptance": [
+          {
+            "no_baseline": "links"
+          }
+        ],
+        "status": "done",
+        "branch": "alpha/p5-baseline-links"
+      }
+    ]
+  },
+  "schema": 1,
+  "areas": {
+    "identity": "done",
+    "components": "done",
+    "testing": "done",
+    "documentation": "done",
+    "build": "done",
+    "security": "done",
+    "dependencies": "done",
+    "releases": "done",
+    "git": "done",
+    "agent_workflow": "done",
+    "requirements": "done",
+    "architecture": "done",
+    "errors": "done",
+    "design_language": "done",
+    "ui": "open",
+    "accessibility": "open",
+    "observability": "open",
+    "data": "open",
+    "performance": "open",
+    "auth": "open"
+  },
+  "overrides": [],
+  "identity": {
+    "name": "Mental",
+    "slug": "mental",
+    "value_proposition": "Mental compiles a repository into a model of the system that you can run: play a scenario and get a trace, zoom in and out between levels, search for races, and change something to see what changes. A coding agent shares the same view.",
+    "license": "Proprietary",
+    "license_file": null,
+    "copyright_holder": "Semyon Vadishev"
+  },
+  "layout": "monorepo",
+  "components_talk": true,
+  "components": [
+    {
+      "name": "model",
+      "path": "model",
+      "kind": "library",
+      "stack": "rust",
+      "traits": {
+        "has_ui": false,
+        "deployed": false,
+        "network_calls": false,
+        "persisted_data": false,
+        "ml": false,
+        "nontrivial_logic": true
+      }
+    },
+    {
+      "name": "extract",
+      "path": "extract",
+      "kind": "library",
+      "stack": "rust",
+      "traits": {
+        "has_ui": false,
+        "deployed": false,
+        "network_calls": false,
+        "persisted_data": false,
+        "ml": false,
+        "nontrivial_logic": true
+      }
+    },
+    {
+      "name": "mentalc",
+      "path": "mentalc",
+      "kind": "cli",
+      "stack": "rust",
+      "traits": {
+        "has_ui": false,
+        "deployed": false,
+        "network_calls": true,
+        "persisted_data": false,
+        "ml": false,
+        "nontrivial_logic": true
+      }
+    }
+  ],
+  "testing": {
+    "components": [
+      {
+        "name": "model",
+        "levels": [
+          "unit",
+          "contract"
+        ]
+      },
+      {
+        "name": "extract",
+        "levels": [
+          "unit",
+          "contract"
+        ]
+      },
+      {
+        "name": "mentalc",
+        "levels": [
+          "unit",
+          "integration",
+          "end-to-end",
+          "contract"
+        ]
+      }
+    ],
+    "exhaustive": true
+  },
+  "documentation": {
+    "external": "none",
+    "external_path": "",
+    "external_location": "",
+    "mappings": [
+      {
+        "paths": [
+          "model/src/lib.rs",
+          "model/src/id.rs",
+          "model/src/record.rs",
+          "model/src/record/**",
+          "model/src/anchor.rs",
+          "model/src/guard.rs",
+          "model/src/diagnostic.rs"
+        ],
+        "docs": [
+          "docs/specification.md",
+          "docs/glossary.md"
+        ]
+      },
+      {
+        "paths": [
+          "extract/src/lib.rs",
+          "extract/src/build.rs",
+          "extract/src/build/**"
+        ],
+        "docs": [
+          "docs/specification.md",
+          "docs/glossary.md"
+        ]
+      },
+      {
+        "paths": [
+          "extract/src/python/resolve.rs",
+          "extract/src/pack.rs",
+          "extract/src/pack/**"
+        ],
+        "docs": [
+          "docs/resolution.md",
+          "docs/specification.md"
+        ]
+      },
+      {
+        "paths": [
+          "mentalc/src/cli.rs",
+          "mentalc/src/mcp.rs",
+          "mentalc/src/config.rs"
+        ],
+        "docs": [
+          "docs/specification.md",
+          "docs/glossary.md"
+        ]
+      },
+      {
+        "paths": [
+          "model/Cargo.toml"
+        ],
+        "docs": [
+          "docs/guidelines/model.md"
+        ]
+      },
+      {
+        "paths": [
+          "extract/Cargo.toml"
+        ],
+        "docs": [
+          "docs/guidelines/extract.md"
+        ]
+      },
+      {
+        "paths": [
+          "mentalc/Cargo.toml"
+        ],
+        "docs": [
+          "docs/guidelines/mentalc.md"
+        ]
+      },
+      {
+        "paths": [
+          "mentalc/src/build.rs",
+          "mentalc/src/repo.rs",
+          "extract/src/python/sites.rs"
+        ],
+        "docs": [
+          "docs/specification.md",
+          "docs/glossary.md"
+        ]
+      }
+    ],
+    "existing": {
+      "glossary": "docs/glossary.md"
+    }
+  },
+  "build": {
+    "ci": "github-actions",
+    "environments": [],
+    "components": [
+      {
+        "name": "model",
+        "artifact": "none",
+        "hosting": ""
+      },
+      {
+        "name": "extract",
+        "artifact": "none",
+        "hosting": ""
+      },
+      {
+        "name": "mentalc",
+        "artifact": "binary",
+        "hosting": ""
+      }
+    ]
+  },
+  "security": {
+    "secret_store": "",
+    "extra_protected": []
+  },
+  "dependencies": {
+    "updates": "manual",
+    "schedule": "weekly",
+    "cooldown_days": 7
+  },
+  "releases": {
+    "scheme": "semver",
+    "changelog": "file",
+    "scope": "repo",
+    "process": "Tag vX.Y.Z on main after updating CHANGELOG.md; the mentalc binary is built with cargo build --release. Publishing binaries is set up when distribution is decided."
+  },
+  "git": {
+    "convention": "conventional",
+    "scopes": [
+      "model",
+      "extract",
+      "mentalc",
+      "mentalvm",
+      "spec",
+      "research",
+      "plans",
+      "guidelines",
+      "examples",
+      "resolution",
+      "glossary",
+      "findings",
+      "report-jobs"
+    ],
+    "branching": "feature-branches"
+  },
+  "agent_workflow": {
+    "extra_risk_paths": [
+      "model/src/id.rs",
+      "model/src/record.rs",
+      "model/src/record/**",
+      "model/src/guard.rs",
+      "docs/specification.md",
+      "examples/*/model/**"
+    ]
+  },
+  "requirements": {
+    "target_users": "Software developers first: people who change concurrent or distributed systems and need a runnable picture of them, and the coding agents working beside them. Later, managers and other roles who need the big picture of what the systems do, with the option to go down into technical detail.",
+    "items": [
+      {
+        "id": "R1",
+        "text": "mentalc reads a repository's build files into a build model, with no LLM.",
+        "acceptance": "Given examples/report-jobs, when mentalc build runs, then it writes one build unit with its pins, three artifacts, five launches and twelve configuration inputs, and reports its three gaps, each with a fix."
+      },
+      {
+        "id": "R2",
+        "text": "Every reference site in the code gets an outcome from a type checker, and a gate stops the build on gaps that matter.",
+        "acceptance": "Given report-jobs, when sites are resolved with ty, then every site has an outcome and the write receivers resolve to Report; and given a copy with a seeded missing module, then the gate fails and names the fix."
+      },
+      {
+        "id": "R3",
+        "text": "mentalc extracts facts with packs and static tools only.",
+        "acceptance": "Given report-jobs, when extraction runs, then the facts list 6 entry points (2 routes, 2 tasks, 1 schedule, 1 command) and 2 state variables, list every branch as an obligation, and report WEBHOOK_URL as read and unset, with no LLM call."
+      },
+      {
+        "id": "R4",
+        "text": "The mechanical model predicts findings with no LLM and no interpreter.",
+        "acceptance": "Given report-jobs, when the mechanical model and its static checks are built, then the four known findings are predicted."
+      },
+      {
+        "id": "R5",
+        "text": "An LLM names and summarizes every port, and every answer is checked before it counts.",
+        "acceptance": "Given report-jobs and recorded answers, when mentalc build runs with the replay backend, then every port has a named summary that passes coverage, guard algebra and summary agreement; and given the k-th call fails, for every k, then the build either succeeds after a repair or exits with a clear error and writes no partial model."
+      },
+      {
+        "id": "R6",
+        "text": "mentalvm runs the model and searches all orderings within stated bounds.",
+        "acceptance": "Given the report-jobs model, when search runs, then it confirms the duplicate claim with a replayable witness; and given the claim fixed in the code, then a rebuild and a fresh search within the same bounds report no violation."
+      },
+      {
+        "id": "R7",
+        "text": "A run can be read at several levels.",
+        "acceptance": "Given the duplicate-claim witness, when levels are built, then the race shows at the goal level as delivered twice and its cause at the move level, and the pair check passes."
+      },
+      {
+        "id": "R8",
+        "text": "A person and an agent debug one run together.",
+        "acceptance": "Given the witness, when a person steps it in the terminal debugger and an agent through the MCP tools, then both see the same step at each point."
+      },
+      {
+        "id": "R9",
+        "text": "Everything runs locally with the user's own coding agent as the LLM, and output is deterministic.",
+        "acceptance": "Given report-jobs, when mentalc build runs twice with the agent backend and no API key, then both runs succeed and write byte-identical model files; and given the api backend with no key, then it fails with an error naming the variable."
+      }
+    ],
+    "domain_jargon": true
+  },
+  "architecture": {
+    "components": [
+      {
+        "name": "model",
+        "responsibility": "Owns the record format: IDs, records, guards, the canonical JSONL text, the well-formedness checks and the diagnostic type that every other crate reads and writes.",
+        "calls": []
+      },
+      {
+        "name": "extract",
+        "responsibility": "Turns build files, Python source and compose JSON into the build model and facts (sites and outcomes from ty, call graph, obligations, effects, state variables, entry points), with no I/O and no LLM.",
+        "calls": [
+          "model"
+        ]
+      },
+      {
+        "name": "mentalc",
+        "responsibility": "Owns the build: reads the repository at its one I/O edge, runs the six stages, asks LLM backends for judgment, checks every answer and writes .mental/ with its cache and ledger.",
+        "calls": [
+          "model",
+          "extract"
+        ]
+      }
+    ],
+    "contracts": {
+      "format": "other",
+      "paths": [
+        "model/src/id.rs",
+        "model/src/record.rs",
+        "model/src/record/**",
+        "model/src/anchor.rs",
+        "model/src/guard.rs",
+        "model/src/diagnostic.rs",
+        "model/src/jsonl.rs"
+      ]
+    },
+    "glossary": [
+      {
+        "term": "model",
+        "meaning": "A description of the system that a program can run, compiled from a repository as a set of records."
+      },
+      {
+        "term": "build model",
+        "meaning": "A small model of how a project is built (build units, artifacts, launches, dependencies, configuration), made first by plain readers of build files."
+      },
+      {
+        "term": "reference site",
+        "meaning": "A place where the code names something (an import, a call, a decorator, a base class, a write receiver); it gets exactly one outcome."
+      },
+      {
+        "term": "gap",
+        "meaning": "Something unknown that could change the model: an unresolved site, a library with no pack, a missing input."
+      },
+      {
+        "term": "port",
+        "meaning": "A named point on an entity's boundary through which one kind of interaction passes."
+      },
+      {
+        "term": "obligation",
+        "meaning": "A branch, exception path or outside effect found in a handler's code that a compiled behavior must mention."
+      },
+      {
+        "term": "move",
+        "meaning": "A group of nodes that makes one change to shared state; it closes at the write."
+      },
+      {
+        "term": "witness",
+        "meaning": "A shortest run found by search that reaches a bad state, with its schedule so it can be replayed."
+      }
+    ]
+  },
+  "errors": {
+    "components": [
+      {
+        "name": "model",
+        "format": "exceptions"
+      },
+      {
+        "name": "extract",
+        "format": "exceptions"
+      },
+      {
+        "name": "mentalc",
+        "format": "message-and-exit-code"
+      }
+    ],
+    "categories": [
+      "validation",
+      "not-found",
+      "unavailable",
+      "check-failed",
+      "internal"
+    ]
+  },
+  "design_language": {
+    "defined": true,
+    "character": "Warm, quiet and precise: warm paper-white neutrals, one copper accent, hairline borders, depth only for floating panels; dense, tool-like layouts with monospace for anything the machine produced (IDs, values, traces).",
+    "colors": [
+      {
+        "name": "background",
+        "value": "#fdfcfa",
+        "use": "page and diagram background"
+      },
+      {
+        "name": "surface",
+        "value": "#f3f2f0",
+        "use": "panels and groups, such as a system boundary in a diagram"
+      },
+      {
+        "name": "raised",
+        "value": "#ffffff",
+        "use": "boxes and cards: components, records, steps"
+      },
+      {
+        "name": "inset",
+        "value": "#f7f6f4",
+        "use": "code blocks and terminal output"
+      },
+      {
+        "name": "text",
+        "value": "#262521",
+        "use": "titles and body text"
+      },
+      {
+        "name": "muted-text",
+        "value": "#696960",
+        "use": "secondary labels, captions, annotations"
+      },
+      {
+        "name": "line",
+        "value": "#d8d5d0",
+        "use": "hairline borders, dividers and arrows"
+      },
+      {
+        "name": "accent",
+        "value": "#b35017",
+        "use": "the subject of a diagram, the path being explained, primary actions"
+      },
+      {
+        "name": "accent-fill",
+        "value": "#f6ebe3",
+        "use": "the fill behind an accented element"
+      },
+      {
+        "name": "accent-text",
+        "value": "#9a4310",
+        "use": "accented text and links"
+      },
+      {
+        "name": "success",
+        "value": "#517734",
+        "use": "fixed, passed, matched"
+      },
+      {
+        "name": "warning",
+        "value": "#886914",
+        "use": "a preemption, an assumption, a heuristic match"
+      },
+      {
+        "name": "danger",
+        "value": "#b7493f",
+        "use": "a violation, an illegal write, a failed check"
+      },
+      {
+        "name": "info",
+        "value": "#2c6ebd",
+        "use": "neutral highlights and notes"
+      },
+      {
+        "name": "chart-series",
+        "value": "oklch(68% .12 230), oklch(68% .12 145), oklch(70% .13 95), oklch(65% .14 45)",
+        "use": "chart series 1 to 4, in that order"
+      }
+    ],
+    "typography": "Fixel Display SemiBold for headings, letter-spacing -0.025em; Fixel Text Regular for prose; Cascadia Mono Medium for code, IDs, labels and values; fallbacks system-ui for sans and SF Mono, ui-monospace for mono",
+    "shape": "6 px corners on small elements, 9 px on controls, 12 px on cards and panels, 16 px on large frames; hairline low-contrast borders; flat by default, soft layered shadows only on floating panels and popovers; small uppercase labels used sparingly; 150 ms transitions",
+    "imagery": "Remix Icon line icons at 12 to 24 px; no illustrations",
+    "diagrams": "SVG source committed in docs/images/, light theme: groups are surface panels, components are raised boxes with a line-colored hairline, flows are muted arrows, the subject is in the accent; status colors only for findings (danger a violation, warning a preemption or assumption, success fixed); titles in Fixel, labels in Cascadia Mono; every image has alt text",
+    "source": "",
+    "palette_check": "advise",
+    "third_party": []
+  },
+  "installed": {
+    "kit_version": "2.0.1",
+    "mode": "adopted",
+    "on": "2026-11-18",
+    "components": {
+      "model": "2026-11-18",
+      "extract": "2026-11-18",
+      "mentalc": "2026-11-18"
+    },
+    "preexisting": [
+      ".gitignore",
+      "README.md"
+    ]
+  }
+}

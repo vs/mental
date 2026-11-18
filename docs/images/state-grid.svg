@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 350" width="1000" height="350" role="img" aria-labelledby="t d">
+  <title id="t">One worker's code and the states of two workers</title>
+  <desc id="d">One worker's claim code has four steps. Two workers running it give a four-by-four grid of states. The highlighted path reads twice before either writes and ends in a double claim.</desc>
+  <style>
+    .h { font-family: 'Fixel Display', system-ui, sans-serif; font-weight: 600; font-size: 15px; letter-spacing: -0.025em; fill: #262521; }
+    .p { font-family: 'Fixel Text', system-ui, sans-serif; font-size: 14px; fill: #262521; }
+    .m { font-family: 'Cascadia Mono', 'SF Mono', ui-monospace, monospace; font-weight: 500; font-size: 12px; fill: #696960; }
+    .box { fill: #ffffff; stroke: #d8d5d0; stroke-width: 1; }
+    .grid { stroke: #d8d5d0; stroke-width: 1; }
+    .node { fill: #ffffff; stroke: #696960; stroke-width: 1; }
+    .flow { fill: none; stroke: #696960; stroke-width: 1.25; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#696960"/>
+    </marker>
+    <marker id="v" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#b7493f"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="350" fill="#fdfcfa"/>
+
+  <text class="h" x="40" y="40">Code: one worker</text>
+  <rect class="box" x="40" y="56" width="180" height="40" rx="9"/>
+  <text class="p" x="54" y="81">load row</text>
+  <rect class="box" x="40" y="116" width="180" height="40" rx="9"/>
+  <text class="p" x="54" y="141">status is PENDING?</text>
+  <rect class="box" x="40" y="176" width="180" height="40" rx="9"/>
+  <text class="p" x="54" y="201">set RUNNING</text>
+  <rect class="box" x="40" y="236" width="180" height="40" rx="9"/>
+  <text class="p" x="54" y="261">upload, mark DONE</text>
+  <path class="flow" d="M130,96 V116 M130,156 V176"/>
+  <path class="flow" d="M130,216 V234" marker-end="url(#a)"/>
+  <text class="m" x="40" y="304">4 nodes in the control-flow graph</text>
+
+  <text class="h" x="300" y="40">States: two workers</text>
+  <text class="m" x="520" y="62" text-anchor="middle">worker[0] →</text>
+  <text class="m" x="400" y="84" text-anchor="middle">start</text>
+  <text class="m" x="480" y="84" text-anchor="middle">read</text>
+  <text class="m" x="560" y="84" text-anchor="middle">write</text>
+  <text class="m" x="640" y="84" text-anchor="middle">done</text>
+  <text class="m" x="372" y="114" text-anchor="end">start</text>
+  <text class="m" x="372" y="174" text-anchor="end">read</text>
+  <text class="m" x="372" y="234" text-anchor="end">write</text>
+  <text class="m" x="372" y="294" text-anchor="end">done</text>
+  <text class="m" x="300" y="326">worker[1] ↓</text>
+
+  <path class="grid" d="M400,110 H640 M400,170 H640 M400,230 H640 M400,290 H640 M400,110 V290 M480,110 V290 M560,110 V290 M640,110 V290"/>
+  <circle class="node" cx="400" cy="110" r="8"/><circle class="node" cx="480" cy="110" r="8"/><circle class="node" cx="560" cy="110" r="8"/><circle class="node" cx="640" cy="110" r="8"/>
+  <circle class="node" cx="400" cy="170" r="8"/><circle class="node" cx="560" cy="170" r="8"/><circle class="node" cx="640" cy="170" r="8"/>
+  <circle class="node" cx="400" cy="230" r="8"/><circle class="node" cx="480" cy="230" r="8"/><circle class="node" cx="640" cy="230" r="8"/>
+  <circle class="node" cx="400" cy="290" r="8"/><circle class="node" cx="480" cy="290" r="8"/><circle class="node" cx="560" cy="290" r="8"/><circle class="node" cx="640" cy="290" r="8"/>
+
+  <path d="M408,110 H472 M480,118 V162 M488,170 H552 M560,178 V218" fill="none" stroke="#b7493f" stroke-width="1.5" stroke-dasharray="4 3"/>
+  <path d="M560,212 V219" fill="none" stroke="#b7493f" stroke-width="1.5" marker-end="url(#v)"/>
+  <circle cx="480" cy="170" r="9" fill="#ffffff" stroke="#886914" stroke-width="2"/>
+  <text class="m" x="470" y="194" text-anchor="end" style="fill:#886914">both read PENDING</text>
+  <circle cx="560" cy="230" r="9" fill="#ffffff" stroke="#b7493f" stroke-width="2"/>
+  <text class="m" x="572" y="254" style="fill:#b7493f">both claimed</text>
+
+  <rect class="box" x="700" y="40" width="280" height="70" rx="12"/>
+  <text class="h" x="714" y="64">Explosion</text>
+  <text class="m" x="714" y="84">4 × 4 positions × status values,</text>
+  <text class="m" x="714" y="100">then retries, queues, timers</text>
+  <rect class="box" x="700" y="125" width="280" height="70" rx="12"/>
+  <text class="h" x="714" y="149">Abstraction</text>
+  <text class="m" x="714" y="169">status as 4 classes, not rows;</text>
+  <text class="m" x="714" y="185">predicates, not values</text>
+  <rect class="box" x="700" y="210" width="280" height="70" rx="12"/>
+  <text class="h" x="714" y="234">Search</text>
+  <text class="m" x="714" y="254">every ordering within bounds,</text>
+  <text class="m" x="714" y="270">a witness for each violation</text>
+</svg>

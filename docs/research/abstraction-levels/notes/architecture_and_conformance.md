@@ -30,9 +30,11 @@ Source note: every claim carries the link it was read from. "(via search summary
 ## 1. C4 model and Structurizr
 
 ### Takeaway
+
 C4 fixes four nested abstractions and leaves every boundary decision to a person. Structurizr stores one model and derives the views, and it fills in relationships between ancestors from relationships between descendants, but only under a strategy the user picks. There is no behavior and no check between levels beyond what derivation gives for free.
 
 ### Cited Findings
+
 - C4 describes its abstractions as a containment chain: a software system is made of containers (applications and data stores), which contain components, which are implemented by code elements (classes, interfaces, objects, functions); people sit outside the chain as users. The page does not say who decides what a component is. — [c4model.com/abstractions](https://c4model.com/abstractions)
 - Four core static diagrams (system context, container, component, code) and three supplementary ones (system landscape, dynamic, deployment). The site says not all four levels are needed and that context and container diagrams are sufficient for most teams. — [c4model.com/diagrams](https://c4model.com/diagrams)
 - C4 "implies nothing about the process of delivering software". The FAQ's answer to a container diagram that is too dense is to split it into several diagrams, one per service, each with its nearest dependencies; it does not offer an extra level. — [c4model.com/faq](https://c4model.com/faq)
@@ -42,33 +44,39 @@ C4 fixes four nested abstractions and leaves every boundary decision to a person
 - The older analysis library offered strategies keyed on annotations, implemented interfaces, naming and Spring stereotypes, and needed a `DuplicateComponentStrategy` because one class can be found twice. (via search summary) — [structurizr-analysis javadoc](https://javadoc.io/static/com.structurizr/structurizr-analysis/1.0.0/com/structurizr/analysis/package-summary.html)
 
 ### Inferences
+
 - The draft report's sentence "the DSL creates these implied relationships by default" is right for the DSL and wrong for the library, whose default creates none. The design point that matters is that implication is a *policy*, and the eager policy is documented as exploding. Mental should compute lifted wires on demand per view and never store all ancestor pairs.
 - Implied relationships are materialized in the model when a child relationship is added. They are therefore stored facts that can go stale if the child relationship is later removed by hand. A derived-on-read lift, as Mental plans, avoids that.
 - The component finder is rule-based matching written by the team. That is the same job Mental gives to packs (known frameworks) and to the LLM (everything else); Structurizr is a precedent for the pack half only.
 - C4's answer to density is more diagrams at the same level, not an inserted level. Mental's inserted levels (bounded contexts) have no C4 precedent.
 
 ### Gaps
+
 - The full component finder documentation is paywalled (early access), so the matching rules were not read.
 - Whether c4model.com still recommends generating code-level diagrams automatically was not confirmed on the pages fetched.
 
 ## 2. Arcadia and Capella
 
 ### Takeaway
+
 Arcadia prescribes five perspectives and joins them with realization links that the method calls justification links. Capella checks the model with validation rules written in Java or OCL, grouped into integrity, design, quality and transition categories. Maintainers have removed several of the cross-level realization rules as useless, and users report the rule documentation is out of date, so even the structural link check is weaker in practice than the method suggests.
 
 ### Cited Findings
+
 - The five Arcadia perspectives as named on the method page: Customer Operational Need Analysis; System Need Analysis; Logical Architecture (notional solution); Physical Architecture; and Contracts for Development and IVVQ (the building strategy, elsewhere called the end-product breakdown). The models at each level are "related by justification links" and processed together for impact analysis. — [mbse-capella.org/arcadia.html](https://mbse-capella.org/arcadia.html)
 - Validation is EMF-based. Rules are contributed through the `org.eclipse.emf.validation` `constraintProviders` extension point; a Java rule must "extend the AbstractValidationRule class"; OCL is also supported. Category paths under `capella.category/` include `quality`, `integrity`, `design` (coverage, well-formedness, consistency, completeness) and `transition` (consistency, justification). — [Capella wiki, Validation Rules](https://github.com/eclipse-capella/capella/wiki/Validation-Rules)
 - Two cross-level rules as users see them: TJ_LA_02, "(Capability) should be refined towards the Logical Architecture", and TC_DC_11, "(Logical Component) does not realize any System Component". A maintainer replied in March 2022 that the first "comes from a deprecated feature, removed from Capella" (capability refinement, removed in 1.4) and that the second "is useless for Logical architecture (except for the root Logical System realization)". A later reply states that both, with TJ_PA_05, TJ_EPBS_02 and TJ_LA_01, were removed. — [Capella forum thread 4844](https://forum.mbse-capella.org/t/how-to-get-rid-of-validation-warnings-from-rules-tj-la-02-capability-refinement-and-tc-dc-11-logical-component-realization/4844)
 - A user on Capella 5.2 reported in December 2022 that "the list of validation rules in the documentation is not up to date", with removed rules still documented and new ones undocumented, and "thousands of warnings" per validation run. Single unconfirmed forum post. — [Capella forum thread 5948](https://forum.mbse-capella.org/t/capella-validation-rules-updated-list/5948)
 
 ### Inferences
+
 - The draft report says Capella "runs validation rules over [the links]. The rules check that links exist and are well formed." The sourced picture is harsher: the maintainers judged "every logical component must realize a system component" to be noise and deleted it. A rule of the form "every lower element must trace to an upper element" does not survive contact with real models, because lower levels legitimately contain things the upper level never mentions.
 - For Mental this argues against a blanket "every lower step must map upward" rule. The refinement rule in `how-mental-works.md` already runs the other way (every *upper* transition must map to anchored lower steps), which is the direction Capella kept (the root realization). Lower steps with no upper image should be stutters, not findings.
 - "Thousands of warnings" is the adoption failure to avoid. Findings need a baseline and a ratchet from day one (see section 8).
 - Capella's automated transitions (copy a level down and keep the links) were not sourced here; the forum threads suggest they are a source of rule noise after re-transition.
 
 ### Gaps
+
 - No primary description of Capella's transition tooling or of how realization links are kept consistent when the upper level changes was fetched.
 - No count of built-in rules was found.
 - No study of realization-link quality in industrial Capella models was found.
@@ -76,9 +84,11 @@ Arcadia prescribes five perspectives and joins them with realization links that 
 ## 3. SysML v2 and KerML
 
 ### Takeaway
+
 SysML v2 became a formal OMG specification in September 2025. It has no fixed levels. A requirement is a Boolean check of the form "assumptions imply constraints" on a subject, `satisfy` asserts that check for a given element, a verification case returns a verdict, and a view is a model element that must satisfy its viewpoint. Refinement, by contrast, is only a metadata annotation on a dependency with a prose meaning.
 
 ### Cited Findings
+
 - Status "Formal", publication date September 2025, with a Language document (formal/26-03-02), a v1-to-v2 Transformation document, and machine-readable library packages. — [OMG SysML 2.0](https://www.omg.org/spec/SysML/2.0)
 - Final KerML, SysML v2 and API specifications were approved by the OMG on 21 July 2025. (via search summary) — [INCOSE IS 2025 presentation](https://www.incose.org/wp-content/uploads/legacy/presentation/is2025-pdf/Presentation-56.pdf)
 - Requirement semantics in the standard library: `RequirementConstraintCheck` has `assumptions` and `constraints`, and returns `allTrue(assumptions()) implies allTrue(constraints())`, documented as "If all the assumptions are true, then all the required constraints must hold." `RequirementCheck` adds a `subject`, "the entity that is being checked for satisfaction", and nested `subrequirements` that are themselves required constraints. `satisfiedRequirementChecks` is "the subset of requirementChecks for Requirements asserted to be satisfied". — [Requirements.sysml](https://raw.githubusercontent.com/Systems-Modeling/SysML-v2-Release/master/sysml.library/Systems%20Library/Requirements.sysml)
@@ -92,6 +102,7 @@ SysML v2 became a formal OMG specification in September 2025. It has no fixed le
 - An LLM plus the official conformance checker in a loop: single-shot natural-language-to-SysML v2 generation passed production conformance in 51.16% of 604 cases, the iterative loop in 100.00%. This is syntactic and static conformance, not semantic correctness. — [arXiv 2607.14162](https://arxiv.org/abs/2607.14162)
 
 ### Inferences
+
 - SysML v2 was absent from the draft report. Its most reusable idea is the shape of a requirement: a named Boolean over a subject, of the form assumptions ⇒ constraints, with nested sub-requirements, an explicit "asserted satisfied by X", and a separate verification case with a four-valued verdict. Mental's per-level invariants and refinement obligations fit that shape, and "inconclusive" is the honest verdict for a bounded run.
 - A view that must satisfy a viewpoint is a checkable statement of "this level shows only its own vocabulary". Mental's abstraction barrier is a viewpoint check whose subject is a level.
 - The standard gives refinement a name and no semantics. Anyone exchanging Mental models with SysML v2 tools could tag refinement maps with `#refinement`, but the meaning has to come from Mental.
@@ -99,6 +110,7 @@ SysML v2 became a formal OMG specification in September 2025. It has no fixed le
 - The 51% to 100% jump under a checker loop is direct evidence for Mental's plan to have a deterministic tool gate every LLM proposal.
 
 ### Gaps
+
 - The specification PDF was not read; KerML's semantics for specialization, subsetting and redefinition are stated here only as library code, not from the normative text.
 - No evidence was found of any SysML v2 tool checking the `Refinement` annotation.
 - Industrial adoption data for v2 was not searched.
@@ -106,9 +118,11 @@ SysML v2 became a formal OMG specification in September 2025. It has no fixed le
 ## 4. AADL and OSATE
 
 ### Takeaway
+
 AADL separates what a component promises (its type, with ports and abstract flow specifications) from how it is built (its implementation, with subcomponents and flow implementations), and it binds software components to processors, memory and buses as a separate relation. OSATE's latency analysis computes worst-case end-to-end latency on the same flows at whatever level of detail the model currently has. This is the closest precedent for Mental's logical side, physical side and allocation, though the primary documents could not be read in full this session.
 
 ### Cited Findings
+
 - The SEI technical note by Feiler and Hansson (CMU/SEI-2007-TN-010, December 2007) introduces a framework that calculates end-to-end latency, data age and their jitter for signal streams, shows it on a model written in the AADL flow specification notation, and explains how it yields worst-case end-to-end latency "for models of varying fidelity, including partitioned architectures"; it documents the OSATE flow latency plug-in. — [SEI library entry](https://www.sei.cmu.edu/library/flow-latency-analysis-with-the-architecture-analysis-and-design-language-aadl/)
 - OSATE's latency analysis reports worst-case response time and latency jitter for an end-to-end flow, "with increasing fidelity as AADL models are refined": from functional architectures with only specified latencies on components and connections, to sampling and queued task architectures, ARINC 653 partition binding, and processors of different speeds; it gives feedback on incompletely specified models. (via search summary; the page returned 404 on direct fetch) — [osate.org, About OSATE](https://osate.org/about-osate.html)
 - The latency analysis uses information from the bus a connection is bound to, and falls back to the latency stated on the connection when there is no binding. (via search summary of an SEI mailing-list reply) — [aadl-modeling list, May 2018](https://lists.sei.cmu.edu/pipermail/aadl-modeling/2018-May/000047.html)
@@ -117,21 +131,25 @@ AADL separates what a component promises (its type, with ports and abstract flow
 - Type versus implementation, flow source/sink/path specifications on the type, flow implementations through subcomponents, and `Actual_Processor_Binding` / `Actual_Connection_Binding` properties are defined in SAE AS5506. (training knowledge; not re-fetched)
 
 ### Inferences
+
 - A flow specification is a summary of a component stated at its boundary (this input reaches that output, within this latency). A flow implementation is the path through the children that realizes it. That pair is the same as Mental's closed-entity summary and open-entity behavior, restricted to one property: reachability with a time bound.
 - "Increasing fidelity" is the notable idea. The same end-to-end flow gets a number when only budgets exist, and a better number once tasks, sampling and bindings exist. Mental can do the same for a business-level transition: carry an assumed duration at the top, and replace it with a computed one as lower levels are anchored.
 - Binding as a fallback chain (use the bound bus if there is one, else the connection's own latency) is a concrete rule for the place where Mental's logical wire meets the physical side.
 - The draft report says "OSATE checks that implementation flows realize the declared flow specifications". No fetched source confirms that as an automated check; the sourced statement is only that latency is analyzed along flows. That sentence should be softened or sourced from the AADL standard.
 
 ### Gaps
+
 - The technical note body and OSATE help pages were not read, so the exact list of latency contributors and any consistency check between a flow specification's latency and its implementation's computed latency are unverified.
 - No adoption numbers beyond the known avionics and automotive use were gathered.
 
 ## 5. AGREE
 
 ### Takeaway
+
 AGREE attaches assume-guarantee contracts to AADL components and proves, one hierarchy layer at a time, that a parent's contract follows from its children's contracts. Leaf contracts are assumed, so the whole argument is only as good as the leaves, and a realizability check added in 2015 found 7 of 20 checked contract sets could not be implemented by any component. The semantics are synchronous, and cycles between siblings are handled by imposing a total order.
 
 ### Cited Findings
+
 - "The goal of the analysis is to prove that a component's contract is entailed by the contracts of its subcomponents." AGREE is an Eclipse plug-in for OSATE with "a syntax similar to Lustre"; the case study used the JKind and Kind 2 model checkers with the Yices SMT solver. — [Backes, Cofer, Miller, Whalen, "Requirements Analysis of a Quad-Redundant Flight Control System", arXiv 1502.03343](https://ar5iv.labs.arxiv.org/html/1502.03343)
 - The obligation for one layer has two parts: for each subcomponent c, the system assumption and the guarantees of the subcomponents ordered before c imply c's assumption (one check per subcomponent); and the system assumption with all subcomponent guarantees implies the system guarantee. The paper warns the naive formula "may not be sound when the connections between components form cycles", so "AGREE creates a total ordering of a system's subcomponents". The paper does not itself state the count "n + 1". — [arXiv 1502.03343](https://ar5iv.labs.arxiv.org/html/1502.03343)
 - "The state transitions of each component in the model occur synchronously with every other component"; asynchronous support was described as in progress. Delay is expressed only with the Lustre-style `pre` operator. — [arXiv 1502.03343](https://ar5iv.labs.arxiv.org/html/1502.03343)
@@ -144,6 +162,7 @@ AGREE attaches assume-guarantee contracts to AADL components and proves, one hie
 - The OCRA authors classify AGREE as using the "weak" notion of assumption: the pair means only "if the assumption holds, also the guarantee holds", and the environment is not obliged to meet the assumption. — [Cimatti, Dorigatti, Tonetta, ASE 2013](https://es-static.fbk.eu/people/tonetta/publications/ase13.pdf)
 
 ### Inferences
+
 - The draft report's "N components becomes N + 1 small proofs" is the right count per layer, but the cited AGREE paper does not state it; the clean n + 1 statement is OCRA's Theorem 1 (section 6). The draft's "k-induction in JKind" is not stated in the cited case study either, which names JKind, Kind 2 and Yices; the JKind paper (not re-read here) is the place to source the algorithms.
 - The draft says unrealizable *leaf* contracts were found. The realizability paper reports the unrealizable model at the flight-control-computer level, which has children in the architecture; the requirements paper reports the conflict in the output-signal component. "Unrealizable contracts that the authors had not noticed" is accurate; "leaf" should be dropped or checked against the paper's table.
 - Mental's summaries are contracts, and they are written by an LLM. A summary that no implementation could satisfy would make every check above it pass vacuously. The realizability idea translates into a cheap test Mental can run with its interpreter: for each summary case, there must exist at least one run of the open entity that matches it, and for each input the guards allow there must be some case that fires.
@@ -151,6 +170,7 @@ AGREE attaches assume-guarantee contracts to AADL components and proves, one hie
 - AGREE is synchronous. Its results say little about interleavings, which are the point of Mental's interpreter.
 
 ### Gaps
+
 - Cofer et al. NFM 2012 was not read in the original; the statement about leaf contracts is from a search summary.
 - No measured comparison of compositional and monolithic proof time was found in the fetched sources.
 - How AGREE contracts are maintained when the architecture changes was not found.
@@ -158,9 +178,11 @@ AGREE attaches assume-guarantee contracts to AADL components and proves, one hie
 ## 6. OCRA and contract-based design
 
 ### Takeaway
+
 OCRA states contract refinement exactly: the contracts of the children refine the parent's contract when the children's implementations together implement the parent, and when each child's environment (the parent's environment plus its siblings) meets that child's assumption. That gives n + 1 proof obligations per decomposition, local to that decomposition. OCRA separately checks a concrete state machine against a leaf contract and checks that it accepts every input the contract allows.
 
 ### Cited Findings
+
 - A contract is a pair of assertions (assumption, guarantee) over a component's ports. An implementation M satisfies it when M's traces that meet the assumption also meet the guarantee; an environment satisfies it when all its traces meet the assumption; M is *receptive* when it has a matching transition for every environment input the contract allows; M *realizes* the contract when it satisfies it and is receptive. — [Cimatti, Dorigatti, Tonetta, "OCRA: A Tool for Checking the Refinement of Temporal Contracts", ASE 2013](https://es-static.fbk.eu/people/tonetta/publications/ase13.pdf)
 - Refinement "has a contravariant fashion: guarantees must be strengthened and assumptions must be weakened", and is reduced to "multiple checks of trace inclusion" instead of alternating simulation. — [ASE 2013](https://es-static.fbk.eu/people/tonetta/publications/ase13.pdf)
 - Theorem 1 gives the proof obligations for a component with sub-contracts (A1, G1) … (An, Gn): one condition that the sub-contracts together with the port mapping imply the parent contract, and, for each subcomponent, one condition that the parent assumption with the other sub-contracts implies that subcomponent's assumption. The obligations "are valid if and only if the contracts refinement is correct". — [ASE 2013](https://es-static.fbk.eu/people/tonetta/publications/ase13.pdf)
@@ -172,6 +194,7 @@ OCRA states contract refinement exactly: the contracts of the children refine th
 - The theory: Benveniste et al., *Contracts for System Design*, Foundations and Trends, 2018 builds a generic "meta-theory" of contracts covering refinement, conjunction and composition, with requirement engineering for a parking garage and AUTOSAR timing contracts as examples; a related report describes independent implementability, where each sub-contract can go to a different supplier. (via search summary of the catalogue record) — [Aalborg University record](https://vbn.aau.dk/en/publications/contracts-for-system-design)
 
 ### Inferences
+
 - The draft report says OCRA is "checked with nuXmv". The primary 2013 paper says NuSMV3 and MathSAT; nuXmv came later. A small correction, but the engine list matters less than the structure of the obligations.
 - The second family of obligations is what Mental's design lacks. Mental checks that children realize the parent's steps. It does not check that each child is used within its own assumptions: that the callers and siblings of an entity only send it what its summary says it accepts. A summary with a guard "order exists" is an assumption; a sibling that can call it without that being true is an environment-side violation, and it shows up nowhere in a downward-only refinement check.
 - Receptiveness is the precise form of "the summary has a case for every input the contract allows". It is the same test as the realizability inference in section 5 and is cheap to run by enumeration on Mental's guarded cases.
@@ -179,6 +202,7 @@ OCRA states contract refinement exactly: the contracts of the children refine th
 - OCRA can print the flattened system for a monolithic check. Mental should keep the same escape hatch: when per-pair checks disagree with intuition, run the flat model.
 
 ### Gaps
+
 - Cimatti and Tonetta's SEAA 2012 paper with the formal definitions and proofs was not read.
 - No quantitative scalability data or industrial post-project adoption evidence was found.
 - Benveniste et al. was not opened.
@@ -186,9 +210,11 @@ OCRA states contract refinement exactly: the contracts of the children refine th
 ## 7. Reflexion models and their descendants
 
 ### Takeaway
+
 A reflexion model needs three inputs: a drawn high-level model, extracted source dependencies, and a map from source entities to high-level entities. The tool lifts each source dependency through the map and reports where the drawn model agrees with the code and where it does not. It scaled to Excel in 1995 with a 971-line map over 15 high-level entities, later gained hierarchy, incremental recomputation and semi-automatic mapping, and has two documented failure modes: the map is costly to write, and finding a violation does not get it fixed.
 
 ### Cited Findings
+
 - The engineer defines a high-level model, specifies how it maps to the source, and a tool computes a reflexion model "that shows where the engineer's high-level model agrees with and where it differs from a model of the source". Example: for NetBSD (250,000 lines of C), an engineer computed several reflexion models of the virtual memory subsystem "in only a few hours". — [Murphy, Notkin, Sullivan, FSE 1995, author page](https://www.cs.ubc.ca/~murphy/papers/rm/fse95.html)
 - The paper's Table 1: Excel, 1,200,000 lines of C, a source model of 119,637 tuples, a map of 971 lines, 15 high-level entities, computed in about 2 to 4 minutes. NetBSD: 15,657 tuples, a 7-line map, 8 entities. An early version of the tools took 40 minutes on Excel. The paper notes a rough map sufficed for NetBSD while "in the case of Excel, a detailed map was desired", and that the approach lets an engineer "balance the cost of refining the map with the level of detail necessary". The reflexion model is formally specified (in Z) with convergences, divergences and absences. — [Murphy et al. 1995, PDF](https://www.cs.kent.edu/~jmaletic/cs63902/Papers/Murphy95.pdf)
 - A Microsoft engineer used the technique for an experimental reengineering of Excel, about 1.2 million lines of C, and could "assess and plan the task more rapidly and with more confidence than promised by conventional techniques". — [Murphy and Notkin, UW-CSE-96-07-01](https://www.cs.ubc.ca/~murphy/papers/rm/excel_tr.html)
@@ -202,6 +228,7 @@ A reflexion model needs three inputs: a drawn high-level model, extracted source
 - The same study cites tools that give reflexion feedback while coding (SAVE-LiFe, JITTAC), and notes Structure101 and Sonargraph hook into the IDE build for just-in-time feedback. — [Ali et al. 2018](https://bura.brunel.ac.uk/bitstream/2438/14795/4/Fulltext.pdf)
 
 ### Inferences
+
 - The draft report's description of reflexion models is correct. What it missed: hierarchy and incrementality were both added by Koschke and are prerequisites for a ladder; automatic mapping predates LLMs; and the two best field studies say the technique fails socially, not technically.
 - The Excel ratio is a useful yardstick: 971 map lines and 15 boxes for 1.2 million lines of code, one day to a first model, four weeks to a good one. If Mental's LLM produces a first map in minutes, the remaining human cost is the four weeks of refinement, and that is where Mental's review and promotion flow has to be good.
 - The draft's claim "domain ladders per project have no precedent at all … Reflexion models assume a person draws the high-level model" needs qualifying. The *map* has been machine-proposed since 2005, and by 2026 an LLM proposes it (section 9). What still has no precedent is a machine proposing the high-level *model itself* with behavior and vocabulary per level, then checking it.
@@ -210,6 +237,7 @@ A reflexion model needs three inputs: a drawn high-level model, extracted source
 - "Unmapped code" has to be a visible category. Murphy's tool let the engineer trade map detail for effort; import-linter's `exhaustive` option (section 8) turns the same idea into a failing check.
 
 ### Gaps
+
 - Koschke and Simon 2003 and Koschke 2010/2013 were not read; the lifting rules for hierarchical models and any speed-up numbers are missing.
 - The Rosik et al. body was not read, so how reflexion models concealed inconsistencies is an inference.
 - The exact HuGMe and InMap evaluation setups were not read.
@@ -217,9 +245,11 @@ A reflexion model needs three inputs: a drawn high-level model, extracted source
 ## 8. Dependency-rule tools: ArchUnit, jQAssistant, import-linter, Nx, SonarQube, Sonargraph, Lattix
 
 ### Takeaway
+
 These tools all check static dependencies against declared rules; none checks behavior. They differ in how a level is declared (package pattern, graph query, ordered list, tag, drawn container, matrix rule) and they agree on three practical features: rules inherit down the containment tree, transitive paths can count, and existing violations are recorded in a baseline so that only new ones fail the build.
 
 ### Cited Findings
+
 - ArchUnit can "check dependencies between packages and classes, layers and slices, check for cyclic dependencies and more" by "analyzing given Java bytecode". Layers are package patterns (`.layer("Controller").definedBy("..controller..")`), with rules like `mayOnlyBeAccessedByLayers`; `onionArchitecture()` and slice cycle checks are built in; "ArchUnit can derive rules straight from PlantUML diagrams". `FreezingArchRule` works by "recording all existing violations to a ViolationStore" so later runs "only report new violations", and fixed violations are removed from the store. Static only. — [ArchUnit user guide](https://www.archunit.org/userguide/html/000_Index.html)
 - jQAssistant scans artifacts (class files, JARs, Maven POMs, XML, JSON, test results) into an embedded Neo4j database and runs rules written as Cypher queries. *Concepts* enrich the graph with labels, properties or relations (modules, layers, roles) and warn if they match nothing; *constraints* return violations; *groups* bundle them. Existing violations can be written to `jqassistant-baseline.xml`, committed, and pruned as they disappear. — [jQAssistant manual](https://jqassistant.github.io/jqassistant/current/)
 - import-linter has five contract types: forbidden, protected, layers, independence, acyclic siblings. — [import-linter contract types](https://import-linter.readthedocs.io/en/stable/contract_types/)
@@ -230,6 +260,7 @@ These tools all check static dependencies against declared rules; none checks be
 - Sonargraph's architecture DSL lets one element use another by connecting its connector to the other's interface. (via search summary of a secondary blog; primary documentation not found) — [IASA, Designing a DSL to describe software architecture](https://btabok.iasaglobal.org/designing-a-dsl-to-describe-software-architecture-part-1/)
 
 ### Inferences
+
 - jQAssistant's *concept* is the nearest existing mechanism to a Mental level: a query that adds higher-level labels onto the lower-level graph, with a warning when it matches nothing. A level whose mapping matches no code is a dead level, and that warning is worth copying.
 - Three features recur and should be in Mental's first barrier check: rule inheritance down containment (Lattix, SonarQube), transitive paths counted (import-linter), and an exhaustive mode where unmapped code fails (import-linter, Nx's untagged rule).
 - Baseline-and-ratchet appears in ArchUnit and jQAssistant, and its absence is what Capella users complain about. An LLM-proposed level will report many leaks on first run; without a committed baseline the feature will be switched off.
@@ -238,6 +269,7 @@ These tools all check static dependencies against declared rules; none checks be
 - All of these check structure over a single repository's code dependencies. None has a notion of a step, a state or a vocabulary per level.
 
 ### Gaps
+
 - Sonargraph's primary documentation and adoption data for any of these tools were not retrieved.
 - SonarQube's supported languages and the on-disk format of the intended architecture were not on the page read.
 - Whether any of these tools scales rule checking incrementally was not checked.
@@ -245,9 +277,11 @@ These tools all check static dependencies against declared rules; none checks be
 ## 9. LLMs for architecture conformance and code-to-architecture mapping (2023–2026)
 
 ### Takeaway
+
 Conformance checking is the least studied use of LLMs in software architecture. The measured results that exist are for neighbouring tasks: linking architecture documents to code (F1 0.86), mapping an architecture model onto a reference architecture (85.8% with a compliance feedback loop), refining recovered module structure, detecting violations of written architecture decisions, and reconstructing microservice architecture (F1 0.60). The repeated findings are that a deterministic check in the loop is what makes the LLM output usable, and that LLMs describe systems at code granularity unless forced upward.
 
 ### Cited Findings
+
 - A systematic review of LLMs in software architecture covers 18 articles and names "checking conformance" among the underexplored areas, with generating code from architectural design. — [Schmid et al., arXiv 2505.16697](https://arxiv.org/abs/2505.16697)
 - A second review found a single paper using an LLM for architectural conformance recommendations. (via search summary) — [arXiv 2503.13310](https://arxiv.org/pdf/2503.13310)
 - Trace links from architecture documentation to code: an LLM extracts component names from the documentation to stand in for a hand-made architecture model. Weighted average F1 0.86 with GPT-4o, against 0.87 for TransArC (which needs a manual model) and 0.62 for ArDoCode (the best baseline without one). — [Fuchß, Liu, Hey, Keim, Koziolek, ICSA 2025](https://fuchss.org/conferences/icsa25/)
@@ -259,6 +293,7 @@ Conformance checking is the least studied use of LLMs in software architecture. 
 - Detecting SOLID design-principle violations with four open LLMs: prompt strategy mattered and none was best across principles; this is class-level, not architectural. (via search summary) — [arXiv 2509.03093](https://arxiv.org/abs/2509.03093)
 
 ### Inferences
+
 - No paper found measures an LLM proposing a *ladder* of levels, or measures layer assignment of code as a first-class task. The nearest numbers, 0.86 F1 for document-to-code links and 85.8% for model-to-reference mapping, suggest that roughly one mapping in seven will be wrong before review. A barrier check run on such a map will report false leaks at about that rate, so each finding must show the mapping decision it depends on.
 - RAMD's ablation and the SysML v2 conformance loop (section 3) say the same thing: the deterministic check is the convergence signal for the LLM. Mental's reflexion check should run *inside* the proposal loop, feeding divergences and unmapped code back to the LLM, and not only as a report to the person afterwards.
 - "Granularity mismatch" is the main risk for LLM-proposed upper levels: the LLM will restate the code. A level proposal should be rejected automatically when its entities are in near one-to-one correspondence with the level below, or when its vocabulary is mostly lower-level identifiers.
@@ -266,6 +301,7 @@ Conformance checking is the least studied use of LLMs in software architecture. 
 - The decision-record study shows LLM conformance checks degrade when the rule depends on deployment or organizational facts. Mental's physical side and IaC extraction supply the deployment facts; the organizational ones stay with the person.
 
 ### Gaps
+
 - No benchmark exists for layer or level assignment with a ladder as ground truth; Mental would need to build one (Git's porcelain/plumbing split is documented by the project and could serve).
 - The bodies of the 2025–2026 papers were not read; numbers are from abstracts.
 - No study of how LLM-proposed mappings hold up across commits was found.
@@ -273,9 +309,11 @@ Conformance checking is the least studied use of LLMs in software architecture. 
 ## 10. Behavioral conformance between architecture and implementation
 
 ### Takeaway
+
 Nearly all conformance checking is structural. The behavioral work that exists either lifts monitored runtime interactions to architecture units and checks them against communication rules (ARAMIS), compares recorded traces with sequence diagrams (ConArch and related), or model-checks a state machine against a temporal contract (OCRA). All trace-based approaches are limited by which scenarios were actually run.
 
 ### Cited Findings
+
 - "Architecture compliance checking approaches focus solely on structural characteristics and ignore behavioral conformance", as stated by a paper proposing a reflexion-based comparison of implementation behavior with a behavioral architecture model. (via search summary) — [Springer chapter, DOI 10.1007/978-3-642-16612-9_16](https://rd.springer.com/chapter/10.1007/978-3-642-16612-9_16)
 - ARAMIS (Nicolaescu and Lichter, RWTH Aachen) checks "behavior-based architecture conformance" against pre-specified communication rules: it needs a prescriptive architecture description, even an outdated one, and a mapping from code to architecture units; it collects run-time traces from Java systems with the Kieker monitoring framework and maps interactions onto the units. A follow-up paper argues the check is only as good as the monitored behavior and proposes a metric for the adequacy of monitored scenarios. (via search summary) — [WICSA 2016 paper](https://swc.rwth-aachen.de/docs/2016_Nicoleascu_WICSA.pdf), [APSEC 2017 paper](https://swc.rwth-aachen.de/docs/2017_APSEC_Nicolaescu.pdf), [dissertation record, 2018](https://publications.rwth-aachen.de/record/751838/export/hr?ln=en)
 - ConArch detects inconsistencies between the documented dynamic behavior of an architecture and its implementation at run time; a related approach builds an execution tree from UML sequence diagrams and flags recorded operations that match no diagram. (via search summary) — [Ciraci, Sözer, Tekinerdogan, Bilkent repository](https://repository.bilkent.edu.tr/bitstream/11693/28072/1/An%20approach%20for%20detecting%20inconsistencies%20between%20behavioral%20models%20of%20the%20software%20architecture%20and%20the%20code.pdf)
@@ -284,11 +322,13 @@ Nearly all conformance checking is structural. The behavioral work that exists e
 - Ali et al. cite earlier combined static and dynamic conformance work (Pattern Lint, 1996) and note that tools lack support for dynamic binding of services. — [Ali et al. 2018](https://bura.brunel.ac.uk/bitstream/2438/14795/4/Fulltext.pdf)
 
 ### Inferences
+
 - Behavioral conformance has two existing shapes, and Mental's interpreter can produce both without instrumentation: lifted interaction traces checked against rules (ARAMIS), and a lower-level behavior checked against an upper-level contract (OCRA). Mental generates the runs from the model, so the ARAMIS coverage problem becomes a bounded-exploration question with a stated bound, instead of "which tests happened to run".
 - ARAMIS needs the same two inputs as a reflexion model (prescriptive model, code-to-unit map). The behavioral check does not remove the mapping cost; it reuses the map.
 - A verdict from a trace-based check should always carry its coverage. This matches SysML v2's "inconclusive" verdict and should be the default when the explored scenarios do not exercise an upper step.
 
 ### Gaps
+
 - None of the ARAMIS, ConArch or Popescu papers was read in full; results and case-study sizes are unknown.
 - No recent (2020 onward) survey of behavioral architecture conformance was found.
 - TLA+ trace validation and refinement checking belong to another note and are not covered here.

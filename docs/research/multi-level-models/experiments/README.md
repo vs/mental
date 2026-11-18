@@ -29,7 +29,9 @@ Set up the environment and the rq checkouts as in the abstraction-function READM
 ```sh
 PY=venv/bin/python
 AF=../../abstraction-function/experiments
-for v in v2.12 v3.0 v2.0; do for b in 0 2; do $PY -I $AF/run.py explore --rq src/rq-$v --out graphs/$v --bound $b; done; done
+for v in v2.12 v3.0 v2.0; do
+  for b in 0 2; do $PY -I $AF/run.py explore --rq src/rq-$v --out graphs/$v --bound $b; done
+done
 $PY -I mlexp/analyze.py graphs/v2.12 results graphs/v3.0 graphs/v2.0
 $PY -I mlexp/llm_tasks.py prompts graphs/v2.12 src/rq-v2.12 llm
 # run llm/prompt-name.md and llm/prompt-ladder.md through `claude -p` (flags as in the
