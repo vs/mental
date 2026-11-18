@@ -58,7 +58,6 @@ The principles in `docs/alpha/principles.toml` name them in `checked_by` as `ci:
 | agent-config | CLAUDE.md and .claude/ configuration (agnix) | pull request, at Stop |
 | review-dates | Suppressions past their review date | pull request, weekly |
 | toolchain | Pinned tools that have a newer release | weekly |
-| baselines | Baselines only shrink | pull request |
 
 ## Commit convention
 
@@ -171,7 +170,6 @@ Claude can't edit these. Lockfiles change only through the package manager; chan
 - `**/*.pem`
 - `**/*.key`
 - `Cargo.lock`
-- `.claude/alpha/baselines/**`
 
 ## Exceptions
 

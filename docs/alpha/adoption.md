@@ -120,7 +120,7 @@ Done when:
 | --- | --- | --- |
 | `p5-baseline-typos` | - | done |
 | `p5-baseline-markdown` | - | done |
-| `p5-baseline-links` | - | pending |
+| `p5-baseline-links` | - | in progress |
 
 ### `p5-baseline-typos`: Clear the typos baseline
 

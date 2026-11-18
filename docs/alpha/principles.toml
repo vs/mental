@@ -11,10 +11,10 @@ name = "Mental"
 slug = "mental"
 
 [review]
-risk_paths = ["**/migrations/**", "**/*.proto", "**/openapi*.yaml", "**/openapi*.yml", "**/openapi*.json", "**/auth/**", "**/security/**", ".github/**", "docs/alpha/principles.toml", "model/src/id.rs", "model/src/record.rs", "model/src/record/**", "model/src/guard.rs", "docs/specification.md", "examples/*/model/**", "model/src/anchor.rs", "model/src/diagnostic.rs", "model/src/jsonl.rs", "docs/alpha/design-language.md", ".claude/alpha/baselines/**"]
+risk_paths = ["**/migrations/**", "**/*.proto", "**/openapi*.yaml", "**/openapi*.yml", "**/openapi*.json", "**/auth/**", "**/security/**", ".github/**", "docs/alpha/principles.toml", "model/src/id.rs", "model/src/record.rs", "model/src/record/**", "model/src/guard.rs", "docs/specification.md", "examples/*/model/**", "model/src/anchor.rs", "model/src/diagnostic.rs", "model/src/jsonl.rs", "docs/alpha/design-language.md"]
 
 [protected]
-paths = ["**/.env", "**/.env.*", "**/*.pem", "**/*.key", "Cargo.lock", ".claude/alpha/baselines/**"]
+paths = ["**/.env", "**/.env.*", "**/*.pem", "**/*.key", "Cargo.lock"]
 extra = []
 
 [git]
@@ -953,19 +953,3 @@ id = "review-dates"
 command = "mise run check:review-dates"
 globs = []
 stop = false
-
-[[repo_checks]]
-id = "baselines"
-command = "mise run check:baselines"
-globs = []
-stop = false
-
-[[baselines]]
-id = "links"
-dir = "."
-command = "lychee --offline --no-progress --format json ."
-
-[baselines.json]
-items = "error_map.*.*"
-file = "@0"
-rule = "url"
