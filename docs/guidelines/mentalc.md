@@ -94,10 +94,10 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 - **Enforced by:** tidy tests `banned_crates` and `no_async`.
 
 #### C6. A small blocking API client
-- **Rule:** the `api` backend sends the raw Messages API through `ureq`: model IDs come from config, never from code; `temperature`, `top_p` and `top_k` are never sent; only 408, 409, 429, 5xx, 529 and transport errors are retried, with exponential backoff, jitter, `retry-after` and a maximum attempt count; `stop_reason` `refusal` or `max_tokens` is a `BackendError`, never a repair; a missing key is an error that names the variable to set.
-- **Why:** there is no official Rust SDK, and clust shows a typed wrapper's bloat and staleness; repairing a refusal wastes calls; sampling parameters are rejected by the current API version.
+- **Rule:** the `api` backend sends the raw Messages API through `ureq`: model IDs come from config, never from code; `temperature`, `top_p` and `top_k` are never sent; only 408, 409, 429, 5xx, 529 and transport errors are retried, with exponential backoff, jitter, `retry-after` and a maximum attempt count; `stop_reason` `refusal` or `max_tokens` is a `BackendError`, never a repair; a missing key is an error that names the variable to set. Every request has a connect timeout of 10 s and a total timeout of 10 min, set on the `ureq` agent. A timeout is a transport error: it is retried like one, since a Messages call changes nothing on the server and is safe to repeat, and after the last attempt it is a `BackendError` (exit 2) that says which limit was hit and that a rerun reuses every answer already cached.
+- **Why:** there is no official Rust SDK, and clust shows a typed wrapper's bloat and staleness; repairing a refusal wastes calls; sampling parameters are rejected by the current API version. `ureq` has no timeout by default, so a stalled socket would hang the build instead of failing it.
 - **Source:** [Codex retry policy][codex-retry]; [clust's hard-coded model enum][clust-model]; Anthropic claude-api reference (`shared/tool-use-concepts.md`, `shared/error-codes.md`).
-- **Enforced by:** insta snapshot of the serialized request; unit tests of response parsing on recorded bodies (success, refusal, `max_tokens`, 429 with `retry-after`, 529); unit tests of the retry classification as a pure function.
+- **Enforced by:** insta snapshot of the serialized request; unit tests of response parsing on recorded bodies (success, refusal, `max_tokens`, 429 with `retry-after`, 529); unit tests of the retry classification as a pure function; a test against a local listener that accepts and never answers, with the timeouts passed in short, asserting the retry count and the error text.
 
 ### Answers and prompts
 
@@ -222,6 +222,15 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 - **Why:** a diff in a golden task is exactly the signal that cache keys changed.
 - **Source:** [Codex context snapshots with normalization][codex-normalize].
 - **Enforced by:** insta in CI.
+
+### Outside processes
+
+#### C26. The one process has a time limit
+
+- **Rule:** `repo.rs` runs `docker compose config` with a time limit of 60 s; when it passes, `mentalc` kills the process and exits 2 with an error that names the command and says to run it by hand to see why it stalls (a stopped Docker daemon, a remote `include:` being fetched). A non-zero exit is also exit 2, with the command's stderr. The limit is a parameter of the function, not a setting.
+- **Why:** the standard library's `wait` has no timeout, so a stalled command would hang `mentalc build` with no message; `compose config` normally answers in well under a second.
+- **Source:** spec 5.2 (the one process `mentalc` starts); principle "every external call has a timeout and a failure path".
+- **Enforced by:** a test in `repo.rs` that runs a command which never exits with a short limit and asserts the kill and the error text; a test of a command that exits non-zero.
 
 ## Open questions for the owner
 

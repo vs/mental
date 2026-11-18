@@ -24,7 +24,7 @@ A rule that only a reviewer can check is kept only when it prevents real bloat o
 | [testing.md](testing.md) | the testing playbook: layers, the `check` helper, fixtures, snapshots, properties, fuzzing, fault injection, mutants, coverage, determinism, speed, tidy tests (T1-T21) |
 | [model.md](model.md) | record types, semantic IDs, canonical JSONL, guards, checks, diagnostics (M1-M25) |
 | [extract.md](extract.md) | Python and compose to facts: parser, stages, packs, control flow, fixtures (X1-X22) |
-| [mentalc.md](mentalc.md) | the compiler: pipeline, LLM loop, backends, cache, ledger, MCP, CLI (C1-C25) |
+| [mentalc.md](mentalc.md) | the compiler: pipeline, LLM loop, backends, cache, ledger, MCP, CLI, the one outside process (C1-C26) |
 | [mentalvm.md](mentalvm.md) | the interpreter: step, choices, replay, search, minimizer, WebAssembly (V1-V25) |
 
 ## The workspace at a glance
@@ -397,6 +397,7 @@ Ten principles carry the rules that are statements of intent; the rest stay as r
 | C23 Pull protocol at three layers | reviewer | ci:mutants |
 | C24 Golden report-jobs build | ci: debug and release acceptance jobs | |
 | C25 Golden tasks | ci: insta check | |
+| C26 Time limit on the one process | principle:timeouts | reviewer |
 | V1 Configurations are values | principle:pure-core | public-API snapshot |
 | V2 Cheap, ordered clones | clippy:disallowed-types | tidy:mentalvm_no_interior_mutability; property test |
 | V3 The step prunes nothing | principle:semantics-stay-in-the-step | property test |

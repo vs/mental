@@ -82,7 +82,7 @@ Codes are a closed enum, written in kebab-case. A diagnostic has a code, the rec
 | `build-step-unread` | warning | `setup.py`, a `RUN` line or a build script exists and was not read | — |
 | `config-unset` | warning | a compose value refers to a variable that neither the file nor `.env` sets | set it in `.env` |
 
-A failure of `docker compose config` itself, or an unreadable file, is a tool failure: exit code 2, no diagnostics file.
+A failure of `docker compose config` itself (a non-zero exit, or no answer within its time limit of 60 s, after which it is killed; [C26](../guidelines/mentalc.md#c26-the-one-process-has-a-time-limit)), or an unreadable file, is a tool failure: exit code 2, no diagnostics file.
 
 ## 6. Layout and size
 
