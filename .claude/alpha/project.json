@@ -266,7 +266,8 @@
             "run": "! grep -qE '\\*Stutter:\\*|\\*Isolated:\\*' docs/glossary.md"
           }
         ],
-        "status": "pending"
+        "status": "done",
+        "branch": "alpha/p4-glossary-verdicts"
       },
       {
         "id": "p5-baseline-typos",
