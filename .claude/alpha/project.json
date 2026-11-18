@@ -99,9 +99,7 @@
       "tracked": 216
     },
     "git_hooks": "alpha",
-    "baselines": [
-      "links"
-    ],
+    "baselines": [],
     "steps": [
       {
         "id": "p4-ty-banned-crates",
@@ -312,7 +310,8 @@
             "no_baseline": "links"
           }
         ],
-        "status": "pending"
+        "status": "in_progress",
+        "branch": "alpha/p5-baseline-links"
       }
     ]
   },
