@@ -100,7 +100,6 @@
     },
     "git_hooks": "alpha",
     "baselines": [
-      "typos",
       "markdown",
       "links"
     ],
@@ -282,7 +281,8 @@
             "no_baseline": "typos"
           }
         ],
-        "status": "pending"
+        "status": "done",
+        "branch": "alpha/p5-baseline-typos"
       },
       {
         "id": "p5-baseline-markdown",
