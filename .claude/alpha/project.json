@@ -140,7 +140,8 @@
             "run": "! grep -nE 'spec (4\\.4|4\\.8)|plan D[79]|rejects seeded errors|ordered-reads rule' docs/guidelines/model.md && ! grep -nE 'spec 3 and 6\\.5|spec 8\\.2 and 6\\.8' docs/guidelines/*.md && ! grep -n '(E4)' docs/resolution.md && ! grep -n 'concrete or symbolic' docs/guidelines/mentalvm.md"
           }
         ],
-        "status": "pending"
+        "status": "done",
+        "branch": "alpha/p4-guidelines-refs"
       },
       {
         "id": "p4-plan-layout",
