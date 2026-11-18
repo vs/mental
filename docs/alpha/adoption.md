@@ -118,7 +118,7 @@ Done when:
 
 | Step | Component | Status |
 | --- | --- | --- |
-| `p5-baseline-typos` | - | pending |
+| `p5-baseline-typos` | - | in progress |
 | `p5-baseline-markdown` | - | pending |
 | `p5-baseline-links` | - | pending |
 
