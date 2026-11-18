@@ -45,7 +45,7 @@ mentalc/
   tests/              cli.rs  mcp.rs  report_jobs.rs  fixtures/<repo>/answers/
 ```
 
-Structural and anchor checks come from `model` ([M12](model.md#m12-checking-is-one-pure-pass-that-never-stops-early)); phase 2 is `extract::extract`.
+Structural and anchor checks come from `model` ([M12](model.md#m12-checking-is-one-pure-pass-that-never-stops-early)); phase 2 is `extract::extract`. `build.rs` returns the model files as bytes and writes nothing; `repo.rs` writes them to `.mental/model/`.
 
 ## Dependency allowlist
 

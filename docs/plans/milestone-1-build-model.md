@@ -97,13 +97,16 @@ extract/    src/  lib.rs
                   build/docker.rs     Dockerfile -> base image, workdir, default command, unread steps
                   build/python.rs     .python-version, pyvenv.cfg, a base image tag -> a version
                   build/roots.rs      units + launches + file list -> source roots
-                  pack.rs             launcher rows
-            packs/launchers.toml
+                  pack.rs             launcher rows, from a string
 mentalc/    src/  main.rs  cli.rs     [edge: stdio]
-                  repo.rs             [edge: file system; the one process: docker compose config]
-                  build.rs            read inputs -> extract::build::assemble -> write .mental
+                  lib.rs              run(cli) -> ExitStatus
+                  repo.rs             [edge: file system, docker compose]
+                  build.rs            snapshot -> model files as bytes
+            packs/launchers.toml      embedded with include_str!
 examples/report-jobs/mentalc.toml     name = "reports"
 ```
+
+`repo.rs` is the only file that touches the disk or runs a process ([G4](../guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)): it reads the inputs, runs `docker compose config` and writes `.mental/model/`. `build.rs` calls `extract::build::assemble` and returns the files to write, so it has no I/O. `lib.rs` holds `run` so `main.rs` stays thin ([G12](../guidelines/README.md#g12-exit-codes-and-a-thin-main)). The launcher pack lives in `mentalc/packs/` with every other pack, and `extract::pack` parses the string `mentalc` passes in.
 
 Dependencies: `model` has `serde` and `serde_json`; `extract` adds `toml`; `mentalc` adds `clap` and `anyhow`. Budget: about 1,600 lines of non-test code.
 
@@ -120,11 +123,11 @@ Each step is one pull request that leaves every gate green, with its tests in th
 | 2 | `model::diagnostic`: `Diagnostic`, `Severity`, `Code` with the codes of section 5; the completeness test that every code has a fixture | — |
 | 3 | `model::jsonl`: canonical read and write, `format.json`, strict reading; `anchor` | round-trip properties |
 | 4 | `model::record::build`: the five kinds | the format snapshot, which freezes the fields of section 4 |
-| 5 | `extract::build::compose` and `pack` with launcher rows | the stored JSON of report-jobs gives 5 launches, 3 artifacts, 12 configuration inputs; fixtures for profiles, `env_file`, a variable reference, `replicas` |
+| 5 | `extract::build::compose` and `pack` with launcher rows (`mentalc/packs/launchers.toml`) | the stored JSON of report-jobs gives 5 launches, 3 artifacts, 12 configuration inputs; fixtures for profiles, `env_file`, a variable reference, `replicas` |
 | 6 | `extract::build::lock` and `pyproject` | fixtures per format and per error code; a uv workspace with two members and a path dependency |
 | 7 | `extract::build::docker` and `python` | fixtures: a multi-stage file (the last stage counts), `CMD` in both forms, a `RUN` line listed as unread |
 | 8 | `extract::build::roots` and `assemble` | report-jobs as strings in, the records and three gaps of section 1 out |
-| 9 | `mentalc`: `repo.rs`, `build`, `--json`, exit codes; `examples/report-jobs/mentalc.toml` | the acceptance of section 1, run against the real directory with the stored compose JSON, and in the Docker CI job against the real command |
+| 9 | `mentalc`: `lib.rs`, `repo.rs`, `build`, `--json`, exit codes; `examples/report-jobs/mentalc.toml` | the acceptance of section 1, run against the real directory with the stored compose JSON, and in the Docker CI job against the real command |
 | 10 | Measure: run `mentalc build` on full-stack-fastapi-template, Mealie, Redash and rq; compare launches with `docker compose config` and pins with `uv export --frozen`; record the differences and the gaps as findings | a findings entry; reader fixes go back through steps 5 to 8 |
 
 ## 8. Tests
