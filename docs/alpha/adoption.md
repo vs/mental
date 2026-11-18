@@ -6,7 +6,7 @@ alpha adopted this repo. These steps bring its code up to the principles in [pri
 
 | Phase | Done | Steps |
 | --- | --- | --- |
-| P4 Rework | 6 | 9 |
+| P4 Rework | 7 | 9 |
 | P5 Burn-down | 0 | 3 |
 
 ## P4 Rework
@@ -19,7 +19,7 @@ alpha adopted this repo. These steps bring its code up to the principles in [pri
 | `p4-timeouts` | mentalc | done |
 | `p4-trim-later` | mentalc | done |
 | `p4-golden-model` | - | done |
-| `p4-project-principles` | - | pending |
+| `p4-project-principles` | - | done |
 | `p4-diagrams` | - | pending |
 | `p4-glossary-verdicts` | - | pending |
 
