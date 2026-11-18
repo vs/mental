@@ -46,7 +46,7 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 
 #### X1. ruff's parser and ty's crates, pinned to one commit
 - **Rule:** parse with ruff's parser and resolve references with ty's crates, all from one pinned commit of the ruff repository. Do not use tree-sitter, stack-graphs, SCIP indexers or a language server, and do not write resolution rules of our own.
-- **Why:** a typed, CPython-shaped AST makes a missing case a compile error; ty works on the same syntax tree, in process, and resolved 88.5% of calls on five projects, agreeing with Pyrefly on 99.7% of the sites both answer ([type checkers as libraries](../research/type-checkers-as-libraries/report.md)). The alternatives are untyped, archived, or need another program installed.
+- **Why:** a typed, CPython-shaped AST makes a missing case a compile error; ty works on the same syntax tree, in process, and resolved 88.5% of calls on five projects, agreeing with Pyrefly on 99.7% of the sites both answer ([type checkers as libraries](../research/type-checkers-as-libraries/report.md)). The alternatives are untyped, archived, or need another program installed. What these crates pull in (salsa, rayon, rand; 242 crates at ty 0.0.105) is accepted in this crate only, the one exception to [G16](README.md#g16-banned-weight).
 - **Source:** [ruff versioning policy][ruff-versioning]; [ruff parser `lib.rs`][ruff-parser]; [stack-graphs README][sg-readme].
 - **Enforced by:** tidy tests `extract_ruff_ty_pinned` and `banned_crates`.
 
@@ -149,7 +149,7 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 - **Enforced by:** clippy `disallowed-types` ([G6](README.md#g6-ordered-collections-only)); determinism test.
 
 #### X17. Out of scope for version one
-- **Rule:** no concrete syntax tree or trivia, no incremental reparsing, no language server, no query engine, no language-neutral abstraction layer, no taint tracking.
+- **Rule:** none of our own: no concrete syntax tree or trivia, no incremental reparsing, no language server, no query engine, no language-neutral abstraction layer, no taint tracking. ty's query engine is used through its crates ([X1](#x1-ruffs-parser-and-tys-crates-pinned-to-one-commit)), never rebuilt or extended.
 - **Why:** stack-graphs (archived) and ty (236k lines) show where these lead.
 - **Source:** [stack-graphs README][sg-readme]; [ty `Cargo.toml`][ty-cargo].
 - **Enforced by:** tidy test `banned_crates`; reviewer.

@@ -175,14 +175,14 @@ The helper is the only place that knows the API. When the API changes, one helpe
 
 | Test | Checks | Rule |
 |---|---|---|
-| `crate_graph` | workspace dependency edges; only `extract` uses `ruff_*` | [G1](README.md#g1-fixed-crate-graph), [X2](extract.md#x2-no-ruff-or-ty-type-escapes) |
+| `crate_graph` | workspace dependency edges; only `extract` uses `ruff_*` and `ty_*` | [G1](README.md#g1-fixed-crate-graph), [X2](extract.md#x2-no-ruff-or-ty-type-escapes) |
 | `no_foreign_reexports` | no `pub use` of another crate's items | [G2](README.md#g2-small-public-surface) |
 | `traits_have_two_impls` | every trait has two non-test impls, `Backend` excepted | [G3](README.md#g3-functions-over-frameworks) |
 | `edges_are_listed` | `#[expect(clippy::disallowed_methods ...)]` only in listed edge files | [G4](README.md#g4-io-and-ambient-inputs-only-at-named-edges) |
 | `serde_derives_in_allowed_modules` | `Serialize`/`Deserialize` derives only in allowed modules | [G14](README.md#g14-serializable-types-are-contracts) |
 | `dependencies_justified` | a comment above each `[workspace.dependencies]` entry; member deps within the crate's allowlist | [G15](README.md#g15-every-dependency-justified-once) |
 | `lockfile_allowlist` | `Cargo.lock` package names equal the checked-in `deps.allow` | [G15](README.md#g15-every-dependency-justified-once) |
-| `banned_crates` | none of the banned crates in `Cargo.lock` | [G16](README.md#g16-banned-weight) |
+| `banned_crates` | none of the banned crates in `Cargo.lock`, except packages reachable only through ruff's and ty's crates; none at all under `model` or `mentalvm` | [G16](README.md#g16-banned-weight) |
 | `no_async` | no `async fn` or `.await` | [G16](README.md#g16-banned-weight) |
 | `file_length` | non-test source files at most 400 lines | [G17](README.md#g17-size-limits) |
 | `no_non_exhaustive` | no `#[non_exhaustive]` | [G19](README.md#g19-no-non_exhaustive-inside-the-workspace) |
