@@ -35,7 +35,7 @@ run = "osv-scanner scan source --no-ignore ."
 run = "typos"
 
 [tasks."check:markdown"]
-run = "python3 .claude/alpha/checks/ratchet.py markdown"
+run = "rumdl check ."
 
 [tasks."check:links"]
 run = "python3 .claude/alpha/checks/ratchet.py links"

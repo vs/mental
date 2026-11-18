@@ -961,12 +961,6 @@ globs = []
 stop = false
 
 [[baselines]]
-id = "markdown"
-dir = "."
-command = "rumdl check ."
-pattern = "^(?P<file>[^:\\s]+):\\d+:\\d+: \\[(?P<rule>MD\\d+)\\]"
-
-[[baselines]]
 id = "links"
 dir = "."
 command = "lychee --offline --no-progress --format json ."
