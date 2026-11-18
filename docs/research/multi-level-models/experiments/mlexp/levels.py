@@ -127,7 +127,7 @@ def build(graph: dict[str, Any], run: dict[str, Any], move_close: str = 'every-w
     """The step tree of one run under design B, and the step lists of design A.
 
     The defaults are the rules of the first experiment. The options are those of
-    docs/ladder-strategies.md 5.2: O1 `move_close` and O3 `outcomes`.
+    docs/research/multi-level-models/ladder-strategies.md 5.2: O1 `move_close` and O3 `outcomes`.
     """
     return build_effects(effects_of(graph, run), move_close, outcomes)
 

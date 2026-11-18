@@ -1,4 +1,4 @@
-"""Experiments L2 to L5 of docs/ladder-strategies.md on rq.
+"""Experiments L2 to L5 of docs/research/multi-level-models/ladder-strategies.md on rq.
 
 L2  where a move ends: every-write, atomic-group, write-run, and the `prefer` choice among them
 L3  naming from the head: the naming sheet with each step's head effect, and a name-truth check
@@ -35,7 +35,7 @@ from afexp.harness import digest  # noqa: E402
 from mlexp.levels import key_pattern  # noqa: E402
 
 # ---------------------------------------------------------------------------
-# Thresholds fixed in advance (docs/ladder-strategies.md 5.2, O4).
+# Thresholds fixed in advance (docs/research/multi-level-models/ladder-strategies.md 5.2, O4).
 BAND = (2, 7)            # band: merge when the median fan-in is below 2; look for a level in between above 7
 SINGLE_CHILD = 0.8       # single-child: merge when at least this share of upper steps has exactly one lower step
 SPAN_OVERLAP = 0.5       # span-overlap: merge when the step-length distributions of two adjacent levels overlap this much

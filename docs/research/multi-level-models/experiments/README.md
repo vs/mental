@@ -15,7 +15,7 @@ Research code behind section 8 of the [report](../report.md). It reuses the harn
 | `results/reader.json` | Reader test (E3), with every answer |
 | `results/naming-sheet.json`, `prompt-name.md`, `witness.txt`, `b-partitions.json` | Inputs given to the LLM, and design B's cut of the witness |
 | `results/llm-answers/` | The raw answers: twelve of the first experiment, six `name-head-*` of L3 |
-| `mlexp/strategies.py` | Experiments L2 to L5 of the [ladder strategies](../../../ladder-strategies.md#8-experiments): move rules, naming from the head, object-centric outcomes, merge tests |
+| `mlexp/strategies.py` | Experiments L2 to L5 of the [ladder strategies](../ladder-strategies.md#8-experiments): move rules, naming from the head, object-centric outcomes, merge tests |
 | `results/strategies.json` | L2, L4 and L5 |
 | `results/strategies-naming.json`, `naming-sheet-head.json` | L3: the sheet with heads, agreement and name-truth failures for both naming variants |
 | `results/strategies-reader.json` | L2's stand-in reader at the move level under each move rule, with every answer |

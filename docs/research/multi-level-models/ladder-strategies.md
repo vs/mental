@@ -4,7 +4,7 @@
 
 The owner asked for two things. First, the ways of building multi-level models found in research should be kept together in one place. Second, `mentalc` should be able to build a ladder in several ways, so that the ways can be tried side by side and the better ones chosen by measurement. The small hooks this needs in the specification, the glossary and the `mentalc` guidelines were applied on the same date and are listed in [section 10](#10-changes-to-accepted-documents).
 
-Sources: the [multi-level models report](research/multi-level-models/report.md) defines closing rules, charters, admission tests, cuts and the rq experiment. The [levels in other domains report](research/levels-in-other-domains/report.md) gives the practices of other fields and proposals N1 to N9. The [abstraction levels report](research/abstraction-levels/report.md) covers how levels are related and checked.
+Sources: the [multi-level models report](report.md) defines closing rules, charters, admission tests, cuts and the rq experiment. The [levels in other domains report](../levels-in-other-domains/report.md) gives the practices of other fields and proposals N1 to N9. The [abstraction levels report](../abstraction-levels/report.md) covers how levels are related and checked.
 
 Each section carries a status, as in the specification: **Proposed** (the working answer), **Experiment** (competing designs kept side by side, to be settled by measurement), **Measured** (tried and not chosen; kept for comparison), **Later**, **Open**.
 
@@ -262,7 +262,7 @@ These are the checks of 5.3 in the specification (pair, barrier, coverage, invar
 | a project with runbooks or a documented process | for `documented` and `framework` top vocabulary | to choose |
 | a project that is mostly computation, such as a compiler | where outcome and stage have little to work on | to choose |
 
-The three projects still to choose are fixed before any measurement, as in the [resolution plan](resolution.md#the-plan-for-all-six).
+The three projects still to choose are fixed before any measurement, as in the [resolution plan](../../resolution.md#the-plan-for-the-experiments).
 
 ## 8. Experiments
 
@@ -283,7 +283,7 @@ Option O1. On rq the rules closed "mark started" as two moves; the hand grouping
 
 **Decide by:** M3, M4 (developer questions), M5 (move-class stability across rq versions, where 0.50 and 0.86 were measured), M7. `prefer` wins only if its choice beats both fixed rules on at least one subject and loses on none.
 
-**Result on rq (2026-11-17; [`strategies.json`](research/multi-level-models/experiments/results/strategies.json), key `L2`).** All 2,097 runs, three rules, the same observables. M7 was measured by a proxy: how often a move class makes the same kind of observable change (*purity*).
+**Result on rq (2026-11-17; [`strategies.json`](experiments/results/strategies.json), key `L2`).** All 2,097 runs, three rules, the same observables. M7 was measured by a proxy: how often a move class makes the same kind of observable change (*purity*).
 
 | | `every-write` | `atomic-group` | `write-run` |
 |---|---|---|---|
@@ -302,7 +302,7 @@ Option O1. On rq the rules closed "mark started" as two moves; the hand grouping
 - **`prefer` chooses `write-run`** (mean stability 0.73 against 0.69, outside the tie margin of 0.02).
 - **Not decided.** `prefer`'s choice beats the fixed rules on rq, but the rule asks for "at least one subject and loses on none", and rq is one subject. **Proposal:** make `write-run` the working default of `closing-rules`, and repeat L2 on report-jobs, where `atomic-group` can differ. The reader here used mechanical move names (closing function and what it writes), so that only the cut differed between rules; the first experiment's reader used LLM names.
 
-**Result on report-jobs (2026-11-17; [`report-jobs/strategies.json`](research/multi-level-models/experiments/results/report-jobs/strategies.json), key `L2`).** The subject is the real code of `examples/report-jobs`, run by a new harness ([`rjexp/harness.py`](research/multi-level-models/experiments/rjexp/harness.py)):
+**Result on report-jobs (2026-11-17; [`report-jobs/strategies.json`](experiments/results/report-jobs/strategies.json), key `L2`).** The subject is the real code of `examples/report-jobs`, run by a new harness ([`rjexp/harness.py`](experiments/rjexp/harness.py)):
 - one step per SELECT, per session commit, per S3 upload and per Celery message sent or received, on SQLite;
 - six two-actor scenarios, explored up to two preemptions: 115 runs, 24 of them anomalous;
 - the anomalies are three of the example's four known bugs. Two workers claim one report and upload it twice (14 runs). `requeue_stuck` sets a finished report back to PENDING, so it is delivered again (4). The duplicate idempotency key gives a 500 (6).
@@ -325,7 +325,7 @@ Option O2. Move names agreed exactly in 22% of sample pairs and shared 0.51 of t
 
 **Decide by:** M5 and M6 for moves and activations, with the same six samples (three Opus, three Sonnet). `head` is adopted if move agreement rises clearly and name truth failures do not rise.
 
-**Result on rq (2026-11-17; [`strategies-naming.json`](research/multi-level-models/experiments/results/strategies-naming.json)).** Six new samples (three Opus 5.5, three Sonnet 5.5) on the same 44 step classes, with each move's head (what its closing effect writes, in plain words, and the observable change) and each activation's head move, and the instruction that every thing a move's name mentions must be something its head writes. They are compared with the six samples of the first experiment. Cost $1.45.
+**Result on rq (2026-11-17; [`strategies-naming.json`](experiments/results/strategies-naming.json)).** Six new samples (three Opus 5.5, three Sonnet 5.5) on the same 44 step classes, with each move's head (what its closing effect writes, in plain words, and the observable change) and each activation's head move, and the instruction that every thing a move's name mentions must be something its head writes. They are compared with the six samples of the first experiment. Cost $1.45.
 
 | | `children` (first experiment) | `head` |
 |---|---|---|
@@ -341,7 +341,7 @@ Option O2. Move names agreed exactly in 22% of sample pairs and shared 0.51 of t
 - **The name-truth check as first written was too strict.** Of its 20 failures on the first experiment's names, 15 were not wrong names. "Cancel" named the call a step belongs to; rq's started-jobs list does list executions; a dependent job is the job written. The revision exempts a word that names the step's own call and lets a list stand for what it lists. It was fitted to those failures, so its 0 on the new samples is weaker evidence than the drop from 20 to 6 under the original check.
 - **Decision by the stated rule: `head` is not adopted** for stability. **Proposal:** use the head for moves only, as a truth aid. Keep `children` for activations and goals. Keep "generate once, store with the step class" as the answer to instability (it already was). Run the revised name-truth check on report-jobs before relying on it.
 
-**Result on report-jobs (2026-11-17; [`report-jobs/strategies-naming.json`](research/multi-level-models/experiments/results/report-jobs/strategies-naming.json)).** Twelve samples, because report-jobs had no earlier ones: six without the head, six with it, three Opus and three Sonnet each, on 11 move, 5 activation and 4 goal classes. Report-jobs has no user documentation, so the prompt describes the service in a paragraph. The name-truth words and the storage words for report-jobs were written before the samples were seen. Cost $0.69.
+**Result on report-jobs (2026-11-17; [`report-jobs/strategies-naming.json`](experiments/results/report-jobs/strategies-naming.json)).** Twelve samples, because report-jobs had no earlier ones: six without the head, six with it, three Opus and three Sonnet each, on 11 move, 5 activation and 4 goal classes. Report-jobs has no user documentation, so the prompt describes the service in a paragraph. The name-truth words and the storage words for report-jobs were written before the samples were seen. Cost $0.69.
 
 | | `children` | `head` |
 |---|---|---|
@@ -431,7 +431,7 @@ P13 to P17: the two-up frame, epitome and zoom back out, the status map, the run
 
 ## 9. The plan
 
-1. **Now, in the research harness.** L2, L3, L4 and L5 on rq reuse `mlexp/levels.py`, the naming sheet and the reader harness of the [multi-level experiments](research/multi-level-models/experiments/README.md). **Done 2026-11-17** (`mlexp/strategies.py`; $1.65 of LLM calls). Results are under each experiment above and in [findings, section L](findings.md#l-ladder-strategies-on-rq). **Report-jobs done the same day** with a harness for its real code (`rjexp/harness.py`; $0.69 of LLM calls).
+1. **Now, in the research harness.** L2, L3, L4 and L5 on rq reuse `mlexp/levels.py`, the naming sheet and the reader harness of the [multi-level experiments](experiments/README.md). **Done 2026-11-17** (`mlexp/strategies.py`; $1.65 of LLM calls). Results are under each experiment above and in [findings, section L](../../findings.md#l-ladder-strategies-on-rq). **Report-jobs done the same day** with a harness for its real code (`rjexp/harness.py`; $0.69 of LLM calls).
 2. **When phase 11 is built.** Implement `fixed` and `closing-rules` with every option of 5.2, and `ladder build`, `list`, `use` and `compare`. The golden report-jobs build (C24) covers one ladder per strategy, with answers from the `replay` backend. Run L7 on rq and report-jobs.
 3. **When `mentalvm` explores.** `mentalvm ladder eval` replaces the research harness for M1 to M3 and M7.
 4. **With the extended corpus.** L1 and L6, on the three subjects of 7.2 still to choose.
@@ -443,13 +443,13 @@ Applied on 2026-11-17 at the owner's request, so that `mentalc` takes the ladder
 
 | Document | Change |
 |---|---|
-| [Specification](specification.md) 5 | Status: the ladder of 5.1 is now strategy `fixed`, one of several under test; the `level` record gains `strategy`, `kind`, `charter` and `admission` (6.4 here) |
+| [Specification](../../specification.md) 5 | Status: the ladder of 5.1 is now strategy `fixed`, one of several under test; the `level` record gains `strategy`, `kind`, `charter` and `admission` (6.4 here) |
 | Specification 6.1 | `--ladder` on `build`; the `mentalc ladder` commands |
 | Specification 6.2 | Phase 1 reads the ladder strategy from the config; phase 11 runs the configured strategies |
 | Specification 6.6 | The ladder roles |
 | Specification 13 | The open question on inserting a level points to L5 |
-| [Glossary](glossary.md) | *Level* no longer lists one fixed ladder; new terms *ladder* and *ladder strategy* |
-| [`mentalc` guidelines](guidelines/mentalc.md) | Module layout: `phase/levels/` with one file per strategy |
+| [Glossary](../../glossary.md) | *Level* no longer lists one fixed ladder; new terms *ladder* and *ladder strategy* |
+| [`mentalc` guidelines](../../guidelines/mentalc.md) | Module layout: `phase/levels/` with one file per strategy |
 
 Not changed: the specification's ladder table in 5.1 stays as the definition of `fixed`, and the proposals of section 9 of the multi-level report (closing rules, charters, cuts) remain proposals there.
 
