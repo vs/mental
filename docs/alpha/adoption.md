@@ -6,7 +6,7 @@ alpha adopted this repo. These steps bring its code up to the principles in [pri
 
 | Phase | Done | Steps |
 | --- | --- | --- |
-| P4 Rework | 2 | 9 |
+| P4 Rework | 3 | 9 |
 | P5 Burn-down | 0 | 3 |
 
 ## P4 Rework
@@ -15,7 +15,7 @@ alpha adopted this repo. These steps bring its code up to the principles in [pri
 | --- | --- | --- |
 | `p4-ty-banned-crates` | extract | done |
 | `p4-guidelines-refs` | - | done |
-| `p4-plan-layout` | mentalc | pending |
+| `p4-plan-layout` | mentalc | done |
 | `p4-timeouts` | mentalc | pending |
 | `p4-trim-later` | mentalc | pending |
 | `p4-golden-model` | - | pending |
