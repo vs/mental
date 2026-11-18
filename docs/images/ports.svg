@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 400" width="1000" height="400" role="img" aria-labelledby="t d">
+  <title id="t">Ports on a service</title>
+  <desc id="d">A client reaches the service through its provided port POST /reports. The service reaches the outside only through four required ports: a database port wired to the SQL port of Postgres, a storage port wired to the object API of an S3 bucket, a queue port wired to a Redis queue, and a repository port wired to the files of a Git repository.</desc>
+  <style>
+    .h { font-family: 'Fixel Display', system-ui, sans-serif; font-weight: 600; font-size: 15px; letter-spacing: -0.025em; fill: #262521; }
+    .m { font-family: 'Cascadia Mono', 'SF Mono', ui-monospace, monospace; font-weight: 500; font-size: 12px; fill: #696960; }
+    .box { fill: #ffffff; stroke: #d8d5d0; stroke-width: 1; }
+    .port { fill: #f6ebe3; stroke: #b35017; stroke-width: 1.5; }
+    .flow { fill: none; stroke: #696960; stroke-width: 1.25; }
+  </style>
+  <defs>
+    <marker id="a" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M0,0 L8,4 L0,8 z" fill="#696960"/>
+    </marker>
+  </defs>
+  <rect width="1000" height="400" fill="#fdfcfa"/>
+
+  <rect class="box" x="20" y="170" width="150" height="64" rx="12"/>
+  <text class="h" x="34" y="194">Client</text>
+  <text class="m" x="34" y="214">browser · script</text>
+  <path class="flow" d="M170,202 H280" marker-end="url(#a)"/>
+  <text class="m" x="225" y="194" text-anchor="middle">HTTP</text>
+
+  <rect x="290" y="40" width="300" height="330" rx="16" fill="#f3f2f0" stroke="#d8d5d0"/>
+  <text class="h" x="310" y="68">Report service</text>
+  <text class="m" x="310" y="88">boundary + interior</text>
+  <text class="m" x="310" y="140">provided port</text>
+  <text class="m" x="310" y="156">POST /reports</text>
+  <rect class="port" x="282" y="194" width="16" height="16" rx="3"/>
+  <path class="flow" d="M298,202 H358" marker-end="url(#a)"/>
+
+  <rect class="box" x="360" y="174" width="130" height="56" rx="12"/>
+  <text class="h" x="374" y="198">handler code</text>
+  <text class="m" x="374" y="218">the interior</text>
+
+  <path class="flow" d="M490,195 L505,88 H582"/>
+  <path class="flow" d="M490,200 L505,168 H582"/>
+  <path class="flow" d="M490,206 L505,248 H582"/>
+  <path class="flow" d="M490,211 L505,328 H582"/>
+  <text class="m" x="574" y="78" text-anchor="end">db</text>
+  <text class="m" x="574" y="158" text-anchor="end">storage</text>
+  <text class="m" x="574" y="238" text-anchor="end">queue</text>
+  <text class="m" x="574" y="318" text-anchor="end">repo</text>
+  <rect class="port" x="582" y="80" width="16" height="16" rx="3"/>
+  <rect class="port" x="582" y="160" width="16" height="16" rx="3"/>
+  <rect class="port" x="582" y="240" width="16" height="16" rx="3"/>
+  <rect class="port" x="582" y="320" width="16" height="16" rx="3"/>
+  <text class="m" x="575" y="358" text-anchor="end">required ports</text>
+
+  <path class="flow" d="M598,88 H730" marker-end="url(#a)"/>
+  <path class="flow" d="M598,168 H730" marker-end="url(#a)"/>
+  <path class="flow" d="M598,248 H730" marker-end="url(#a)"/>
+  <path class="flow" d="M598,328 H730" marker-end="url(#a)"/>
+  <text class="m" x="665" y="80" text-anchor="middle">SQL over TCP</text>
+  <text class="m" x="665" y="160" text-anchor="middle">HTTPS</text>
+  <text class="m" x="665" y="240" text-anchor="middle">Redis protocol</text>
+  <text class="m" x="665" y="320" text-anchor="middle">file system calls</text>
+
+  <rect class="box" x="740" y="60" width="240" height="56" rx="12"/>
+  <rect class="port" x="732" y="80" width="16" height="16" rx="3"/>
+  <text class="h" x="758" y="84">Postgres</text>
+  <text class="m" x="758" y="104">sql: tables reports, orders</text>
+  <rect class="box" x="740" y="140" width="240" height="56" rx="12"/>
+  <rect class="port" x="732" y="160" width="16" height="16" rx="3"/>
+  <text class="h" x="758" y="164">S3 bucket</text>
+  <text class="m" x="758" y="184">object API: put · get</text>
+  <rect class="box" x="740" y="220" width="240" height="56" rx="12"/>
+  <rect class="port" x="732" y="240" width="16" height="16" rx="3"/>
+  <text class="h" x="758" y="244">Redis</text>
+  <text class="m" x="758" y="264">queue: reports</text>
+  <rect class="box" x="740" y="300" width="240" height="56" rx="12"/>
+  <rect class="port" x="732" y="320" width="16" height="16" rx="3"/>
+  <text class="h" x="758" y="324">Git repository</text>
+  <text class="m" x="758" y="344">files: refs · objects</text>
+
+  <text class="m" x="665" y="390" text-anchor="middle">wire: joins a required port to a provided port</text>
+</svg>

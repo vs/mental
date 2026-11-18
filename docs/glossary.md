@@ -72,7 +72,7 @@ Everything that enters or leaves an entity passes through one of its ports. Ther
 
 **Examples.**
 
-![Ports on a service. A client reaches the service through its provided port POST /reports. The service reaches the outside only through four required ports: a database port wired to the SQL port of Postgres, a storage port wired to the object API of an S3 bucket, a queue port wired to a Redis queue, and a repository port wired to the files of a Git repository.](images/ports.png)
+![Ports on a service. A client reaches the service through its provided port POST /reports. The service reaches the outside only through four required ports: a database port wired to the SQL port of Postgres, a storage port wired to the object API of an S3 bucket, a queue port wired to a Redis queue, and a repository port wired to the files of a Git repository.](images/ports.svg)
 
 | What the code does | Required port (on the caller) | Provided port (on the other side) | Wire | Message |
 |---|---|---|---|---|

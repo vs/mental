@@ -8,7 +8,7 @@ Mental compiles a repository into a **model of the system that you can run**. Yo
 source code, infrastructure files, docs ─► mentalc ─► MODEL ─► mentalvm ─► TRACES ─► mentaldbg ─► viewer / agent
 ```
 
-![Three tools and what connects them. mentalc compiles a repository and packs into a model, asking an LLM backend for judgment. mentalvm runs the model and produces traces and findings. mentaldbg holds the debug session and serves the viewer, the coding agent and the terminal. Products named Mental wrap all three tools and the viewer.](docs/images/components.png)
+![Three tools and what connects them. mentalc compiles a repository and packs into a model, asking an LLM backend for judgment. mentalvm runs the model and produces traces and findings. mentaldbg holds the debug session and serves the viewer, the coding agent and the terminal. Products named Mental wrap all three tools and the viewer.](docs/images/components.svg)
 
 ## The three tools
 
