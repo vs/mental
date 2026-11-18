@@ -5,7 +5,7 @@
 ## One job
 
 `model` defines the record format and decides whether a set of records is well formed. It holds:
-- the record types, one struct per kind (spec 4.5 to 4.8);
+- the record types, one struct per kind (spec 7.4 to 4.8);
 - semantic IDs (`Id`, `Kind`, the slug alphabet);
 - anchors;
 - guard expressions, their evaluator and the partition check;
@@ -75,7 +75,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 
 #### M5. Names say what, never when or where
 - **Rule:** IDs contain no positions, counters, line numbers, hashes, versions or timestamps, and a slug made only of digits is rejected. When two code names collide, add another code name (module, file stem or class) to the colliding IDs only, never an index.
-- **Why:** IDs stay stable across rebuilds (P9), and unrelated code changes don't rename things.
+- **Why:** IDs stay stable across rebuilds (P8), and unrelated code changes don't rename things.
 - **Source:** [Kythe `storage.proto` L85-L90][ky-vname]; [cargo lockfile "only when necessary to disambiguate"][cg-lockfile-ref].
 - **Enforced by:** parser rule and unit test; an `extract` fixture with two same-named handlers ([X19](extract.md#x19-fixtures-by-category)).
 
@@ -89,7 +89,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 
 #### M7. Canonical JSONL
 - **Rule:** one file per kind, one record per line, lines sorted by ID in byte order, fields in struct declaration order, `None` and empty sets omitted, a final `\n`, nothing else in the file. `write` is a pure function returning a `String`; the caller rewrites a file only when its bytes changed. `Id`'s `Ord` equals byte order of its string.
-- **Why:** the model is byte-deterministic and diffable by text tools and LLMs (spec 4.9).
+- **Why:** the model is byte-deterministic and diffable by text tools and LLMs (spec 7.5).
 - **Source:** [Cargo.lock emitter and sorts, `lockfile.rs` L138-L243][cg-lockfile].
 - **Enforced by:** insta golden of a small model ([M22](#m22-the-format-is-frozen-by-a-golden)); property tests `read(write(m)) == m` and `write(read(b)) == b`; unit test that `Id` order equals `str` order.
 
@@ -114,7 +114,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 #### M11. Identity stays apart from anchors and hashes
 - **Rule:** anchors live in `anchors.jsonl`; content hashes are blake3 over canonical line bytes, stored beside a record, never inside its `Id`; display names never feed IDs.
 - **Why:** moving code must not change IDs, and a cache key must not pose as an identity.
-- **Source:** spec 4.3 and 4.4; [Kythe `storage.proto` L56-L70][ky-names].
+- **Source:** spec 7.2 and 4.4; [Kythe `storage.proto` L56-L70][ky-names].
 - **Enforced by:** unit test that moving an anchor changes only the bytes of `anchors.jsonl`; reviewer.
 
 ### Checks
@@ -139,7 +139,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 
 #### M15. Only full IDs are stored
 - **Rule:** stored records hold fully qualified IDs everywhere, guards and node references included; short forms such as `pred:x` or `.../case:y` exist only in human-facing display.
-- **Why:** the reference check stays textual, with no scope-resolution rule to get wrong. Accepted and written into spec 4.3 and 4.7 ([accepted changes](README.md#accepted-specification-changes)).
+- **Why:** the reference check stays textual, with no scope-resolution rule to get wrong. Accepted and written into spec 7.2 and 7.4.
 - **Source:** inferred; no studied project resolves parent-relative references (SCIP's `local` is file-scoped).
 - **Enforced by:** the guard parser accepts only full IDs (unit test).
 
@@ -158,14 +158,14 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 - **Enforced by:** `good`/`bad` tables; round-trip property test; fixture `unknown-predicate`.
 
 #### M18. Partition by enumeration with a cap
-- **Rule:** the partition check enumerates every assignment of the n dimensions a behavior's guards mention (a plain predicate is one yes-or-no dimension; a state variable tested by predicates with `equals` is one dimension over its domain values, so impossible combinations are never enumerated), reports the lowest gap or overlap as a witness assignment, and above n = 16 emits `guard-check-too-large` instead of skipping. No BDD or SAT. Spec 4.7.
+- **Rule:** the partition check enumerates every assignment of the n dimensions a behavior's guards mention (a plain predicate is one yes-or-no dimension; a state variable tested by predicates with `equals` is one dimension over its domain values, so impossible combinations are never enumerated), reports the lowest gap or overlap as a witness assignment, and above n = 16 emits `guard-check-too-large` instead of skipping. No BDD or SAT. Spec 7.4.
 - **Why:** about 15 lines, deterministic, with concrete messages; the BDD crates are 2,400 to 10,600 lines with forbidden dependencies.
 - **Source:** truth-table oracles in [boolean_expression `bdd.rs` L755-L800][be-bdd] and [biodivine fuzz tests][bd-fuzz].
 - **Enforced by:** unit tests with known witnesses; insta snapshot of the messages; oracle test ([M23](#m23-the-guard-checker-has-a-brute-force-oracle)).
 
 #### M19. One evaluator for two and three values
 - **Rule:** `Expr::eval` is generic over a `Logic` trait implemented for `bool` and for `Option<bool>` (Kleene logic), so `mentalvm`'s "not decided yet" uses the same code.
-- **Why:** the ordered-reads rule of spec 4.7 is three-valued evaluation; one evaluator serves the checker and the interpreter.
+- **Why:** the ordered-reads rule of spec 7.4 is three-valued evaluation; one evaluator serves the checker and the interpreter.
 - **Source:** [cfg-expr `Logic` trait][ce-expr].
 - **Enforced by:** property test: with every predicate `Some(_)`, `Option<bool>` evaluation equals `bool` evaluation.
 
@@ -199,8 +199,8 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 
 #### M24. Milestone 1 is a fixture suite
 - **Rule:** the hand-written report-jobs reference model passes `check` with no diagnostics, and `tests/data/err/<code>/` holds one seeded-error model per diagnostic code, each producing exactly that code.
-- **Why:** this is milestone 1's acceptance check (spec 11.4: "accepts the reference model and rejects seeded errors").
-- **Source:** spec 11.4; [rust-analyzer `parse_ok`/`parse_err`][ra-parser-tests].
+- **Why:** this is milestone 1's acceptance check (spec 14.2: "accepts the reference model and rejects seeded errors").
+- **Source:** spec 14.2; [rust-analyzer `parse_ok`/`parse_err`][ra-parser-tests].
 - **Enforced by:** public-API test in `tests/`; completeness test of [M13](#m13-diagnostic-codes-are-closed-and-complete).
 
 #### M25. A testkit, not a fifth crate

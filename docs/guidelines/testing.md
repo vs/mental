@@ -78,7 +78,7 @@ The helper is the only place that knows the API. When the API changes, one helpe
 #### T6. The golden is never a snapshot
 - **Rule:** the hand-written reference model at `examples/report-jobs/model/` is a specification: tests compare against it with a plain helper that prints the first differing lines, and no snapshot tool, `--update` flag or test ever writes into `examples/`.
 - **Why:** a golden that tooling can rewrite stops being a specification and becomes an observation.
-- **Source:** spec 11.4; the testing note's snapshot policy.
+- **Source:** spec 14.2; the testing note's snapshot policy.
 - **Enforced by:** tidy test `no_snapshots_into_examples`; CI fails if `examples/` changes during the test run.
 
 #### T7. The harness checks invariants on every fixture
@@ -175,7 +175,7 @@ The helper is the only place that knows the API. When the API changes, one helpe
 
 | Test | Checks | Rule |
 |---|---|---|
-| `crate_graph` | workspace dependency edges; only `extract` uses `ruff_*` | [G1](README.md#g1-fixed-crate-graph), [X2](extract.md#x2-no-ruff-type-escapes) |
+| `crate_graph` | workspace dependency edges; only `extract` uses `ruff_*` | [G1](README.md#g1-fixed-crate-graph), [X2](extract.md#x2-no-ruff-or-ty-type-escapes) |
 | `no_foreign_reexports` | no `pub use` of another crate's items | [G2](README.md#g2-small-public-surface) |
 | `traits_have_two_impls` | every trait has two non-test impls, `Backend` excepted | [G3](README.md#g3-functions-over-frameworks) |
 | `edges_are_listed` | `#[expect(clippy::disallowed_methods ...)]` only in listed edge files | [G4](README.md#g4-io-and-ambient-inputs-only-at-named-edges) |
@@ -194,7 +194,7 @@ The helper is the only place that knows the API. When the API changes, one helpe
 | `model_records_deny_unknown_fields` | every `Deserialize` struct in `model` has the attribute | [M9](model.md#m9-unknown-data-is-an-error) |
 | `model_no_json_value` | no `serde_json::Value` in `model/src` | [M9](model.md#m9-unknown-data-is-an-error) |
 | `extract_no_library_names` | no library names in `extract/src` outside tests | [X10](extract.md#x10-no-library-names-in-rust) |
-| `extract_ruff_pinned` | every `ruff_*` version starts with `=` | [X1](extract.md#x1-ruffs-parser-pinned-nothing-heavier) |
+| `extract_ruff_ty_pinned` | every `ruff_*` and `ty_*` dependency names the same pinned commit | [X1](extract.md#x1-ruffs-parser-and-tys-crates-pinned-to-one-commit) |
 | `mentalvm_no_interior_mutability` | no `RefCell` or `Cell` in `mentalvm/src` | [V2](mentalvm.md#v2-cheap-ordered-clones) |
 
 The alpha kit's generated `tests/setup.rs` already checks that `unsafe_code = "forbid"` and clippy's pedantic group stay on.

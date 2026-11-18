@@ -4,7 +4,7 @@
 
 ## One job
 
-`mentalvm` interprets the model (spec 8): `initial`, `enabled` and `fire` define every step, and four functions use them: a concrete or symbolic `run`, bounded-exhaustive `explore`, `replay` with verdicts, and the witness minimizer. Its outcomes are model gaps, deadlocks, illegal writes, zero-time cycles, violated invariants and normal ends.
+`mentalvm` interprets the model (spec 12): `initial`, `enabled` and `fire` define every step, and four functions use them: a concrete or symbolic `run`, bounded-exhaustive `explore`, `replay` with verdicts, and the witness minimizer. Its outcomes are model gaps, deadlocks, illegal writes, zero-time cycles, violated invariants and normal ends.
 
 **It never:** reads source code; depends on `mentalc` (models arrive as files); does I/O, reads the clock or entropy, or spawns threads in its core; hides a reduction inside the step function.
 
@@ -61,7 +61,7 @@ The binary declares `required-features = ["cli"]`, and the WebAssembly build use
 
 #### V1. Configurations are values
 - **Rule:** the core exposes `initial`, `enabled` and `fire` as pure functions over `&Model` and `&Config`; `fire` returns a new `Config` and one `Step`, or an `Outcome`. No public signature takes `&mut Config`. The trace is output, never part of the configuration.
-- **Why:** snapshots, stepping backwards, DFS backtracking and "equal however reached" (spec 8.1) come free; undo logs would roughly double the step code and its tests.
+- **Why:** snapshots, stepping backwards, DFS backtracking and "equal however reached" (spec 12.1) come free; undo logs would roughly double the step code and its tests.
 - **Source:** [Stateright `Model` trait, `lib.rs` L158-L179][sr-model]; PEx's copy-and-restore cost ([`StepState.java`][pex-stepstate]).
 - **Enforced by:** reviewer; insta snapshot of the public API (rustdoc JSON or a hand-kept list).
 
@@ -105,7 +105,7 @@ The binary declares `required-features = ["cli"]`, and the WebAssembly build use
 
 #### V8. Replay gives a verdict per choice
 - **Rule:** `replay` reports `matched`, `infeasible` (the named choice is not in `enabled`) or `diverged` (the kind or position no longer lines up, or the run ends before or after the schedule) for each choice, and accepts an optional strategy that continues after the first mismatch.
-- **Why:** spec 8.9; P's three named "not reproducible" cases map onto these verdicts, and its suffix strategy is "replay, then search on".
+- **Why:** spec 12.3; P's three named "not reproducible" cases map onto these verdicts, and its suffix strategy is "replay, then search on".
 - **Source:** [P `ReplayStrategy.cs` L93-L107][p-replay].
 - **Enforced by:** one unit test per verdict in `replay/tests.rs`; snapshot of the report-jobs post-fix replay.
 
@@ -149,7 +149,7 @@ The binary declares `required-features = ["cli"]`, and the WebAssembly build use
 
 #### V15. No partial-order reduction in version one
 - **Rule:** search has no partial-order reduction unless report-jobs bounds prove too slow. If it is added, it is sleep sets over static footprints and ships with a differential test: the same set of `(outcome kind, node)` with it on and off, on every corpus model and on generated tiny models, with both state counts pinned.
-- **Why:** "activations run until they wait" plus the visited set already merge most reorderings; loom's DPOR is coupled to its runtime, and no studied project tests a reduction against full search. Accepted and written into spec 8.4 ([accepted changes](README.md#accepted-specification-changes)).
+- **Why:** "activations run until they wait" plus the visited set already merge most reorderings; loom's DPOR is coupled to its runtime, and no studied project tests a reduction against full search. Accepted and written into spec 12.3.
 - **Source:** [loom DPOR, `execution.rs` L134-L160][loom-dpor]; [Stateright 2pc counts with and without symmetry][sr-2pc].
 - **Enforced by:** reviewer; the differential test, if a reduction is added.
 
@@ -163,8 +163,8 @@ The binary declares `required-features = ["cli"]`, and the WebAssembly build use
 
 #### V17. Run files are JSON
 - **Rule:** run files and reports are JSON through `deny_unknown_fields` types; a run file round-trips byte for byte.
-- **Why:** the no-YAML decision ([G13](README.md#g13-json-out-toml-in-no-yaml)); spec 8.6 now shows a JSON run file ([accepted changes](README.md#accepted-specification-changes)).
-- **Source:** owner decision; spec 8.6.
+- **Why:** the no-YAML decision ([G13](README.md#g13-json-out-toml-in-no-yaml)); spec 12.6 now shows a JSON run file.
+- **Source:** owner decision; spec 12.6.
 - **Enforced by:** property test of the round trip; cargo-fuzz target for the run-file reader ([T11](testing.md#t11-fuzz-only-readers-of-outside-input)).
 
 #### V18. Version one scope
@@ -176,7 +176,7 @@ The binary declares `required-features = ["cli"]`, and the WebAssembly build use
 ### Tests (beyond [testing.md](testing.md))
 
 #### V19. One scenario test per step rule
-- **Rule:** each rule of spec 8.2 (an unhandled message is a model gap, every write is checked against the lifecycle, an activation runs until it waits, run-time IDs are derived from the creating step) has a tiny fixture model and an inline snapshot of its trace, one step per line.
+- **Rule:** each rule of spec 12.1 (an unhandled message is a model gap, every write is checked against the lifecycle, an activation runs until it waits, run-time IDs are derived from the creating step) has a tiny fixture model and an inline snapshot of its trace, one step per line.
 - **Why:** hand-written scenarios cover what random search reaches slowly.
 - **Source:** [TigerBeetle VOPR scenario tests][tb-vopr].
 - **Enforced by:** unit tests in `step/tests.rs`.
@@ -195,7 +195,7 @@ The binary declares `required-features = ["cli"]`, and the WebAssembly build use
 
 #### V22. Replay round trips gate CI
 - **Rule:** for every corpus witness, explore, serialize the run file, parse it, replay it: all choices `matched`, same outcome. report-jobs after the CAS fix replays the stored race schedule to `diverged` at `worker[1]/n:claim`, and a fresh `explore` with the same bounds is clean; a deletion test yields `infeasible`.
-- **Why:** spec 8.9 and F-S11; Shuttle's round-trip tests are `#[ignore]`d today because replay broke unnoticed.
+- **Why:** spec 12.3 and F-S11; Shuttle's round-trip tests are `#[ignore]`d today because replay broke unnoticed.
 - **Source:** [Shuttle `tests/basic/replay.rs` L32-L51][sh-replay-tests].
 - **Enforced by:** CI; tidy test `no_should_panic_or_ignore`.
 

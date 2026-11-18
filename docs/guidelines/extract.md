@@ -4,9 +4,9 @@
 
 ## One job
 
-`extract` turns Python source files and the output of `docker compose config` into facts, in `model` types: modules and symbols, imports and the call graph, obligations (branch points), effects, state variables and their write sites, entry points through pack slots, and infrastructure. It is phase 2 of spec 6.2 and implements spec 6.2.1.
+`extract` turns build files, Python source files and the output of `docker compose config` into facts, in `model` types: the build model (stage 1 of the [specification](../specification.md#5-stage-1-the-build-model)), then reference sites with their outcomes, the call graph, obligations (branch points), effects, state variables and their write sites, and entry points through pack slots (stage 2). It lists every reference site itself and asks a type checker, ty, what each one points to.
 
-**It never:** calls an LLM; names an abstraction; guesses dynamic behavior (a guess belongs to Link and is marked `heuristic` there); touches the file system or runs a process; lets a ruff type escape its API; names a library in Rust code.
+**It never:** calls an LLM; names an abstraction; guesses dynamic behavior (a guess belongs to Link and is marked `heuristic` there); touches the file system or runs a process; lets a ruff or ty type escape its API; names a library in Rust code; resolves a reference by rules of its own.
 
 `mentalc` reads the repository and runs `docker compose config` at its I/O edge, then hands `extract` the file contents and the compose JSON as strings. This tightens rule 5 of the research note, which let `discover` and `compose` do I/O themselves, so that there is a single I/O edge, as the [architecture note](../research/implementation-guidelines/notes/mentalc_architecture.md) asks.
 
@@ -15,15 +15,14 @@
 ```
 extract/
   src/
-    lib.rs          pub fn extract(files: &Files, compose: &str, packs: &Packs) -> (Facts, Vec<Diagnostic>)
-    discover.rs     paths -> module names (from paths and __init__.py); no file system access
-    compose.rs      `docker compose config` JSON -> services, replicas, env, commands
+    lib.rs          pub fn build_model(inputs) and pub fn extract(files, build model, packs) -> (Facts, Vec<Diagnostic>)
+    build.rs        build files as strings -> the build model (build/ holds one reader per format)
     pack.rs         pack rows and the access-path grammar (pack/ for submodules if needed)
     python.rs       the per-language entry point
     python/
       parse.rs      ruff parse_unchecked -> parsed file + syntax diagnostics   (per file)
-      index.rs      parsed file -> ModuleIndex                                  (per file)
-      resolve.rs    all ModuleIndex + pack type rows -> Resolved                (the only cross-file stage)
+      sites.rs      parsed file -> reference sites                              (per file)
+      resolve.rs    sites + the build unit's roots, version and environment -> outcomes, by ty   (the only cross-file stage)
       flow.rs       one function -> obligations with labeled edges              (per function)
       facts.rs      Resolved + function walks + packs -> calls, effects, writes, entry points
   tests/            fixtures/<category>/<case>.py, fixtures/report_jobs.py, public-API tests
@@ -36,7 +35,7 @@ A second language later is a sibling of `python/` that emits the same `model` fa
 | Kind | Crates |
 |---|---|
 | workspace | `model` |
-| normal | `ruff_python_parser`, `ruff_python_ast`, `ruff_text_size`, `ruff_source_file` (all pinned `=0.0.N`, bumped together); `serde`, `serde_json` (compose JSON, pack rows); `toml` (pack files); `thiserror` |
+| normal | `ruff_python_parser`, `ruff_python_ast`, `ruff_text_size`, `ruff_source_file` and ty's crates (`ty_python_semantic`, `ty_project` and what they need), all from one pinned commit of the ruff repository and bumped together; `serde`, `serde_json` (compose JSON, pack rows); `toml` (pack files); `thiserror` |
 | dev | `insta` (with `glob`, `json`), `proptest`; `model` with the `testkit` feature |
 
 The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace toolchain follows ruff's.
@@ -45,14 +44,14 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 
 ### Parser and boundary
 
-#### X1. ruff's parser, pinned; nothing heavier
-- **Rule:** parse with `ruff_python_parser` and `ruff_python_ast`, pinned with `=0.0.N`. Do not use `ruff_python_semantic`, `ty_*`, tree-sitter, stack-graphs, SCIP indexers or a language server.
-- **Why:** a typed, CPython-shaped AST makes a missing case a compile error; the semantic crate is only half a resolver (the linter's 4,000-line visitor fills it), and the alternatives are untyped, archived or need Node.
+#### X1. ruff's parser and ty's crates, pinned to one commit
+- **Rule:** parse with ruff's parser and resolve references with ty's crates, all from one pinned commit of the ruff repository. Do not use tree-sitter, stack-graphs, SCIP indexers or a language server, and do not write resolution rules of our own.
+- **Why:** a typed, CPython-shaped AST makes a missing case a compile error; ty works on the same syntax tree, in process, and resolved 88.5% of calls on five projects, agreeing with Pyrefly on 99.7% of the sites both answer ([type checkers as libraries](../research/type-checkers-as-libraries/report.md)). The alternatives are untyped, archived, or need another program installed.
 - **Source:** [ruff versioning policy][ruff-versioning]; [ruff parser `lib.rs`][ruff-parser]; [stack-graphs README][sg-readme].
-- **Enforced by:** tidy tests `extract_ruff_pinned` and `banned_crates`.
+- **Enforced by:** tidy tests `extract_ruff_ty_pinned` and `banned_crates`.
 
-#### X2. No ruff type escapes
-- **Rule:** public functions take strings and return `model` types; no ruff type appears in a public signature, and no other crate depends on a ruff crate.
+#### X2. No ruff or ty type escapes
+- **Rule:** public functions take strings and return `model` types; no ruff or ty type appears in a public signature, and no other crate depends on a ruff or ty crate.
 - **Why:** ruff's AST changes shape within months (`ExprCompare`, `ExprCall`), and the churn must stay inside one crate.
 - **Source:** [ruff versioning policy][ruff-versioning]; the note's measured churn between 0.16.0 and 0.17.5.
 - **Enforced by:** rustc `unreachable_pub`; tidy test `crate_graph` (only `extract` lists `ruff_*`).
@@ -78,26 +77,26 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 - **Enforced by:** clippy `disallowed-methods` with no `#[expect]` allowed in `extract` (tidy test `edges_are_listed`).
 
 #### X6. Per-file stages see one file
-- **Rule:** `parse`, `index` and `flow` take one file or one function; only `resolve` reads across files. Its fixpoint over module-level bindings is bounded, and a binding that hasn't converged yields an `unresolved(not_converged)` fact.
+- **Rule:** `parse`, `sites` and `flow` take one file or one function; only `resolve` reads across files, and it is one call into the type checker per build unit.
 - **Why:** testable alone, cacheable per file later, and no silent `max_iter`.
 - **Source:** [stack-graphs README][sg-readme]; [PyCG fixpoint][pycg-main], made explicit.
 - **Enforced by:** function signatures (`fn index(file: &ParsedFile) -> ModuleIndex`); reviewer.
 
 #### X7. Lookups return outcomes, never Option
-- **Rule:** every lookup returns `Resolved(id) | External(qualified_name) | Unresolved(Reason)`, where `Reason` is a closed enum (`not_found`, `wildcard_import`, `dynamic_attr`, `eval`, `dynamic_import`, `ambiguous`, `no_pack`, `not_converged`), and each `Unresolved` becomes a fact.
+- **Rule:** every lookup returns `Resolved(id) | External(qualified_name) | Unresolved(Reason)`, where `Reason` is the closed enum of the [specification](../specification.md#63-outcomes) (`missing_module`, `no_type`, `not_found`, `ambiguous`, `dynamic`, `unreachable`), and each `Unresolved` becomes a fact. The checker's `Unknown`, `Any` and `Never` are `Unresolved`.
 - **Why:** what the extractor can't see is recorded, never dropped; PyCG silently returns on calls it can't resolve.
 - **Source:** [ruff `ReadResult`][ruff-readresult]; [PyCG `visit_Call`][pycg-call] (counterexample).
 - **Enforced by:** reviewer; the conservation oracle ([X8](#x8-conservation)).
 
 #### X8. Conservation
 - **Rule:** every call expression, decorator and branch form in the AST appears in the output exactly once, resolved or not.
-- **Why:** this makes "complete" checkable; spec P7 makes extractors own completeness.
+- **Why:** this makes "complete" checkable; spec P6 makes extractors own completeness.
 - **Source:** the note's candidate rule 8 (no precedent in the studied tools).
 - **Enforced by:** oracle test: a separate ~30-line visitor counts calls, decorators and branch statements per file and compares with the emitted facts on every fixture and on report-jobs.
 
 #### X9. Extract never guesses
-- **Rule:** no heuristic edges, no name-similarity matching, no "most likely" type. A binding's type comes only from its own statement (assignment, `with ... as`, parameter or variable annotation) combined with pack type rows; anything else is `unresolved`.
-- **Why:** spec P7 and 6.2.2: guesses belong to Link, marked `heuristic`.
+- **Rule:** no heuristic edges, no name-similarity matching, no "most likely" type. A site's target is what the type checker answers; anything it does not answer is `unresolved`, and `extract` adds no inference of its own on top.
+- **Why:** spec P6 and 10: guesses belong to Link, marked `heuristic`.
 - **Source:** [ruff `check_type` initializer typing][ruff-typing]; [CodeQL literal-only `getUrlPattern`][codeql-concepts-url].
 - **Enforced by:** extract's fact types in `model` have no `heuristic` field; fixtures in the `assignments` category; reviewer rejects flow-sensitive inference.
 
@@ -105,7 +104,7 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 
 #### X10. No library names in Rust
 - **Rule:** framework and library knowledge lives only in pack data files; `extract/src` names no library.
-- **Why:** packs are declarative data (spec 7); ruff's FastAPI check written in Rust is the counterexample.
+- **Why:** packs are declarative data (spec 6.6); ruff's FastAPI check written in Rust is the counterexample.
 - **Source:** [CodeQL models-as-data][codeql-mad]; [ruff `fastapi/rules/mod.rs`][ruff-fastapi].
 - **Enforced by:** tidy test `extract_no_library_names` (fails on `fastapi|celery|sqlalchemy|boto|click|redis|requests|kombu|pydantic` outside tests).
 
@@ -139,7 +138,7 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 
 #### X15. Every fact carries an anchor
 - **Rule:** every fact has a non-optional anchor: file, byte range, and 1-based line and column for display; the range slices to non-empty source text.
-- **Why:** spec P8; ruff gives every node a `TextRange`.
+- **Why:** spec P7; ruff gives every node a `TextRange`.
 - **Source:** [ruff AST `generated.rs`][ruff-ast].
 - **Enforced by:** non-optional field in `model`; harness invariant on every fixture ([T7](testing.md#t7-the-harness-checks-invariants-on-every-fixture)).
 
@@ -183,9 +182,9 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 
 #### X22. report-jobs is the acceptance test
 - **Rule:** one `insta::assert_json_snapshot!` of the full output for `examples/report-jobs/src`, plus explicit counts: 5 files, 6 entry points (2 routes, 2 Celery tasks, 1 schedule, 1 command), 2 state variables, every branch listed. An annotated copy (`tests/fixtures/report_jobs.py`, fragment headers) carries inline expectations, and a drift test strips the annotations and compares the result with the real example files.
-- **Why:** spec 6.2.1, F-S10 and milestone 2.
-- **Source:** spec 6.2.1 and 11.4; [ruff whole-output snapshots][ruff-parser-fx].
-- **Enforced by:** public-API test; reviewer approves snapshot diffs. The call-graph edge count is asserted under the definition in spec 6.2.1; the trial's 41 is re-measured under it, not copied ([accepted changes](README.md#accepted-specification-changes)).
+- **Why:** spec 6, F-S10 and milestone 2.
+- **Source:** spec 6 and 11.4; [ruff whole-output snapshots][ruff-parser-fx].
+- **Enforced by:** public-API test; reviewer approves snapshot diffs. The call-graph edge count is asserted under the definition in spec 6; the trial's 41 is re-measured under it, not copied.
 
 [ruff-versioning]: https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/docs/versioning.md
 [ruff-parser]: https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_parser/src/lib.rs#L289

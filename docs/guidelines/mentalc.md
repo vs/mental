@@ -4,16 +4,16 @@
 
 ## One job
 
-`mentalc` compiles one repository at one commit into a complete model (spec 6). It owns:
-- the pipeline of spec 6.2, in one function;
+`mentalc` compiles one repository's working tree into a complete model. It owns:
+- the six stages of the [specification](../specification.md#4-the-build-at-a-glance), in one function, and the gate between stages 2 and 3;
 - tasks, prompts and answer types;
 - the LLM backends and the task protocol (`task next`, `task submit`);
-- the checks of spec 6.7 that need no interpreter, and repairs;
+- the static checks, and repairs; checks that need a run belong to `mentalvm check`;
 - the answer cache and the call ledger;
 - the CLI and the MCP stdio server;
 - the packs and prompts, as data embedded in the binary.
 
-**It never:** runs the model (it does not depend on `mentalvm`); writes a partial model; extracts facts itself (that is `extract`); lets an LLM drop an obligation, decide feasibility or invent an ID (spec 6.4); calls a live LLM in a test.
+**It never:** runs the model (it does not depend on `mentalvm`); writes a partial model; extracts facts itself (that is `extract`); lets an LLM drop an obligation, decide feasibility or invent an ID (spec 9.1); calls a live LLM in a test.
 
 ## Module layout
 
@@ -26,10 +26,9 @@ mentalc/
     config.rs         mentalc.toml -> Config (role -> backend and LLM, repair cap)
     repo.rs           RepoSnapshot: reads files, runs `docker compose config`       [edge: fs, process]
     build.rs          the pipeline: one function, phases in spec order
-    phase/            detect.rs vocabulary.rs group.rs compile.rs mechanisms.rs
-                      link.rs load.rs close.rs  (each a pure function; LLM phases have plan and apply)
-    phase/levels/     mod.rs (enum Strategy, plan and apply dispatch) fixed.rs rules.rs llm.rs documented.rs
-                      (one ladder strategy per file, each plan and apply; see docs/ladder-strategies.md)
+    stage/            gate.rs mechanical.rs vocabulary.rs name.rs summarize.rs group.rs
+                      link.rs load.rs close.rs levels.rs  (each a pure function; LLM stages have plan and apply)
+                      (stages 1 and 2 are extract::build_model and extract::extract; levels.rs is the closing-rules strategy)
     task.rs           Task, RenderedTask, next_task and accept (the build state machine)
     answer.rs         answer types (deny_unknown_fields) and schema derivation
     prompt.rs         embedded templates, rendering, prompts.lock check
@@ -40,7 +39,7 @@ mentalc/
     backend.rs        trait Backend
     backend/          api.rs agent_cli.rs replay.rs                                 [edge: network, process]
     mcp.rs            serve(reader: impl BufRead, writer: impl Write)
-  packs/              hand-written TOML packs (spec 7), embedded with include_str!
+  packs/              hand-written TOML packs (spec 6.6), embedded with include_str!
   prompts/            <role>/<name>.md templates, embedded with include_str!
   prompts.lock        template -> (version, blake3 hash)
   tests/              cli.rs  mcp.rs  report_jobs.rs  fixtures/<repo>/answers/
@@ -63,7 +62,7 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 ### Pipeline
 
 #### C1. The pipeline is one function
-- **Rule:** `build()` calls the phases of spec 6.2 in order as plain function calls over typed values; there is no `Phase` trait, registry or plugin system.
+- **Rule:** `build()` calls the phases of spec 4 in order as plain function calls over typed values; there is no `Phase` trait, registry or plugin system.
 - **Why:** the data flow is visible in about 40 lines and matches the spec's Reads and Writes columns.
 - **Source:** [typst `compile_impl`][typst-compile]; [jaq's explicit pipeline][jaq-lib]; [rust-analyzer "functions over objects"][ra-style-fn].
 - **Enforced by:** reviewer; a test that asserts the phase order reported by `build --json`.
@@ -82,7 +81,7 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 
 #### C4. One judge for every backend
 - **Rule:** the LLM core is a state machine with two operations, `next_task() -> Option<Task>` and `accept(task_id, raw: &str) -> Verdict` (`Accepted | Repair(Task) | Failed(Error)`). All checking, repair, caching and ledger writes happen inside `accept`; backends never call them. Commands are stateless: `task next` and `task submit` rerun the pipeline from the repository plus `.mental/` until the first cache miss, so no session file exists.
-- **Why:** the pull backend inverts control, every backend must be judged identically (spec 6.5), and nothing can drift between calls.
+- **Why:** the pull backend inverts control, every backend must be judged identically (spec 9.3), and nothing can drift between calls.
 - **Source:** [rust-analyzer "stateless a-la HTTP", architecture.md L241-L245][ra-arch-stateless]; [SysMoBench in-memory attempt counter][smb-server] (counterexample).
 - **Enforced by:** a test that every backend goes through `accept`; the pull-protocol property test ([C23](#c23-the-pull-protocol-is-tested-at-three-layers)).
 
@@ -90,8 +89,8 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 
 #### C5. The backend is synchronous
 - **Rule:** `trait Backend { fn caps(&self) -> Caps; fn complete(&self, task: &RenderedTask) -> Result<RawAnswer, BackendError>; }`, implemented only by the push backends (`api`, `local`, `agent-cli`, `replay`). The `agent` backend implements nothing: it is the CLI and MCP surface over `next_task` and `accept`.
-- **Why:** 15 calls per build need no concurrency, and an async runtime would add dozens of crates. Accepted and written into spec 6.5 ([accepted changes](README.md#accepted-specification-changes)).
-- **Source:** [rmcp `Cargo.toml`, tokio mandatory][rmcp-cargo]; spec 6.4 cost estimate (F-S10).
+- **Why:** 15 calls per build need no concurrency, and an async runtime would add dozens of crates. Accepted and written into spec 9.3.
+- **Source:** [rmcp `Cargo.toml`, tokio mandatory][rmcp-cargo]; spec 9.1 cost estimate (F-S10).
 - **Enforced by:** tidy tests `banned_crates` and `no_async`.
 
 #### C6. A small blocking API client
@@ -111,13 +110,13 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 #### C8. Prompts are versioned data
 - **Rule:** templates live in `prompts/<role>/<name>.md`, are embedded with `include_str!` and declare a version; `prompts.lock` pins `(version, blake3)` per template.
 - **Why:** prompts are reviewable data, and the version in the ledger must mean something.
-- **Source:** [Codex `prompts/src/compact.rs`][codex-prompts]; spec 6.6.
+- **Source:** [Codex `prompts/src/compact.rs`][codex-prompts]; spec 9.4.
 - **Enforced by:** unit test that fails when a template's hash changes without a version bump or when the lock is stale; insta snapshot of each template rendered on a fixture.
 
 ### Checks and repair
 
 #### C9. Checks are pure and re-run on every cache hit
-- **Rule:** each check of spec 6.7 is a pure function over the model returning diagnostics; checks run on fresh answers and again on every cache hit.
+- **Rule:** each check of spec 9.2 is a pure function over the model returning diagnostics; checks run on fresh answers and again on every cache hit.
 - **Why:** a stricter check then turns exactly the now-failing stored answers into repairs, so the check version needs no place in the cache key.
 - **Source:** [ruff caches only clean results][ruff-diagnostics]; the LLM note, section 4.
 - **Enforced by:** test that a cached answer that now fails a check yields a repair, not acceptance.
@@ -130,7 +129,7 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 
 #### C11. Repairs are capped and the build fails closed
 - **Rule:** repairs per task are capped in config (default 3); on exhaustion the build fails with every failure attached. There is no fail-open path and no "model with gaps".
-- **Why:** fail rather than degrade (spec 6.5); Specula's stop gate fails open and is the counterexample.
+- **Why:** fail rather than degrade (spec 9.3); Specula's stop gate fails open and is the counterexample.
 - **Source:** [Aider `max_reflections = 3`][aider-loop]; [SysMoBench correction loop][smb-method]; [Specula `stop_gate.py`][specula-gate].
 - **Enforced by:** limit tests at 2, 3 and 4 failed repairs ([T13](testing.md#t13-test-every-limit-at-its-edges)); a mutant that skips the cap must be caught.
 
@@ -138,7 +137,7 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 
 #### C12. The cache key is content, never the LLM
 - **Rule:** `key = blake3(canonical_json({cache_format, role, template name, template hash, answer-schema hash, sorted input-slice hashes}))`. Code enters by the hash of the exact slice placed in the prompt, callee summaries by their own content hash; the LLM identity never enters.
-- **Why:** unrelated edits and model changes invalidate nothing (spec 6.6), a forgotten version bump can't serve stale answers, and an unchanged callee summary stops recompilation above it (early cutoff, as Salsa's backdating and ninja's `restat` do, without revision counters).
+- **Why:** unrelated edits and model changes invalidate nothing (spec 9.4), a forgotten version bump can't serve stale answers, and an unchanged callee summary stops recompilation above it (early cutoff, as Salsa's backdating and ninja's `restat` do, without revision counters).
 - **Source:** [ruff `cache_key.rs`, `Hash` is not portable][ruff-cachekey]; [Salsa `backdate.rs`][salsa-backdate]; [ninja `graph.cc` L225-L262][ninja-graph].
 - **Enforced by:** property tests (key independent of map order; a byte change outside every slice leaves the key unchanged, inside a slice changes it); a golden key for a fixed input as an inline snapshot.
 
@@ -150,13 +149,13 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 
 #### C14. Every recompile is explained
 - **Rule:** `build --json` lists each cache miss with the input hash that changed.
-- **Why:** spec 6.8's promise ("a one-line fix recompiles exactly these units") becomes observable and testable.
+- **Why:** spec 9.4's promise ("a one-line fix recompiles exactly these units") becomes observable and testable.
 - **Source:** [ninja `-d explain`, `graph.cc`][ninja-graph].
 - **Enforced by:** CLI snapshot of the explanation; the one-line-fix test ([C24](#c24-the-golden-report-jobs-build)).
 
 #### C15. The ledger is append-only and crash-safe
 - **Rule:** every call, failed and repair calls included, appends exactly one complete JSON line to `calls.jsonl` (one `write_all`) before its records are used; raw answers are stored by content hash, not inline; a torn last line is detected when the ledger is opened. Repair counts are derived from the ledger (`repair_of`), not kept elsewhere.
-- **Why:** audit and LLM comparison (spec 6.6), and crash safety for the pull backend.
+- **Why:** audit and LLM comparison (spec 9.4), and crash safety for the pull backend.
 - **Source:** [Codex rollout recorder][codex-rollout]; Aider `--llm-history-file`.
 - **Enforced by:** property test with crash and reopen ([C23](#c23-the-pull-protocol-is-tested-at-three-layers)); test that the ledger line count equals the number of backend calls; each ledger line deserializes into a `deny_unknown_fields` struct.
 
@@ -213,9 +212,9 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 - **Enforced by:** the tests; mutation testing on `task.rs` and `mcp.rs`.
 
 #### C24. The golden report-jobs build
-- **Rule:** `mentalc build --offline` on `examples/report-jobs` with the committed answers succeeds; the produced model matches the hand-written reference at `examples/report-jobs/model/` under a written comparison rule; the four findings of spec 6.9 are asserted by `Code` and anchor; a second test applies the one-line fix and asserts that exactly the expected units recompile. The test also runs on a release build.
-- **Why:** spec 6.9 and 6.8 become regression tests; the reference is a specification, so tooling never rewrites it ([T6](testing.md#t6-the-golden-is-never-a-snapshot)).
-- **Source:** spec 6.9, 11.4 and F-S10; [SQLite as-delivered testing][sqlite-testing].
+- **Rule:** `mentalc build --offline` on `examples/report-jobs` with the committed answers succeeds; the produced model matches the hand-written reference at `examples/report-jobs/model/` under a written comparison rule; the four findings of spec 8.2 are asserted by `Code` and anchor; a second test applies the one-line fix and asserts that exactly the expected units recompile. The test also runs on a release build.
+- **Why:** spec 8.2 and 6.8 become regression tests; the reference is a specification, so tooling never rewrites it ([T6](testing.md#t6-the-golden-is-never-a-snapshot)).
+- **Source:** spec 8.2, 11.4 and F-S10; [SQLite as-delivered testing][sqlite-testing].
 - **Enforced by:** `tests/report_jobs.rs`, in debug and release CI jobs.
 
 #### C25. Golden tasks show every key change

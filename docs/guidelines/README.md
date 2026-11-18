@@ -20,7 +20,7 @@ A rule that only a reviewer can check is kept only when it prevents real bloat o
 
 | File | Covers |
 |---|---|
-| [README.md](README.md) | this index; cross-cutting rules G1-G21; accepted specification changes; mapping to alpha |
+| [README.md](README.md) | this index; cross-cutting rules G1-G21; mapping to alpha |
 | [testing.md](testing.md) | the testing playbook: layers, the `check` helper, fixtures, snapshots, properties, fuzzing, fault injection, mutants, coverage, determinism, speed, tidy tests (T1-T21) |
 | [model.md](model.md) | record types, semantic IDs, canonical JSONL, guards, checks, diagnostics (M1-M25) |
 | [extract.md](extract.md) | Python and compose to facts: parser, stages, packs, control flow, fixtures (X1-X22) |
@@ -33,7 +33,7 @@ One Cargo workspace at the repository root, with flat top-level crate folders:
 
 ```
 model/      library   record format, IDs, guards, JSONL, checks, Diagnostic     deps: serde, serde_json, blake3
-extract/    library   Python source + compose JSON -> facts, no LLM             deps: model, ruff parser crates, ...
+extract/    library   build files, Python source, compose JSON -> build model and facts, no LLM   deps: model, ruff parser and ty crates, ...
 mentalc/    binary    pipeline, LLM tasks and backends, cache, ledger, checks, MCP; packs/ and prompts/ embedded
 mentalvm/   library + thin binary   step, run, explore, replay; core does no I/O and compiles to WebAssembly
 
@@ -51,7 +51,7 @@ Also decided by the owner on 2026-11-14, when these guidelines were accepted:
 - `mentalvm`'s `clap` and `anyhow` sit behind a default `cli` feature, so its core builds for WebAssembly without them;
 - CI adds nextest, `cargo insta test --check` and `cargo fuzz build`;
 - any duplicate ID in a model is an error, even when the two lines are identical ([M6](model.md#m6-identity-is-the-key));
-- the decisions D1 to D9 of the [`model` plan](../plans/model.md#3-decisions).
+- the format rules of the [specification](../specification.md#7-the-model): full IDs only, `equals` on enum predicates, one format version, one file per kind, no stored kind.
 
 **I/O edges.** Only these files may touch the file system, processes, network, environment, clock or stdio ([G4](#g4-io-and-ambient-inputs-only-at-named-edges)):
 
@@ -150,8 +150,8 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 
 #### G13. JSON out, TOML in, no YAML
 - **Rule:** tool output is JSON or JSONL; human-written input (config, packs) is TOML; every command has a `--json` form; no YAML crate is used.
-- **Why:** one format per direction, and the spec's text model is JSONL (spec 4.9).
-- **Source:** owner decision; spec 4.9.
+- **Why:** one format per direction, and the spec's text model is JSONL (spec 7.5).
+- **Source:** owner decision; spec 7.5.
 - **Enforced by:** tidy test `banned_crates`.
 
 #### G14. Serializable types are contracts
@@ -250,32 +250,6 @@ disallowed-methods = [
 ```
 
 Crate-level additions, as inner attributes: `#![deny(clippy::wildcard_enum_match_arm)]` at the top of `model/src/lib.rs` and `extract/src/python/flow.rs` (M4, X13), and `#![warn(clippy::panic)]` in `mentalvm/src/lib.rs` (V4).
-
-## Accepted specification changes
-
-The research contradicted or sharpened [`docs/specification.md`](../specification.md) in the places below. The owner accepted every change on 2026-11-14, and each one is now written into the specification at the section named.
-
-| # | Change | Where it is now | Rules |
-|---|---|---|---|
-| 1 | **Backends are synchronous, and the build is a state machine.** `fn complete(&self, &RenderedTask) -> Result<RawAnswer, BackendError>`, implemented only by push backends; the core is `next_task()` and `accept(task_id, raw)`; the `agent` backend is the CLI and MCP surface over those two | [§6.5](../specification.md#65-llm-backends) | [C4](mentalc.md#c4-one-judge-for-every-backend), [C5](mentalc.md#c5-the-backend-is-synchronous) |
-| 2 | **The `agent` backend keeps no session file.** Its state is the cache, the ledger and repair counts derived from the ledger | [§6.5](../specification.md#65-llm-backends) | [C15](mentalc.md#c15-the-ledger-is-append-only-and-crash-safe) |
-| 3 | **ruff's parser and Mental's own resolver.** `ruff_python_parser` and `ruff_python_ast`, exact-pinned, types confined to `extract`; names resolved from pack type rows; tree-sitter stays an Experiment | [§6.2.1](../specification.md#621-extract-in-detail) | [X1](extract.md#x1-ruffs-parser-pinned-nothing-heavier), [X9](extract.md#x9-extract-never-guesses) |
-| 4 | **A call-graph edge is defined.** A distinct pair of repository functions; repeated calls count once; pack calls become effects or slots; unresolved calls are counted apart. The trial's 41 is re-measured under this definition | [§6.2.1](../specification.md#621-extract-in-detail) | [X22](extract.md#x22-report-jobs-is-the-acceptance-test) |
-| 5 | **No partial-order reduction in version one.** Bounded DFS with an exact visited set (budgets in the key) and a preemption bound; reduction later only as sleep sets with a differential test. The §13 question about safe reordering is answered by not reordering yet | [§8.4](../specification.md#84-strategies), [§13](../specification.md#13-open-questions) | [V9](mentalvm.md#v9-bounded-dfs-with-an-exact-visited-set), [V15](mentalvm.md#v15-no-partial-order-reduction-in-version-one) |
-| 6 | **Bound exceeded is its own result.** A hard cap hit by search, the minimizer or a fixpoint is reported as `bound-exceeded`, never as "none within these bounds" | [§8.5](../specification.md#85-how-a-run-ends) | [T13](testing.md#t13-test-every-limit-at-its-edges), [V12](mentalvm.md#v12-every-loop-has-a-hard-cap) |
-| 7 | **Only full IDs are stored.** Guards, steps, nodes, classes and run files use complete IDs; short forms only on screen | [§4.3](../specification.md#43-semantic-ids), [§4.7](../specification.md#47-behavior-records), [§8.6](../specification.md#86-files) | [M15](model.md#m15-only-full-ids-are-stored) |
-| 8 | **The ID grammar is tightened.** ASCII slugs `[a-z0-9]+(-[a-z0-9]+)*`, no escaping, no all-digit slug; collisions resolved by another code name, never a counter; IDs are canonical; `[n]` only on instances; an ID pattern for every kind; every ID unique | [§4.3](../specification.md#43-semantic-ids) | [M2](model.md#m2-one-canonical-text-form), [M3](model.md#m3-one-slug-alphabet-no-escaping), [M5](model.md#m5-names-say-what-never-when-or-where), [M6](model.md#m6-identity-is-the-key) |
-| 9 | **Derivable fields are not stored.** The kind is the ID's last prefix and the file the record sits in; a state variable's writers are derived from behaviors' write nodes | [§4.2](../specification.md#42-fields-every-record-has), [§4.6](../specification.md#46-state-records) | plan D5 and section 6 |
-| 10 | **Storage has one format version and strict, canonical files.** `.mental/model/format.json`; one file per kind (`state_vars.jsonl`, `machines.jsonl` and `characteristics.jsonl` replace `stores.jsonl` and `inputs.jsonl`); unknown fields rejected; absent and empty fields omitted; a version mismatch says "rebuild"; raw answers stored by hash in `.mental/answers/` | [§4.9](../specification.md#49-storage) | [M10](model.md#m10-one-format-version-no-migrations), [C15](mentalc.md#c15-the-ledger-is-append-only-and-crash-safe) |
-| 11 | **Guard algebra gains two rules.** Predicates over one enum variable carry `equals` and form one dimension over its values; above 16 dimensions the check reports `guard-check-too-large`; guards use only `!`, `&`, `\|`, parentheses and full IDs; a case with no guard is `otherwise` | [§4.7](../specification.md#47-behavior-records) | [M18](model.md#m18-partition-by-enumeration-with-a-cap) |
-| 12 | **The cache key is content.** Role, template name and content hash, answer-schema hash and input-slice hashes, never the LLM; `prompts.lock`; checks re-run on every hit; only accepted answers cached; no eviction by age; every miss explained | [§6.6](../specification.md#66-the-call-ledger), [§6.8](../specification.md#68-incremental-builds) | [C8](mentalc.md#c8-prompts-are-versioned-data), [C12](mentalc.md#c12-the-cache-key-is-content-never-the-llm), [C13](mentalc.md#c13-the-cache-keeps-paid-answers-safe), [C14](mentalc.md#c14-every-recompile-is-explained) |
-| 13 | **No YAML.** The term, ledger, run-file and variation-point examples are JSON | [§6.3](../specification.md#63-vocabulary-the-projects-glossary), [§6.6](../specification.md#66-the-call-ledger), [§8.6](../specification.md#86-files), [§8.8](../specification.md#88-what-if-edits-variants-and-experiments) | [G13](#g13-json-out-toml-in-no-yaml), [V17](mentalvm.md#v17-run-files-are-json) |
-| 14 | **Pack rows for the extractor.** Types, effects, slots, raises and config bindings are CodeQL-style rows with a closed access-path grammar plus `Decorates` and `WithArg`; behaviors stay records | [§7](../specification.md#7-packs) | [X10](extract.md#x10-no-library-names-in-rust), [X11](extract.md#x11-one-small-closed-access-path-grammar) |
-| 15 | **Exit codes, an offline mode, a replay backend and fixed MCP tools.** Exit 0, 1, 2; `--offline` fails on a cache miss; `replay` answers only from stored answers; MCP tools `mental_task_next` and `mental_task_submit`, failures as `isError: true`, both protocol revisions | [§6.1](../specification.md#61-inputs-output-commands), [§6.5](../specification.md#65-llm-backends) | [G12](#g12-exit-codes-and-a-thin-main), [C16](mentalc.md#c16-a-hand-written-synchronous-dual-era-mcp-server), [C17](mentalc.md#c17-a-fixed-tool-list-over-shared-core-functions), [C20](mentalc.md#c20-tests-never-call-a-live-model) |
-
-Two details were settled while writing the changes in, beyond what the proposals said:
-- **A node may appear in several cases** of its behavior, since cases are paths through the same nodes; every appearance carries the same fields (§4.3). The `model` plan checks this with the code `node-mismatch`.
-- **Variation points use the prefix `vp:`**, not `var:`, which state variables already use (§8.8). Their final ID patterns are settled with milestone 6.
 
 ## Mapping to alpha
 
@@ -376,7 +350,7 @@ Ten principles carry the rules that are statements of intent; the rest stay as r
 | M23 Brute-force guard oracle | reviewer | ci:mutants |
 | M24 Milestone 1 fixture suite | reviewer | completeness test |
 | M25 A testkit, not a fifth crate | reviewer | |
-| X1 ruff's parser, pinned | tidy:extract_ruff_pinned, banned_crates | |
+| X1 ruff's parser and ty's crates, pinned | tidy:extract_ruff_ty_pinned, banned_crates | |
 | X2 No ruff type escapes | tidy:crate_graph | clippy:unreachable_pub |
 | X3 Bump ruff on purpose | ci: ruff bump touches only extract | reviewer |
 | X4 Always parse_unchecked | clippy:disallowed-methods | property test |
