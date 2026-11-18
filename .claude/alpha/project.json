@@ -100,7 +100,6 @@
     },
     "git_hooks": "alpha",
     "baselines": [
-      "markdown",
       "links"
     ],
     "steps": [
@@ -297,7 +296,8 @@
             "no_baseline": "markdown"
           }
         ],
-        "status": "pending"
+        "status": "in_progress",
+        "branch": "alpha/p5-baseline-markdown"
       },
       {
         "id": "p5-baseline-links",
