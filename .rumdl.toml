@@ -4,7 +4,12 @@
 # the 80-column limit.
 
 [global]
-exclude = [".claude/alpha/state/", ".claude/alpha/notes/", ".claude/settings.local.json", ".claude/worktrees/", ".DS_Store", ".claude/alpha/hooks/__pycache__/", ".claude/alpha/checks/__pycache__/", ".env", ".env.*", "**/.env", "**/.env.*", "/target/", "model/**/coverage.xml", "extract/**/coverage.xml", "mentalc/**/coverage.xml", "Cargo.lock"]
+exclude = [".claude/alpha/state/", ".claude/alpha/notes/", ".claude/settings.local.json", ".claude/worktrees/", ".DS_Store", ".claude/alpha/hooks/__pycache__/", ".claude/alpha/checks/__pycache__/", ".env", ".env.*", "**/.env", "**/.env.*", "/target/", "model/**/coverage.xml", "extract/**/coverage.xml", "mentalc/**/coverage.xml", "Cargo.lock", "docs/research/*/experiments/results/"]
 
 [MD013]
 paragraphs = false
+# Project choice (CONTRIBUTING.md, Exceptions): headings are not length-checked,
+# so their anchors and the links to them stay stable, and code blocks may run
+# to 120 columns for layouts, JSON examples and formulas.
+headings = false
+line-length = 120

@@ -191,3 +191,5 @@ A check skipped or loosened in one place, or a baseline loosened, needs a row he
 | `**/tests/**` | `clippy::disallowed_methods` | tests make temp directories and read fixture files ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `**/tests.rs` | `clippy::disallowed_methods` | unit tests make temp directories and read fixture files ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `docs/research/*/experiments/results/` | `typos` | recorded output of tools and LLMs (hashes, raw answers, prompts as sent); editing it would falsify the record, so `_typos.toml` excludes it |
+| `docs/research/*/experiments/results/` | `markdown` | the same recorded output, prompts as sent included; `.rumdl.toml` excludes it |
+| `**/*.md` | `markdown` (MD013) | headings are not length-checked, so their anchors and the links to them stay stable, and code blocks may run to 120 columns for layouts, JSON examples and formulas (owner choice, 2026-11-18) |
