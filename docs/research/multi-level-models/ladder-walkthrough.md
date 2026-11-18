@@ -141,7 +141,7 @@ Steps 1 to 6 cut *one* run. The model has to show *any* run, so each step is gen
 
 A step class can unfold in more than one way. "Finish job" sometimes commits at once, and sometimes is rejected and then retried. These alternatives are the step's **cases**. The step map stored in the model is this tree of classes and their cases. Here is part of it for rq 2.12, with the classes seen in the example run marked:
 
-```
+```text
 g:enqueue-dependent   enqueue a dependent job                     (in this run)
 └ a:enqueue-dependent:0   enqueue dependent job                   (in this run)
     case  m:509a00  commit job as deferred                        (in this run)
@@ -193,7 +193,7 @@ Only now, with every boundary fixed and every class known, does the LLM see the 
 
 The question, for one goal class:
 
-```
+```text
 Level: goal (one actor gets one thing done)
 Actor: worker      Subject: job
 Before: queued, in the queue
@@ -222,14 +222,14 @@ A view never switches the whole run to one level. It shows a **cut**, a set of s
 
 **Manager: 2 steps.**
 
-```
+```text
 OUTCOME  j1 done, its record disagrees                              ⚠
 OUTCOME  j2 done
 ```
 
 **Product owner: 3 steps.**
 
-```
+```text
 GOAL  client  enqueue a dependent job · j2        5 effects
 GOAL  worker  run next job · j1                  22 effects   ⚠ j1 finished, still listed as started
 GOAL  worker  run next job · j2                  15 effects
@@ -237,7 +237,7 @@ GOAL  worker  run next job · j2                  15 effects
 
 **The cut that explains the bug: 6 steps under 2 open headers.**
 
-```
+```text
 GOAL  client  enqueue a dependent job · j2        5 effects
 GOAL  worker  run next job · j1                                ⚠ j1 finished, still listed as started
 ├ ACTIVATION  pick up and start job · j1         10 effects, 5 support folded
@@ -252,7 +252,7 @@ Opening move 8 one more level shows effect 25 as the evidence: the commit withou
 
 **Developer: all 13 moves.**
 
-```
+```text
 GOAL  client  enqueue a dependent job · j2
 └ ACTIVATION  enqueue dependent job · j2              1 support folded
   └ MOVE 1   commit job as deferred                   0, 14–16

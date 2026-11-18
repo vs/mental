@@ -1,12 +1,13 @@
 # Unresolved references demand an honest ladder
 
 > **Corrections after verification (2026-11-14).** A second round re-read the primary sources; the results are in [`notes/verified_*.md`](notes/) and in [findings, section U](../../findings.md#u-unresolved-references-and-dependencies). Three statements below are superseded:
+>
 > - CodeQL's quality warning is not at 5% unresolved. It fires when fewer than 85% of calls or expression types resolve for Java and C#, and it only warns (F-U5).
 > - The coding agent's permission prompt is **not** a sufficient trust gate for commands `mentalc` would start (F-U17). `mentalc` executes nothing itself; see the [resolution specification](../../resolution.md#12-execution-and-trust).
 > - "Complete on 76 of 126 cases against PyCG's 107" is the best LLM (mistral-large), not gpt-4o (F-U22). The 2026 Java study reports build *success* of 30 to 44% per JDK (F-U1).
 >
 > The design recommended at the end of this report is replaced by the [resolution specification](../../resolution.md).
-
+>
 > **Reopened (2026-11-16).** This report treats SCIP as a source of a symbol format to borrow, not of answers. The owner has reopened that: reading a SCIP index that CI or the agent produced, as a source of resolved references, is now experiment E6 of the [resolution specification](../../resolution.md), with the division of labor between the extractor and an index in its [section 6.6](../../resolution.md).
 
 ## Per-product summary

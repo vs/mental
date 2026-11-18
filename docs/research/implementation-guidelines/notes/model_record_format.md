@@ -17,6 +17,7 @@ URL prefixes used below (each link points at the cloned commit):
 SCIP = `https://github.com/sourcegraph/scip/blob/be1d9f7...`, KY = `https://github.com/kythe/kythe/blob/69141f0...`, GL = `https://github.com/facebookincubator/Glean/blob/bdc9a92...`, RA = `https://github.com/rust-lang/rust-analyzer/blob/114dcb8...`, CG = `https://github.com/rust-lang/cargo/blob/382ecb8...`, CE = `https://github.com/EmbarkStudios/cfg-expr/blob/7e43423...`, BD = `https://github.com/sybila/biodivine-lib-bdd/blob/f2c39b8...`, BE = `https://github.com/cfallin/boolean_expression/blob/795b895...`. Full hashes are in the table above.
 
 One line per product:
+
 - **SCIP**: a protobuf index format whose symbols are one string with a small formal grammar (scheme, package, then descriptors with suffix characters), with Rust and Go parsers, a formatter and a `lint` that rejects symbols that aren't in canonical form.
 - **Kythe**: a graph of nodes and edges stored as flat `Entry` tuples (source VName, edge kind, target VName, fact name, fact value); a VName is five plain strings with strict evolution rules.
 - **Glean**: a typed fact database with its own schema language (Angle); a fact's identity is its predicate plus its key (stored facts are deduplicated), and derived predicates are either stored or computed on demand.
@@ -30,9 +31,11 @@ One line per product:
 ## Q1. How do these projects make identifiers stable, readable and parseable? What grammar, escaping and validation do they use, and how is it tested?
 
 ### Takeaway
+
 Every mature format gives the identifier one canonical text form, a written grammar, and one parse and one format function, and treats "parse then format returns the input" as the definition of a valid ID (SCIP's `lint` enforces this literally). Escaping exists only because their names are arbitrary user text. Mental builds slugs itself from code names, so it can use a closed ASCII alphabet and skip escaping entirely. The biggest real-world bug class is the parser and formatter disagreeing on which characters are allowed.
 
 ### Cited Findings
+
 - **SCIP's grammar is written out in EBNF in the schema file.** `<symbol> ::= <scheme> ' ' <package> ' ' (<descriptor>)+ | 'local ' <local-id>`. Each descriptor kind is a name plus one suffix character: namespace `/`, type `#`, term `.`, meta `:`, macro `!`, method `name(disambiguator).`, type parameter `[name]`, parameter `(name)`. — [SCIP scip.proto L153-L180](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/scip.proto#L153-L180)
 - **SCIP's identity is the ancestry path of names, not positions.** "The list of descriptors for a symbol should together form a fully qualified name … it will include one descriptor for every node in the AST (along the ancestry path)". File-local entities get a separate `local <id>` form. — [SCIP scip.proto L182-L189](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/scip.proto#L182-L189)
 - **SCIP needs two escaping schemes because its names are arbitrary.** Package fields escape a space by doubling it. Descriptor names outside `[_+\-$A-Za-z0-9]` are wrapped in backticks, with a backtick doubled inside. `.` is a placeholder for an empty package field. — [SCIP scip.proto L159-L178](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/scip.proto#L159-L178); [SCIP Rust escape_name L150-L159](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/bindings/rust/src/symbol.rs#L150-L159)
@@ -62,6 +65,7 @@ Every mature format gives the identifier one canonical text form, a written gram
 - **cargo-platform tests canonical form in both directions.** Its test helpers are `good(s, expected)`, `good_canon(s, canon, expected)` (whitespace is normalized to one canonical string) and `bad(s, exact_error_message)`. Each runs both through `FromStr` and through serde (`assert_tokens` / `assert_de_tokens_error`), so text parsing and deserialization are proven identical. — [CG crates/cargo-platform/tests/test_cfg.rs L49-L96](https://github.com/rust-lang/cargo/blob/382ecb8707b82592bb7176ba62b07590c29dee35/crates/cargo-platform/tests/test_cfg.rs#L49-L96)
 
 ### Inferences
+
 - **What Mental should copy:**
   - a grammar written in the spec and in a doc comment on `Id`;
   - one `parse` and one `Display`;
@@ -79,6 +83,7 @@ Every mature format gives the identifier one canonical text form, a written gram
 - **Use cargo's "disambiguate only when needed" for unavoidable collisions,** such as two handlers with the same name in different files. Add a qualifying code name (the module, file stem or class) only when a collision exists, never a counter. This keeps most IDs short and stable when unrelated code changes.
 
 ### Gaps
+
 - SCIP's actual canonicalization behavior for non-ASCII names wasn't run, by constraint. The asymmetry is inferred from reading the code: parser and formatter use different predicates. The Rust test `parses_non_ascii` only tests the escaped form `` `Α`# ``.
 - No fuzz harness for symbol parsing was found in SCIP. That doesn't prove none exists elsewhere (for example in OSS-Fuzz configurations outside the repo).
 
@@ -87,13 +92,16 @@ Every mature format gives the identifier one canonical text form, a written gram
 ## Q2. How do they keep the record schema flat, versioned and evolvable? How do they handle unknown fields, schema versions and deterministic ordering?
 
 ### Takeaway
+
 Two families exist:
+
 - **Shared formats with many writers and readers** (protobuf in SCIP and Kythe, Glean databases, the cargo registry index) evolve by adding optional fields, never reusing field numbers, and ignoring unknown data.
 - **Derived artifacts owned by one tool** (Cargo.lock) use a single format version marker and an exact, hand-controlled output layout so that diffs are minimal.
 
 Mental's model is the second kind ("derived, never edited, never merged"). It should take Cargo.lock's discipline (a version marker, a deterministic layout, a hard error on a version mismatch, no catch-all bag) and none of the forward-compatibility machinery.
 
 ### Cited Findings
+
 - **Kythe's storage is maximally flat.** Everything is an `Entry {source VName, edge_kind, target VName, fact_name, fact_value bytes}`. Edge kind and target are "either both empty, or both nonempty". A node is just the set of its facts, so a new fact needs no schema change. — [KY storage.proto L101-L119](https://github.com/kythe/kythe/blob/69141f022689a611e8a4a1d9b08a3783a2e8a9ed/kythe/proto/storage.proto#L101-L119); [KY schema/schema.go Node.ToEntries](https://github.com/kythe/kythe/blob/69141f022689a611e8a4a1d9b08a3783a2e8a9ed/kythe/go/util/schema/schema.go)
 - **Kythe defines a canonical entry order and a dedup step.**
   - VName order: corpus, language, path, root, signature, compared lexicographically.
@@ -125,6 +133,7 @@ Mental's model is the second kind ("derived, never edited, never merged"). It sh
 - **The cargo registry index is a JSON Lines file with a schema version on each line.** `v: Option<u32>` defaults to 1. "Entries with unknown versions are ignored". The reader skips any line it can't parse ("ignoring everything that we ourselves don't understand") and classifies lines as `Unsupported`, `Invalid`, `Yanked` or `Candidate`. `INDEX_V_MAX = 2`. No `deny_unknown_fields` was found in `cargo-util-schemas/src`. — [CG cargo-util-schemas/src/index.rs L65-L87](https://github.com/rust-lang/cargo/blob/382ecb8707b82592bb7176ba62b07590c29dee35/crates/cargo-util-schemas/src/index.rs#L65-L87); [CG src/sources/registry/index/mod.rs L52, L577-L600, L754-L770](https://github.com/rust-lang/cargo/blob/382ecb8707b82592bb7176ba62b07590c29dee35/src/sources/registry/index/mod.rs#L577-L600)
 
 ### Inferences
+
 - **Typed records, not entity-attribute-value tuples.** Kythe's generic entry is the most evolvable layout, but every reader must re-validate and the compiler can't help. Mental already has a fixed set of record kinds that the interpreter must understand ("every kind must have a meaning in the step function"). One serde struct per kind gives compile-time checks for free. Copy Kythe's *spirit*: a minimal identity, everything else as plain fields, and time and revision never in the name.
 - **Reject unknown fields** (`#[serde(deny_unknown_fields)]`). Unlike the cargo index or protobuf, Mental's model has exactly one writer (the same `mentalc` version) and is always rebuildable. Skipping unknown data would hide compiler/model version skew, which the user's "fail rather than degrade" rule forbids. This deliberately departs from SCIP, Kythe and the cargo index; the reason is the single writer, not taste.
 - **Mental's version strategy:**
@@ -146,6 +155,7 @@ Mental's model is the second kind ("derived, never edited, never merged"). It sh
 - **Keep lines small (Kythe's flat facts, Glean's separate facts).** Anchors already live in `anchors.jsonl` (spec 4.4). The same reasoning argues for keeping a behavior's full graph (`lod: full`) out of the summary line when it gets big; this is a version-two question.
 
 ### Gaps
+
 - None of the studied Rust codebases writes JSONL with a written determinism contract. Cargo.lock (TOML) is the closest. The cargo index is JSONL but append-ordered by publish time, not sorted.
 - Where to put the format version marker isn't settled by any source; it is a design choice for Mental.
 
@@ -154,7 +164,9 @@ Mental's model is the second kind ("derived, never edited, never merged"). It sh
 ## Q3. How are references between records validated (dangling IDs), and how are validation errors reported?
 
 ### Takeaway
+
 Validators in these projects are whole-set passes:
+
 - they check that every reference resolves, and resolves to a record of the *expected type* (Glean's "fact type mismatch", SCIP's "missing symbol");
 - they collect every error, not just the first (SCIP's `errorSet`, deduplicated and sorted);
 - they report each error with the offending ID and context.
@@ -162,6 +174,7 @@ Validators in these projects are whole-set passes:
 Mental's kind prefix in every ID makes the type check cheap. Sorting records makes lookup a binary search.
 
 ### Cited Findings
+
 - **Glean checks reference types during validation.** `validate` walks facts in ID order and checks, for every referenced ID:
   - it is in range ("id {} out of range, expecting id of type {}");
   - its predicate matches the expected one ("fact type mismatch. Expected {} to be of type {} … but got {}").
@@ -183,6 +196,7 @@ Mental's kind prefix in every ID makes the type check cheap. Sorting records mak
 - **SCIP looks symbols up by binary search over a sorted, canonical list.** A `rapid` property test checks that every inserted symbol is found and that absent symbols aren't. — [SCIP Go sort.go L25](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/bindings/go/scip/sort.go#L25); [SCIP Go sort_test.go L129-L160](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/bindings/go/scip/sort_test.go#L129-L160)
 
 ### Inferences
+
 - **Mental's reference check, as a pure function `check(&Model) -> Vec<Diagnostic>`.** It should report:
   1. *syntax*: every ID-valued field parses;
   2. *dangling*: the referenced record exists;
@@ -196,6 +210,7 @@ Mental's kind prefix in every ID makes the type check cheap. Sorting records mak
 - **Mental's "anchor check" is the same pattern on a second file:** every anchor ID refers to an existing record, and every record whose kind requires an anchor has one whose status isn't `broken`.
 
 ### Gaps
+
 - None of the sources validates *relative* references like Mental's `pred:range-too-large` inside a guard, or `.../case:skip` in spec 4.7. SCIP's `local` symbols are document-scoped but not resolved relative to a parent. Mental needs its own written rule:
   - *option one:* resolve against the nearest ancestor entity that has a child with that kind and slug;
   - *option two:* store only full IDs and allow abbreviations only in human-facing display.
@@ -207,7 +222,9 @@ Mental's kind prefix in every ID makes the type check cheap. Sorting records mak
 ## Q4. What is the minimal Rust API shape for such a crate (types, ID newtypes, arenas, interning) that stays simple?
 
 ### Takeaway
+
 The Rust building blocks that last are tiny:
+
 - a newtype whose constructor enforces the invariant;
 - `Deserialize` implemented *through* that constructor, so invalid data can't enter through serde;
 - derived `Ord` so sorting is free.
@@ -215,6 +232,7 @@ The Rust building blocks that last are tiny:
 Arenas and interners (`la-arena`, `PathInterner`) pay off for millions of short-lived items in an IDE. For a model of a few thousand records loaded once, `Vec<Record>` sorted by `Id` with binary search is simpler, and interning would only add dependencies.
 
 ### Cited Findings
+
 - **`text-size` keeps invariants behind a private field.** `TextSize` is `#[derive(Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash)] pub struct TextSize { pub(crate) raw: u32 }`: no public constructor that bypasses checks, and `TryFrom<usize>` for fallible conversion. — [RA lib/text-size/src/size.rs L15-L26](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/lib/text-size/src/size.rs#L23-L26)
 - **`text-size` validates in `Deserialize`.** `Deserialize for TextRange` reads `(start, end)` and returns `de::Error::custom("invalid range: {start}..{end}")` if `start > end`. A test asserts that exact error with `serde_test::assert_de_tokens_error`. — [RA lib/text-size/src/serde_impls.rs L34-L44](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/lib/text-size/src/serde_impls.rs); [RA lib/text-size/tests/serde.rs L40-L50](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/lib/text-size/tests/serde.rs#L40-L50)
 - **`text-size` checks auto traits at compile time.** `assert_impl_all!(TextSize: Send, Sync, Unpin, …, Copy, Debug, Default, Hash, Ord)`, using the `static_assertions` crate. — [RA lib/text-size/tests/auto_traits.rs](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/lib/text-size/tests/auto_traits.rs)
@@ -230,6 +248,7 @@ Arenas and interners (`la-arena`, `PathInterner`) pay off for millions of short-
 - **SCIP's Rust symbol API is free functions over protobuf-generated structs** (`parse_symbol`, `format_symbol`, `is_local_symbol`). The generated types carry `special_fields: SpecialFields`, which leaks into every constructor and test. — [SCIP Rust symbol.rs L161-L213](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/bindings/rust/src/symbol.rs#L171-L213)
 
 ### Inferences
+
 Proposed minimal shape for `model` (to judge against the "compact, no bloat" goal):
 
 - **`Id`**
@@ -249,6 +268,7 @@ Proposed minimal shape for `model` (to judge against the "compact, no bloat" goa
 - **Content hashes stay outside the identity:** `blake3` over the canonical line bytes is computed on demand, or stored beside the record as a cache key (spec 4.3), never as part of `Id`.
 
 ### Gaps
+
 - No studied project uses exactly "string ID, sorted Vec, binary search" in Rust. The recommendation combines SCIP's Go approach (canonical sorted list plus binary search) with text-size's newtype pattern.
 - Scale numbers for Mental models (records per repo) are not measured yet. The claim "a few thousand" comes from the spec's report-jobs example, not from data.
 
@@ -257,7 +277,9 @@ Proposed minimal shape for `model` (to judge against the "compact, no bloat" goa
 ## Q5. What testing strategies do they use for the format layer, and which fit Mental?
 
 ### Takeaway
+
 The highest-value, lowest-cost tests seen are:
+
 1. table-driven `good` / `good_canon` / `bad` cases that assert exact error text and go through both `FromStr` and serde (cargo-platform);
 2. round-trip properties, `format(parse(s)) == s` and `parse(format(x)) == x` (SCIP, Kythe);
 3. a brute-force oracle for anything clever: BDDs are tested against truth tables (boolean_expression, biodivine);
@@ -266,6 +288,7 @@ The highest-value, lowest-cost tests seen are:
 Randomized tests must use fixed or persisted seeds: biodivine does, boolean_expression doesn't.
 
 ### Cited Findings
+
 - **cargo-platform's exact-error tests.** `bad::<CfgExpr>("all(a", "failed to parse `all(a` as a cfg expression: expected `)`, but cfg expression ended")`, about 20 such cases. Each `bad` case also checks `assert_de_tokens_error`, proving that serde reports the same message. `good_canon(" foo  ", "foo", …)` pins the canonical rendering. — [CG crates/cargo-platform/tests/test_cfg.rs L49-L135, L199-L237](https://github.com/rust-lang/cargo/blob/382ecb8707b82592bb7176ba62b07590c29dee35/crates/cargo-platform/tests/test_cfg.rs#L199-L237)
 - **cfg-expr's whole-struct error tests.** The tests use `err!(text => Reason @ span)` and compare a whole `ParseError {original, span, reason}` with `similar_asserts::assert_eq!`. — [CE tests/parser.rs L27-L40](https://github.com/EmbarkStudios/cfg-expr/blob/7e43423c5e32b24f9da0ff65cf3cad5d07bfada9/tests/parser.rs#L27-L40)
 - **SCIP's round-trip and malformed-input tests.** The round-trip tests are `TestSymbolFormatterRoundTrip` (Go) and `parses_java_symbol`, which asserts `input == format_symbol(parse_symbol(input))` (Rust). The malformed-input table runs under `require.NotPanics`. — [SCIP Go symbol_formatter_test.go L31-L50](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/bindings/go/scip/symbol_formatter_test.go#L31-L50); [SCIP Go symbol_test.go L136-L155](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/bindings/go/scip/symbol_test.go#L136-L155)
@@ -280,6 +303,7 @@ Randomized tests must use fixed or persisted seeds: biodivine does, boolean_expr
 - **text-size tests serde at the token level.** It uses `serde_test::assert_tokens` and `assert_de_tokens_error`, and compile-time trait checks via `static_assertions`. — [RA lib/text-size/tests/serde.rs](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/lib/text-size/tests/serde.rs)
 
 ### Inferences
+
 Test plan for the `model` crate, mapped to the decided tools (insta, proptest, cargo-mutants, 100% diff coverage):
 
 - **Unit tests in `id/tests.rs` and `guard/tests.rs`:** cargo-platform-style helpers `good(s)`, `good_canon(s, canon)` (only if any normalization is accepted; preferably none), and `bad(s, "exact message")`. Each helper also runs through `serde_json::from_str::<Id>(&format!("\"{s}\""))`, so serde can't diverge from `FromStr`.
@@ -297,6 +321,7 @@ Test plan for the `model` crate, mapped to the decided tools (insta, proptest, c
 - **Fuzzing (cargo-fuzz)** is probably redundant in version one, given proptest on arbitrary strings for `Id::parse` and `Expr::parse`. Neither SCIP nor cargo-platform has a fuzz target for its parser. Add one only if a parser grows past the tiny grammars proposed here.
 
 ### Gaps
+
 - Mutation testing (cargo-mutants) wasn't observed in any studied repo, so there is no evidence here about its yield on format code.
 - SCIP's reprolang snapshot runner code wasn't read in detail. The directory layout is cited; the update workflow isn't.
 
@@ -305,11 +330,13 @@ Test plan for the `model` crate, mapped to the decided tools (insta, proptest, c
 ## Q6. Guard algebra: how do small crates parse and evaluate boolean expressions, and what is the most compact way to check that 1-30 guards over named predicates cover everything and never overlap?
 
 ### Takeaway
+
 Parse guards into a tiny enum `Pred | Not | And(Vec) | Or(Vec)` (cargo-platform's shape) with a canonical `Display`, and evaluate them over a `Logic` trait so the same code serves two-valued and three-valued (Kleene) evaluation (cfg-expr).
 
 For partition and overlap, enumerate truth assignments over only the predicates that the behavior's guards mention. Cap this at **n ≤ 16 distinct predicates** (65,536 assignments). Above the cap, either fail with a diagnostic or switch to a Kleene case-split search that prunes, within the same API. BDDs and SAT are bloat for version one: the BDD crates are 2,400 to 10,600 lines with dependencies that Mental's dependency policy forbids.
 
 ### Cited Findings
+
 - **cargo-platform's evaluator is recursive and short.** `CfgExpr::matches`, using `iter().all/any`, is about 10 lines. Its parser is a hand-written recursive descent over `all(…)`, `any(…)`, `not(…)` and atoms, about 100 lines with the tokenizer. — [CG crates/cargo-platform/src/cfg.rs L166-L175, L251-L290](https://github.com/rust-lang/cargo/blob/382ecb8707b82592bb7176ba62b07590c29dee35/crates/cargo-platform/src/cfg.rs#L166-L175)
 - **cfg-expr's evaluator.**
   - It evaluates postfix nodes with a value stack.
@@ -326,9 +353,10 @@ For partition and overlap, enumerate truth assignments over only the predicates 
 - **Both BDD crates use exhaustive truth-table enumeration as their test oracle**: 6 variables in boolean_expression, up to 12 in biodivine. — [BE src/bdd.rs L755-L775](https://github.com/cfallin/boolean_expression/blob/795b89567e05f54907b89453bdd481d0b01f0c93/src/bdd.rs#L755-L775); [BD _test_bdd_logic_fuzzing.rs L1-L18](https://github.com/sybila/biodivine-lib-bdd/blob/f2c39b81630d4fd1e3e51245c0dfebf11855811e/src/_test_bdd/_test_bdd_logic_fuzzing.rs#L1-L18)
 
 ### Inferences
+
 - **Grammar for Mental guards.** The spec's examples use `!`, `&` and atoms `pred:<slug>` (spec 4.7). Proposed:
 
-  ```
+  ```text
   expr := or
   or   := and ('|' and)*
   and  := not ('&' not)*
@@ -356,6 +384,7 @@ For partition and overlap, enumerate truth assignments over only the predicates 
 - **Reuse three-valued logic for ordered reads.** The same `Option<bool>` evaluation directly implements spec 4.7's "Ordered reads" rule: before the node that `decides` a predicate, that predicate is `None` (unknown), and a guard that evaluates to `None` can't be taken yet. One `Logic` trait serves both the checker and the interpreter. This is an argument for putting the expression type and evaluator in `model`, not in `mentalvm`.
 
 ### Gaps
+
 - **Predicates aren't always independent.** For example, `status-is-pending` and `status-is-done` over the same enum `state_var` can't both be true. Plain enumeration would report a spurious overlap for that impossible assignment, and a spurious gap when every value is listed but "none true" is impossible. No studied crate addresses domain constraints. Mental needs a rule, such as declaring predicate groups over one enum variable as "exactly one" or "at most one" and skipping infeasible masks. That is a design decision to make before implementing.
 - The cost estimate for enumeration is arithmetic, not a benchmark.
 
@@ -364,14 +393,16 @@ For partition and overlap, enumerate truth assignments over only the predicates 
 ## Q7. Candidate guidelines for the `model` crate (enforceable rules, rationale, source, enforcement)
 
 ### Takeaway
+
 About two dozen rules cover identity, format, validation, API and tests. Most can be enforced by tests the crate needs anyway: round-trip properties, exact-error tables, snapshot goldens and the diagnostic-fixture completeness test. A few need clippy configuration (`disallowed_types`) or a CI dependency allowlist. The rest are reviewer rules, and each states the bloat it prevents.
 
 ### Cited Findings
+
 - Each guideline below cites its source; the evidence is in Q1-Q6 above. Sources: SCIP [lint.go](https://github.com/sourcegraph/scip/blob/be1d9f769a02a11be3b3ec5485231e2531a78a1c/cmd/scip/lint.go), Kythe [storage.proto](https://github.com/kythe/kythe/blob/69141f022689a611e8a4a1d9b08a3783a2e8a9ed/kythe/proto/storage.proto), Glean [factset.cpp](https://github.com/facebookincubator/Glean/blob/bdc9a9235e0af30434f02c0b6515247576444ea8/glean/rts/factset.cpp) and [validate.cpp](https://github.com/facebookincubator/Glean/blob/bdc9a9235e0af30434f02c0b6515247576444ea8/glean/rts/validate.cpp), text-size [serde_impls.rs](https://github.com/rust-lang/rust-analyzer/blob/114dcb8d6f50aca1ef14d67b831a7560362f8f69/lib/text-size/src/serde_impls.rs), cargo [encode.rs](https://github.com/rust-lang/cargo/blob/382ecb8707b82592bb7176ba62b07590c29dee35/src/resolver/encode.rs), [lockfile.rs](https://github.com/rust-lang/cargo/blob/382ecb8707b82592bb7176ba62b07590c29dee35/src/ops/lockfile.rs) and [test_cfg.rs](https://github.com/rust-lang/cargo/blob/382ecb8707b82592bb7176ba62b07590c29dee35/crates/cargo-platform/tests/test_cfg.rs), cfg-expr [expr.rs](https://github.com/EmbarkStudios/cfg-expr/blob/7e43423c5e32b24f9da0ff65cf3cad5d07bfada9/src/expr.rs), biodivine [fuzzing tests](https://github.com/sybila/biodivine-lib-bdd/blob/f2c39b81630d4fd1e3e51245c0dfebf11855811e/src/_test_bdd/_test_bdd_logic_fuzzing.rs), boolean_expression [expr.rs](https://github.com/cfallin/boolean_expression/blob/795b89567e05f54907b89453bdd481d0b01f0c93/src/expr.rs).
 
 ### Inferences
 
-**Identity**
+#### Identity
 
 1. **IDs are only built by `Id::parse` or `Id::child`; the inner `String` is private, and `Deserialize` calls `Id::parse`.**
    - *Why:* invalid IDs can't enter through serde or ad-hoc `format!`.
@@ -406,7 +437,7 @@ About two dozen rules cover identity, format, validation, API and tests. Most ca
    - *Source:* Glean `FactSet::define` L278-L293.
    - *Enforce:* checker fixture.
 
-**Format**
+#### Format
 
 9. **One JSONL file per kind; one record per line; lines sorted by ID in byte order; struct field order is declaration order; `None` and empty sets are omitted; the file ends in `\n`; nothing else is in the file.**
    - *Why:* byte-deterministic output, diffable by text tools and LLMs (spec 4.9).
@@ -441,7 +472,7 @@ About two dozen rules cover identity, format, validation, API and tests. Most ca
     - *Source:* cargo `are_equal_lockfiles`.
     - *Enforce:* unit test. Optional for version one.
 
-**Validation**
+#### Validation
 
 17. **Checking is a pure `fn check(&Model) -> Vec<Diagnostic>` that never stops early. Diagnostics are sorted by `(id, code, field)` and deduplicated.**
     - *Why:* the user sees every problem at once, and output is stable.
@@ -463,7 +494,7 @@ About two dozen rules cover identity, format, validation, API and tests. Most ca
     - *Source:* cfg-expr `error.rs` / `tests/parser.rs`; cargo-platform `bad()`.
     - *Enforce:* `bad(s, msg)` tables; thiserror `Display`.
 
-**API and dependencies**
+#### API and dependencies
 
 22. **Public surface:** `Id`, `Kind`, one struct per record kind, `Model { kind: Vec<T> sorted }`, `read`/`write` per file, `check`, `Expr` with `parse`/`Display`/`eval<L: Logic>`. No arenas, interners or index maps in version one.
     - *Why:* a few thousand records don't need IDE-scale structures, and those need extra dependencies.
@@ -473,7 +504,7 @@ About two dozen rules cover identity, format, validation, API and tests. Most ca
     - *Why:* it exists for published crates (SCIP `SymbolError`, cargo-platform `ParseErrorKind`). Internally it forces `_` arms and hides missing cases.
     - *Enforce:* clippy `wildcard_enum_match_arm` (restriction lint) in `model`; reviewer.
 
-**Guards**
+#### Guards
 
 24. **The guard grammar is `!`, `&`, `|`, parentheses and full predicate IDs; canonical `Display`; an unknown predicate is a link error, never false.**
     - *Source:* cargo-platform `CfgExpr`; the boolean_expression `unwrap_or(false)` anti-pattern.
@@ -486,7 +517,7 @@ About two dozen rules cover identity, format, validation, API and tests. Most ca
     - *Source:* cfg-expr `Logic`.
     - *Enforce:* proptest that `Option<bool>` evaluation with every predicate `Some(_)` equals `bool` evaluation.
 
-**Tests**
+#### Tests
 
 27. **Every parser has a table of `good`, `good_canon` and `bad(s, exact_msg)` cases, each also run through `serde_json`.**
     - *Source:* cargo-platform `test_cfg.rs` L49-L96.
@@ -502,7 +533,8 @@ About two dozen rules cover identity, format, validation, API and tests. Most ca
     - *Source:* SCIP reprolang snapshots; Cargo.lock compatibility tests (`lockfile_compat`, referenced in the `encode.rs` docs).
     - *Enforce:* insta in CI with `--check` (`INSTA_UPDATE=no`).
 
-**Explicitly flagged as bloat for version one**
+#### Explicitly flagged as bloat for version one
+
 - SCIP: the zero-allocation Go-style parser, `SymbolFormatOptions`, backtick and space escaping, package/version components.
 - Kythe: the 5-field VName with `VNameMask`, URI encoding, and generic entity-attribute-value `Entry` storage.
 - Glean: a schema language, code generation, a compatibility checker, and stored-versus-on-demand derivation machinery.
@@ -515,6 +547,7 @@ About two dozen rules cover identity, format, validation, API and tests. Most ca
 - `static_assertions` (auto-trait checks don't matter for this crate).
 
 ### Gaps
+
 - Guideline 20 (fully qualified IDs only) and the domain-constraint rule for dependent predicates (see Q6 Gaps) are spec decisions that no source settles.
 - The clippy lints named (`disallowed_types`, `disallowed_methods`, `wildcard_enum_match_arm`) exist in clippy, but this research didn't verify configuring them per crate in this workspace. They are configured through `clippy.toml` or `#![deny]` at the crate root.
 - No studied project measured how many records or predicates a model like Mental's holds. The thresholds (n ≤ 16, "a few thousand records") should be checked against the first real build of report-jobs.

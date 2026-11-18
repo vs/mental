@@ -21,25 +21,29 @@ Per-ecosystem one-line summary (details and sources below):
 ## 1. Per ecosystem: lockfile, default, transitive pinning with hashes, native graph command
 
 ### Takeaway
+
 Ecosystems split into three groups: (a) lockfile-by-default with full transitive pins and hashes (npm family, Cargo, Bundler, Composer, SwiftPM, uv/Poetry/PDM, Bazel bzlmod), where a static parser gets the exact graph offline; (b) deterministic-from-manifest (Go); (c) no or opt-in lockfile (Maven, Gradle, NuGet, pip + requirements, conda), where the exact graph exists only after running the build tool or an equivalent resolver, usually with network access.
 
 ### Cited Findings
 
-**Maven**
+#### Maven
+
 - [V] Maven resolves version conflicts by "nearest definition" (shortest path wins; at equal depth, first declaration wins); `dependencyManagement` overrides mediation for transitive dependencies; imported BOMs are applied in declaration order and recursively. The resolved version therefore depends on the whole effective POM chain (parents, BOM imports, properties), not on the project `pom.xml` alone. — [Maven: Introduction to the Dependency Mechanism](https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html)
 - [S] Maven has no native lockfile; a 2025 paper states Maven "lacks native support for a lockfile". Third-party plugin `maven-lockfile` (chains-project, KTH) writes a `lockfile.json` and can generate a flattened POM where "every version of direct dependencies in the original pom will be replaced with the versions from the lockfile". — [Maven-Lockfile paper, arXiv 2510.00730](https://arxiv.org/abs/2510.00730v1); [chains-project/maven-lockfile](https://github.com/chains-project/maven-lockfile/)
 - [S] Maven 4.0.0 was still not GA in the sources found: the Apache release catalog lists 4.0.0-rc-6 (30 Jul 2026) and its release notes say it continues gathering feedback before GA. Maven 4 separates the build POM from the consumer POM. No native lockfile was found in Maven 4. — [Maven 4.0.0-rc-6 release notes](https://maven.apache.org/docs/4.0.0-rc-6/release-notes.html); [Maven 4.0.0 GA checklist](https://cwiki.apache.org/confluence/display/MAVEN/Maven+4.0.0+GA+checklist)
 - [V] Maven 4 adds `<packaging>bom</packaging>`, converted to standard `pom` packaging at install/deploy so Maven 3 consumers stay compatible. — [Maven: Introduction to the Dependency Mechanism](https://maven.apache.org/guides/introduction/introduction-to-dependency-mechanism.html)
 - [U] Native graph command: `mvn dependency:tree` (JSON/DOT/GraphML output through `-DoutputType`), and `mvn dependency:list`. It needs all POMs of the transitive closure in `~/.m2` or downloads them; it loads build extensions and plugins but does not compile the project. — [maven-dependency-plugin: tree mojo](https://maven.apache.org/plugins/maven-dependency-plugin/tree-mojo.html)
 
-**Gradle**
+#### Gradle
+
 - [V] Dependency locking is NOT on by default; it is enabled per configuration (`dependencyLocking { lockAllConfigurations() }`); buildscript configurations must be enabled separately. Written by `./gradlew dependencies --write-locks`. Files: `gradle.lockfile` per project and `buildscript-gradle.lockfile`. Format: one line per `group:artifact:version=configurations`. The page mentions no hashes. Page labelled Gradle 9.9.1. — [Gradle: Dependency locking](https://docs.gradle.org/current/userguide/dependency_locking.html)
 - [V] Gradle lockfiles "record resolved versions but no graph"; lockfile-only parsing gives no dependency edges; `gradle/verification-metadata.xml` adds checksums. — [cdxgen PROJECT_TYPES](https://raw.githubusercontent.com/CycloneDX/cdxgen/master/docs/PROJECT_TYPES.md)
 - [V] Trivy confirms the same limitation: from `gradle.lockfile` "direct dependencies can't be reliably identified", so all are marked indirect, and edges are reconstructed experimentally from `*.pom` files in the Gradle cache. — [Trivy: Java coverage](https://trivy.dev/latest/docs/coverage/language/java/)
 - [U] Dependency verification (`gradle/verification-metadata.xml`, written by `--write-verification-metadata sha256`) records checksums/signatures of every resolved artifact including plugins, but it is opt-in and is a flat list, not a graph. — [Gradle: Dependency verification](https://docs.gradle.org/current/userguide/dependency_verification.html)
 - [U] Native graph commands: `gradle dependencies`, `gradle dependencyInsight`, `gradle buildEnvironment`. All require configuring the build, which executes `settings.gradle(.kts)`, `build.gradle(.kts)` and applied plugins, i.e. arbitrary project code. — [Gradle: Viewing dependencies](https://docs.gradle.org/current/userguide/viewing_debugging_dependencies.html)
 
-**npm / pnpm / Yarn / Bun**
+#### npm / pnpm / Yarn / Bun
+
 - [V] `package-lock.json` records per package: `version`, `resolved` (tarball URL), `integrity` (sha512/sha1 SRI), dev/optional flags, and the package's own `dependencies`. `lockfileVersion` 3 is used by npm v9+. For git dependencies `resolved` holds the full git URL with the commit SHA. `npm-shrinkwrap.json` has the same format and is publishable. A hidden `node_modules/.package-lock.json` exists after install. — [npm docs: package-lock.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-lock-json)
 - [U] `package-lock.json` is created automatically by `npm install` (since npm 5). Native graph: `npm ls --all --json` (reads `node_modules` or, with `--package-lock-only`, the lockfile). `npm install --package-lock-only --ignore-scripts` creates a lockfile without installing, but needs registry access. — [npm docs: npm ls](https://docs.npmjs.com/cli/v11/commands/npm-ls)
 - [U] pnpm writes `pnpm-lock.yaml` by default (importers per workspace package, `packages` with `resolution: {integrity: ...}`, `snapshots` with edges); graph command `pnpm list --depth Infinity --json` / `pnpm why`. — [pnpm: pnpm-lock.yaml / git settings](https://pnpm.io/git)
@@ -48,7 +52,8 @@ Ecosystems split into three groups: (a) lockfile-by-default with full transitive
 - [U] Bun: since Bun 1.2 the default lockfile is the text `bun.lock` (JSONC); earlier versions wrote binary `bun.lockb`. — [Bun: lockfile](https://bun.sh/docs/install/lockfile)
 - [V] OSV-Scanner and cdxgen both list `bun.lock`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock` as supported inputs (evidence that the text formats are parseable without the tool). — [OSV-Scanner: supported lockfiles](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/)
 
-**Python**
+#### Python
+
 - [V] `uv.lock` is universal (covers all platform/Python markers), holds exact resolved versions, "should be checked into version control", and "is specific to uv and not usable by other tools"; uv can export to `pylock.toml`. — [uv: project layout](https://docs.astral.sh/uv/concepts/projects/layout/)
 - [S] PEP 751 `pylock.toml` adoption (sources from mid-2026, of mixed dates): uv exports it (`uv export --format pylock.toml`) and installs from it (`uv pip install --pylock`); PDM 2.24 added `pylock` export and 2.25 an opt-in `lock.format pylock`; pip has experimental `pip lock` (since 25.1) and an experimental installer for `pylock.toml`; Poetry support is unconfirmed (one handbook says not shipped as of April 2026, a vendor blog describes a `poetry export --format pylock`). — [PEP 751](https://peps.python.org/pep-0751/); [pydevtools: What is PEP 751](https://pydevtools.com/handbook/explanation/what-is-pep-751/); [Socket: pylock.toml support](https://socket.dev/blog/socket-now-supports-pylock-toml-files)
 - [V] `pip install --dry-run --report out.json` emits, per item, `download_info` (with `archive_info.hashes` or `vcs_info.commit_id` + `requested_revision`), `is_direct`, `requested`, full `metadata` (`requires_dist`), plus the `environment` markers of the machine. pip states it is not a lock file format and is not accepted as install input. — [pip: Installation report](https://pip.pypa.io/en/stable/reference/installation-report/)
@@ -56,39 +61,46 @@ Ecosystems split into three groups: (a) lockfile-by-default with full transitive
 - [U] conda: `environment.yml` is not a lock; exact pins come from `conda env export`, `conda list --explicit` (URLs + md5), `conda-lock`, or `pixi.lock`. — [conda-lock](https://conda.github.io/conda-lock/); [pixi lockfile](https://pixi.sh/latest/workspace/lockfile/)
 - [V] OSV-Scanner supports `Pipfile.lock`, `poetry.lock`, `requirements.txt`, `pdm.lock`, `pylock.toml`, `uv.lock`. — [OSV-Scanner: supported lockfiles](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/)
 
-**Go modules**
+#### Go modules
+
 - [V] Minimal version selection picks the highest *required* version of each module in the `require` graph; the build list does not change when new versions are published, "so no lock file is needed". `go list -m all` prints the build list. `go.sum` is an integrity record and does not select versions. — [Go Modules Reference](https://go.dev/ref/mod)
 - [V] `go mod vendor` copies needed packages to `vendor/` and writes `vendor/modules.txt` listing each vendored package and module version; the go command checks it against `go.mod`. — [Go Modules Reference](https://go.dev/ref/mod)
 - [V] `go.work` defines several main modules resolved together; its `replace` overrides module replaces; Go advises against committing it in most cases. — [Go Modules Reference](https://go.dev/ref/mod)
 - [U] `go mod graph` prints the requirement edges (module@version pairs, pre-MVS); since Go 1.17 `go.mod` lists all modules that provide packages to the main module (`// indirect`), so `go.mod` alone is a close approximation of the build list. — [Go Modules Reference: go mod graph](https://go.dev/ref/mod#go-mod-graph)
 
-**Cargo**
+#### Cargo
+
 - [V] Bare versions are caret requirements (`1.2.3` := `>=1.2.3, <2.0.0`); Cargo records the exact commit of each git dependency in `Cargo.lock` and only checks for updates on `cargo update`. — [Cargo: Specifying dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html)
 - [U] `Cargo.lock` is generated automatically, lists every package with `version`, `source` and `checksum` (sha256 for registry crates) and its `dependencies`. Since August 2023 the Cargo team's guidance is to commit it by default for libraries too (previously: binaries only). — [Rust blog: Change in guidance on committing lockfiles](https://blog.rust-lang.org/2023/08/29/committing-lockfiles.html)
 - [U] `cargo metadata --format-version 1` prints packages plus a `resolve` node graph as JSON; `--locked`/`--offline` prevent network; it does not run build scripts. `cargo tree` prints the tree. — [Cargo: cargo metadata](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html)
 
-**Bazel**
+#### Bazel
+
 - [V] `MODULE.bazel.lock` stores `registryFileHashes` (hashes of registry files used in module resolution) and per-extension entries (`bzlTransitiveDigest`, `usagesDigest`, `generatedRepoSpecs`). Default `--lockfile_mode` is `update`; `error` mode never changes the file or uses the network during resolution. It should be committed and is Bazel-version specific. It does not store a plain graph dump. — [Bazel: lockfile](https://bazel.build/external/lockfile)
 - [U] `bazel mod graph` (also `--output json`) prints the resolved module graph; `bazel mod show_repo` shows repo definitions. — [Bazel: mod command](https://bazel.build/external/mod-command)
 - [U] rules_jvm_external pins Maven artifacts in `maven_install.json` (artifact versions, sha256, dependency edges, repositories), generated by `bazel run @maven//:pin`; resolution is done by Coursier (or optionally a Maven/Gradle-based resolver). — [rules_jvm_external README](https://github.com/bazel-contrib/rules_jvm_external)
 - [V] GitHub's dependency graph reads `MODULE.bazel`, `WORKSPACE`, `MODULE.bazel.lock`, `maven_install.json` for Bazel (no transitive, no auto-submission). — [GitHub: Dependency graph supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)
 
-**NuGet**
+#### NuGet
+
 - [U] `packages.lock.json` is opt-in (`RestorePackagesWithLockFile=true`); it lists direct and transitive packages with `resolved` version and `contentHash`. `obj/project.assets.json` is written on every restore and contains the full graph but is not committed. `dotnet list package --include-transitive` needs a prior restore. — [NuGet: PackageReference, locking dependencies](https://learn.microsoft.com/en-us/nuget/consume-packages/package-references-in-project-files#locking-dependencies)
 - [V] cdxgen: "Without `project.assets.json`, indirect dependencies are omitted" for .NET. — [cdxgen PROJECT_TYPES](https://raw.githubusercontent.com/CycloneDX/cdxgen/master/docs/PROJECT_TYPES.md)
 
-**Bundler, Composer, SwiftPM**
+#### Bundler, Composer, SwiftPM
+
 - [U] `Gemfile.lock` is always written; sections `GEM`, `GIT` (with `remote`, `revision`, optional `branch`/`tag`), `PATH`; an optional `CHECKSUMS` section exists in recent Bundler. Commands: `bundle list`, `bundle lock`. — [Bundler: Gemfile.lock rationale](https://bundler.io/guides/rationale.html)
 - [U] `composer.lock` is always written; each package has `dist` (URL, `shasum`, `reference`) and `source` (git URL + commit `reference`). `composer show --tree`. — [Composer: basic usage, composer.lock](https://getcomposer.org/doc/01-basic-usage.md)
 - [U] SwiftPM writes `Package.resolved` with, per pin, `location`, `state.revision` (commit) and `state.version` or `branch`; `swift package show-dependencies --format json` prints the graph (needs resolution). Apple's guidance is to commit it for apps. — [Swift Package Manager docs](https://docs.swift.org/swiftpm/documentation/packagemanagerdocs/)
 - [V] GitHub's dependency graph lists as "recommended files" (formats that define versions of all direct and indirect dependencies): `Cargo.lock`, `composer.lock`, `package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `poetry.lock`, `Gemfile.lock`, `Package.resolved`, `deno.lock`, `pubspec.lock`; for Go `go.mod`; for Maven `pom.xml`; for Gradle "None". — [GitHub: Dependency graph supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)
 
 ### Inferences
+
 - A static extractor can get an exact pinned graph by parsing files only for: npm/pnpm/Yarn/Bun lockfiles, `Cargo.lock`, `uv.lock`/`poetry.lock`/`pdm.lock`/`pylock.toml`, `Gemfile.lock`, `composer.lock`, `Package.resolved`, `go.mod` (Go ≥ 1.17), `maven_install.json`, `packages.lock.json`. For Maven, Gradle, NuGet without lock, and unpinned Python it must either call the build tool or reimplement its resolver.
 - Gradle is the worst case: even when locking is enabled the lockfile has no edges and no hashes, and the only authoritative graph comes from executing the build.
 - Lockfile formats keep changing (pnpm 12 two-document YAML, Bun text lockfile, `pylock.toml`, npm v3 lock), so "parse the lockfile ourselves" is a recurring maintenance cost; reusing a maintained parser set (OSV-Scalibr, Syft, Trivy, cdxgen) avoids that.
 
 ### Gaps
+
 - No measured data was found in this session on how often each lockfile type is actually committed (per-ecosystem commit rates); the claims above about "commonly committed" are convention, not measurement. Partial proxy: the CODASPY'26 study could auto-generate missing lockfiles for only 19.1% of Python (Poetry) repos versus 96.4% of Rust repos (see section 6).
 - Whether Maven 4.0.0 reached GA between August and November 2026 could not be confirmed.
 - Exact current behaviour of Bundler `CHECKSUMS`, Yarn Berry lock syntax, NuGet lock, Composer and SwiftPM was not re-fetched ([U] items).
@@ -96,9 +108,11 @@ Ecosystems split into three groups: (a) lockfile-by-default with full transitive
 ## 2. Sliding and non-reproducible versions: how they resolve and whether the result can be recorded
 
 ### Takeaway
+
 Every ecosystem has a "sliding" form; where a default lockfile exists the resolved value is recorded automatically (npm family, Cargo, Bundler, Composer, SwiftPM, uv/Poetry), and where it does not (Maven SNAPSHOT/ranges, Gradle dynamic/changing, unpinned pip) the answer depends on the moment of resolution and the repositories reachable, so it can only be observed by resolving now.
 
 ### Cited Findings
+
 - [V] Gradle: locking pins dynamic versions such as `1.+` to the locked version; but "locking should not be used with changing versions such as `-SNAPSHOT`" — Gradle warns when persisting lock state with changing modules. Lenient lock mode still pins dynamic versions but lets transitive versions shift. — [Gradle: Dependency locking](https://docs.gradle.org/current/userguide/dependency_locking.html)
 - [U] Maven SNAPSHOT: `1.0-SNAPSHOT` resolves through the repository's `maven-metadata.xml` to a timestamped build (`1.0-20260101.120000-3`), re-checked per `updatePolicy` (daily by default); the local `~/.m2` copy records which timestamped file was fetched. Version ranges (`[1.0,2.0)`) resolve to the highest available version in the configured repositories at resolution time. `LATEST`/`RELEASE` are deprecated meta-versions resolved from repository metadata. — [Maven POM reference: version requirement specification](https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
 - [V] Trivy's pom.xml resolver illustrates the consequence for static tools: "for snapshot artifacts, only snapshot repositories from the pom are checked"; if a version cannot be determined (e.g. unreachable parent) Trivy uses an empty version and does not detect that dependency's children. — [Trivy: Java coverage](https://trivy.dev/latest/docs/coverage/language/java/)
@@ -114,20 +128,24 @@ Every ecosystem has a "sliding" form; where a default lockfile exists the resolv
 - [V] deps.dev defines its resolved graph as what "installing the package version on a generic 64-bit Linux system" with no other dependencies would produce — i.e. a resolution at the time of the query and for one platform, not the project's historical resolution. — [deps.dev API v3](https://docs.deps.dev/api/v3/)
 
 ### Inferences
+
 - "Can the result be recorded?" has a uniform practical answer: yes, by producing a lockfile or tool-native dump at extraction time and storing it next to the model (for example `mvn dependency:tree -DoutputType=json`, `gradle --write-locks`, `uv pip compile`, `pip install --dry-run --report`). The recorded graph is then "what resolves today on this machine", which may differ from what the developer or CI built last month. A static extractor should label such graphs as *observed at time T* rather than *declared*.
 - Maven SNAPSHOT and Gradle changing modules are the only widespread cases where even a recorded version string does not identify content; the timestamped snapshot version or a content hash is needed.
 - For a library repository without a lockfile (Cargo library, npm library that git-ignores its lock, Python library with ranges), the honest model is a set of constraints plus one sample resolution.
 
 ### Gaps
+
 - Maven range / SNAPSHOT / LATEST semantics and Cargo FAQ were not re-fetched ([U]).
 - No source was found quantifying how often SNAPSHOT or dynamic versions occur in real projects.
 
 ## 3. Git and GitHub-sourced dependencies
 
 ### Takeaway
+
 Lockfile-based ecosystems record the resolved commit SHA for git dependencies (npm `resolved`, `Cargo.lock`, `Gemfile.lock` GIT `revision`, `composer.lock` `reference`, `Package.resolved` `revision`, Go pseudo-versions, pip report `vcs_info.commit_id`, git submodule gitlinks); what is weak is tool support — registry-centred tools (deps.dev, OSV by package name, GitHub static graph) mostly cannot resolve *through* a git dependency, and branch/tag references without a lock are sliding.
 
 ### Cited Findings
+
 - [V] npm: for git dependencies the lockfile's `resolved` field holds the full git URL with the commit SHA (legacy `dependencies` section stores the SHA as `integrity`). — [npm docs: package-lock.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-lock-json)
 - [V] Cargo: `git = "..."` with optional `branch`, `tag` or `rev`; with none, the latest commit of the default branch is used; the exact commit is stored in `Cargo.lock`. One repository can provide several crates (Cargo searches the tree). `version` combined with `git` does not select the commit, it only checks the fetched manifest's version. Crates published to crates.io cannot depend on git-only crates. — [Cargo: Specifying dependencies](https://doc.rust-lang.org/cargo/reference/specifying-dependencies.html)
 - [V] pip: for VCS requirements the installation report contains `vcs_info` with `vcs`, `requested_revision` (e.g. `main`) and the resolved `commit_id`. — [pip: Installation report](https://pip.pypa.io/en/stable/reference/installation-report/)
@@ -144,12 +162,14 @@ Lockfile-based ecosystems record the resolved commit SHA for git dependencies (n
 - [U] PURL can express git-sourced packages as `pkg:github/<owner>/<repo>@<commit-or-tag>` or via the `vcs_url` qualifier on a registry PURL. — [purl-spec](https://github.com/package-url/purl-spec)
 
 ### Inferences
+
 - For git dependencies, *the commit is knowable offline whenever a lockfile exists*; without a lock (npm `github:user/repo` with no lock, pip `git+https://...@main`, Cargo `branch =`, Actions `@v4`), resolving needs `git ls-remote` (network, possibly credentials) and the answer changes over time.
 - A git dependency's own transitive dependencies are only known by fetching that commit and reading its manifest — registries and deps.dev cannot answer. With a top-level lockfile this is already flattened in; without one the extractor needs a clone.
 - An Actions `uses: owner/repo@tag` without `actions.lock` is the cheapest sliding reference to resolve statically (one `git ls-remote` per action), but composite-action internals need the action's `action.yml` at that commit.
 - Vendored code without metadata has no declared version at all; only content-matching services (OSV `determineversion`, hash lookups such as deps.dev `Query` by hash) can guess it, and those are network services.
 
 ### Gaps
+
 - Bundler GIT section, Composer `source.reference`, SwiftPM `Package.resolved`, Yarn/pnpm/Bun git-resolution formats were not re-fetched ([U] in section 1).
 - No documentation was found on how Syft/Trivy represent git-sourced npm or Cargo packages in PURLs (whether the commit is preserved).
 - JitPack and Gradle source-dependency details are [U].
@@ -157,9 +177,11 @@ Lockfile-based ecosystems record the resolved commit SHA for git dependencies (n
 ## 4. Private registries, credentials, mirrors and workspace-internal dependencies
 
 ### Takeaway
+
 Tools that re-resolve through public metadata services (deps.dev, GitHub-hosted auto-submission, Trivy's Maven Central lookup) silently lose or fail on private and mirrored packages; tools run on the developer's own machine with the developer's build-tool configuration do not have this problem, which favours a local-first design that calls the native tool.
 
 ### Cited Findings
+
 - [V] OSV-Scanner's Maven transitive resolution uses the deps.dev API by default; for Maven Central directly use `--data-source=native`; for mirrored or private registries combine `--data-source=native` with `--maven-registry=<url>`. Transitive resolution is disabled in offline mode. — [OSV-Scanner: supported lockfiles](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/)
 - [V] GitHub automatic dependency submission: Python variant "doesn't support private packages", so unpublished packages in `requirements.txt` cause failures; reaching private Maven registries requires self-hosted runners; for Gradle, the internal-repository setting affects only the download of the GitHub plugin, "not the project's own dependency resolution"; `env:` cannot be added to the managed workflow. — [GitHub: Automatic dependency submission reference](https://docs.github.com/en/code-security/reference/supply-chain-security/automatic-dependency-submission)
 - [V] Trivy `pom.xml`: looks in the project, `relativePath`, then `~/.m2/repository`, then remote repositories declared in POMs, then Maven Central; `--offline-scan` disables repository access and dependencies not found locally may be skipped; an unreachable parent yields empty versions and no children. The Trivy page does not mention `settings.xml` (credentials/mirrors). — [Trivy: Java coverage](https://trivy.dev/latest/docs/coverage/language/java/)
@@ -170,65 +192,78 @@ Tools that re-resolve through public metadata services (deps.dev, GitHub-hosted 
 - [V] The CODASPY'26 study attributes its low automated lock-generation success for Python (19.1%) mainly to fragmented build backends, and reports 54.5% for PHP and 76.3% for Ruby — evidence that "just run the package manager to make a lockfile" fails often on arbitrary repositories. — [arXiv 2511.20313](https://arxiv.org/html/2511.20313v2)
 
 ### Inferences
+
 - Lockfiles committed in the repo already contain resolved private packages (name, version, registry URL, hash), so *reading* the pinned graph needs no credentials; credentials only matter for (a) generating a missing lock and (b) downloading the private package's source or API surface.
 - On the developer's machine the native tool already has `settings.xml`, `.npmrc`, `pip.conf`, `~/.gradle/gradle.properties`, `.netrc`, `GOPRIVATE`, and warm caches (`~/.m2`, Gradle cache, Go module cache, `~/.cargo/registry`, `node_modules`). A local extractor that shells out to the build tool inherits all of it; a hosted re-resolver cannot.
 - Workspace-internal packages must be mapped to source folders in the same repo rather than looked up in a registry; lockfiles mark them distinctly (`link: true` in npm, `workspace:` in pnpm/Yarn, `path` sources in Cargo/Bundler, `replace`/`go.work` in Go, project dependencies in Gradle, reactor modules in Maven).
 
 ### Gaps
+
 - No primary source was fetched on how Syft, Renovate or Dependabot handle private registries (Renovate `hostRules`, Dependabot private registries config are known to exist but were not verified here).
 - No measurement was found of how often private dependencies break SBOM generation in practice.
 
 ## 5. Cross-ecosystem tools: what each actually resolves
 
 ### Takeaway
+
 No single existing tool gives an exact, complete graph for every ecosystem offline: Syft, Trivy and OSV-Scanner are essentially lockfile/manifest parsers (exact when a lock exists, weak otherwise, with network-backed re-resolution for Maven); cdxgen is the one generic tool that invokes the build tool (Maven, Gradle, pip install) and is correspondingly more complete but needs toolchains, network and executes project code; GitHub's graph is static parsing plus build-tool-based submission that runs in Actions, not locally.
 
 ### Cited Findings
 
-**cdxgen (CycloneDX generator)**
+#### cdxgen (CycloneDX generator)
+
 - [V] Maven: invokes Maven (3.x needed); if Maven is unavailable or errors, `pom.xml` is parsed manually. Gradle: needs `gradle`/`gradlew`; skipped when install is disabled or `gradle-prefer-lockfile` is set, in which case lockfiles are used and there are no edges; Nebula/Palantir lock formats are not read. Python: by default does an automatic pip install + freeze in a virtual environment; without it only lock files are read. Rust: `--deep` runs `cargo metadata`. .NET: needs restore output (`project.assets.json`) for indirect dependencies. Swift: `--evidence` builds with SwiftPM. Reads `Package.resolved`, `MODULE.bazel(.lock)`, GitHub workflow files, `uv.lock`, `pylock.toml`, `bun.lock`, `deno.lock`. — [cdxgen PROJECT_TYPES](https://raw.githubusercontent.com/CycloneDX/cdxgen/master/docs/PROJECT_TYPES.md)
 - [S] A vendor benchmark write-up (unverified numbers) says cdxgen's Java recall fell to 71% in a container without Maven, below Syft, because it fell back to file parsing. — [safeguard.sh: SBOM generators ranked](https://safeguard.sh/resources/blog/best-sbom-generators-ranked-by-accuracy-2026)
 
-**Trivy**
+#### Trivy
+
 - [V] `pom.xml`: Trivy's own resolver (not Maven) walks parents and dependencies using the local repository then remote repositories and Maven Central; only `import`, `compile`, `runtime` and empty scopes; `--offline-scan` disables remote lookups. `gradle.lockfile`: local only, no edges (experimental tree from cached POMs). JARs: `pom.properties`/`MANIFEST.MF`, then the downloadable `trivy-java-db`. sbt: `build.sbt.lock` only. — [Trivy: Java coverage](https://trivy.dev/latest/docs/coverage/language/java/)
 
-**OSV-Scanner**
+#### OSV-Scanner
+
 - [V] Parses lockfiles for ~12 ecosystems (list in section 1). For Maven `pom.xml` it resolves transitively by default: deps.dev's Maven parser builds the effective POM (inheritance, managed-dependency import, interpolation; may fetch POMs from Maven Central), then deps.dev's resolver library builds the graph using requirement data from the deps.dev API. Shipped in v1.8.1. Test dependencies are not yet included. `--no-resolve` disables it. — [OSV blog: transitive dependency support for Maven pom.xml](https://osv.dev/blog/posts/announcing-transitive-dependency-support-for-maven-pomxml-in-osv-scanner); [OSV-Scanner: supported lockfiles](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/)
 - [S] Transitive scanning for `requirements.txt` via the deps.dev API was added later (changelog "Feature #2571"; a third-party blog dates it to v2.3.5+, unconfirmed). Sources conflict on offline behaviour: official docs say transitive resolution is disabled offline; a later changelog line says it is enabled with `--offline-vulnerabilities`. — [google/osv-scanner releases](https://github.com/google/osv-scanner/releases)
 - [V] Accepts a custom `osv-scanner.json` describing dependencies for unsupported formats. — [OSV-Scanner: supported lockfiles](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/)
 
-**deps.dev (Open Source Insights)**
+#### deps.dev (Open Source Insights)
+
 - [V] Systems: Go, RubyGems, npm, Cargo, Maven, PyPI, NuGet. `GetDependencies` (a resolved graph for a published package version) exists for npm, Cargo, Maven and PyPI only. `GetRequirements` (declared, unresolved constraints) for Cargo, Go, Maven, npm, NuGet, PyPI, RubyGems; Maven requirements are returned as declared in the version POM without parent merging or interpolation. `Query` can look up by content hash. No batch endpoints documented in v3. The API resolves *published package versions*, not an arbitrary local manifest. — [deps.dev API v3](https://docs.deps.dev/api/v3/)
 - [U] Google publishes the resolver implementations as a Go library (`deps.dev/util/resolve`, with Maven and npm resolvers and a pluggable client) — the library OSV-Scanner uses. — [google/deps.dev repository](https://github.com/google/deps.dev)
 
-**GitHub dependency graph and Dependency Submission API**
+#### GitHub dependency graph and Dependency Submission API
+
 - [V] The graph combines static parsing of manifests/lockfiles in the repo with dependencies submitted through the Dependency Submission API. Static transitive support is "Yes" only for Maven, npm, pnpm and Yarn; "No" for Cargo, Composer, Go, Gradle, NuGet, pip, Poetry, RubyGems, SwiftPM, Bazel, Actions. — [GitHub: About the dependency graph](https://docs.github.com/en/code-security/concepts/supply-chain-security/about-the-dependency-graph); [GitHub: supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)
 - [V] Automatic dependency submission (runs in GitHub Actions) covers Go, Maven, Gradle, .NET and Python. Maven: fork of `advanced-security/maven-dependency-submission-action` (Maven dependency tree). Gradle: fork of `gradle/actions` which downloads `github-dependency-graph-gradle-plugin` and runs inside the Gradle build. .NET and Python: Microsoft `component-detection`. Go: downloads Go toolchain and modules. Python variant needs root `requirements.txt` and `.python-version`. — [GitHub: Automatic dependency submission reference](https://docs.github.com/en/code-security/reference/supply-chain-security/automatic-dependency-submission)
 - [S] Timeline: Gradle auto-submission May 2025, NuGet July 2025, Python July 2025. — [GitHub changelog 2025-05-27](https://github.blog/changelog/2025-05-27-dependency-auto-submission-now-supports-gradle/); [GitHub changelog 2025-07-08](https://github.blog/changelog/2025-07-08-dependency-auto-submission-now-supports-python/)
 - [V] Measured weakness: when a parent dependency has no version, GitHub's SBOM "omits all of its transitive dependencies"; GitHub Java recall was 38.2% in that study. — [arXiv 2607.04614](https://arxiv.org/html/2607.04614)
 - [V] (2024 study) GitHub's SBOM export reads only the latest commit on the default branch. — [Benedetti et al., arXiv 2409.06390](https://arxiv.org/html/2409.06390v1)
 
-**Syft**
+#### Syft
+
 - [V] Syft and Trivy "rely only on static metadata" (no installation/resolution) in the Python comparison; with lockfiles as input Syft and Trivy outputs are identical (Jaccard 1.0). — [arXiv 2409.06390](https://arxiv.org/html/2409.06390v1); [arXiv 2511.20313](https://arxiv.org/html/2511.20313v2)
 - [U] Syft is cataloger-based, works offline by default; network lookups (e.g. Maven parent POM fetching, Go license lookups) are opt-in configuration. — [anchore/syft](https://github.com/anchore/syft)
 
-**Renovate, Dependabot, ecosyste.ms, interchange formats**
+#### Renovate, Dependabot, ecosyste.ms, interchange formats
+
 - [U] Renovate "managers" extract declared dependencies from manifests with their own parsers and look up versions via "datasources"; lockfiles are updated by invoking the real package manager. It is an updater, not a graph resolver. — [Renovate: managers](https://docs.renovatebot.com/modules/manager/)
 - [U] Dependabot (`dependabot-core`) runs native package-manager tooling inside containers to update manifests/locks. [V] GitHub now also has "Dependabot graph jobs" that build the dependency graph for Go modules, pip and Poetry and take precedence over auto-submission (not available on GitHub Enterprise Server). — [dependabot-core](https://github.com/dependabot/dependabot-core); [GitHub: supported package ecosystems](https://docs.github.com/en/code-security/reference/supply-chain-security/dependency-graph-supported-package-ecosystems)
 - [U] ecosyste.ms offers open APIs/datasets of package metadata and declared dependencies across many registries, plus a `resolve` service; it is a hosted service, not a local resolver. — [ecosyste.ms](https://ecosyste.ms/)
 - [U] PURL (`pkg:type/namespace/name@version?qualifiers#subpath`) is the common identifier; CycloneDX expresses the graph in a `dependencies` array of `ref` → `dependsOn` and hashes per component; SPDX uses relationships (`DEPENDS_ON`). — [purl-spec](https://github.com/package-url/purl-spec); [CycloneDX specification overview](https://cyclonedx.org/specification/overview/)
 - [S] Converting a lockfile to an SBOM "is sometimes lossy". — [Nesbitt: Could lockfiles just be SBOMs?](https://nesbitt.io/2025/12/23/could-lockfiles-just-be-sboms)
 
-**Offline summary (from the above)**
+#### Offline summary (from the above)
+
 - [V] Fully offline with exact results: Syft/Trivy/OSV-Scanner parsing of committed lockfiles; Trivy `gradle.lockfile`; Go from `go.mod`. Network needed: OSV-Scanner Maven/requirements transitive resolution (deps.dev or registry), Trivy `pom.xml` when POMs are not in `~/.m2`, deps.dev and ecosyste.ms (hosted), GitHub graph (hosted), cdxgen when it invokes Maven/Gradle/pip without warm caches. — [OSV-Scanner docs](https://google.github.io/osv-scanner/supported-languages-and-lockfiles/); [Trivy Java](https://trivy.dev/latest/docs/coverage/language/java/); [deps.dev API](https://docs.deps.dev/api/v3/)
 
 ### Inferences
+
 - The realistic architecture for a local extractor is a ladder: (1) parse a committed lockfile (exact, offline, no code execution); (2) else call the native tool in a "resolve only" mode on the developer's machine (exact for today, uses local credentials and caches, may execute build logic); (3) else fall back to a re-implemented resolver (deps.dev resolve library / OSV-Scanner for Maven and pip; Trivy for Maven) and mark the result approximate.
 - cdxgen already implements steps 1–2 for most ecosystems and emits CycloneDX with edges and PURLs; OSV-Scanner / OSV-Scalibr implement steps 1 and 3. Using one of them as a subprocess and consuming CycloneDX JSON is a plausible "rely on existing tools" path; the accuracy studies in section 6 say results must still be checked per ecosystem.
 - The Dependency Submission API snapshot format and CycloneDX are both viable interchange targets; CycloneDX carries edges, hashes and PURLs and is what cdxgen, Trivy and Syft all emit.
 - GitHub's graph cannot be the source for a local-first tool: it requires the repo on GitHub, Actions for the build-based part, and the Java numbers are poor without submission.
 
 ### Gaps
+
 - Syft's exact per-ecosystem behaviour (which catalogers do network I/O, whether it resolves Maven transitive dependencies) was not verified from Syft documentation in this session.
 - Whether OSV-Scanner's requirements.txt transitive resolution is on by default in current v2, and its offline semantics, are conflicting across sources.
 - Renovate, Dependabot, ecosyste.ms, PURL/CycloneDX/SPDX claims are [U].
@@ -237,9 +272,11 @@ No single existing tool gives an exact, complete graph for every ecosystem offli
 ## 6. Published accuracy evidence
 
 ### Takeaway
+
 The studies agree: with a lockfile, generic SBOM tools are exact on name and version (100% in one study); without one, accuracy collapses, worst in Python (precision 12–17% for Syft/Trivy/cdxgen-era tools; version accuracy 21–31% for GitHub/Trivy/Syft) and poor in Java unless the build tool's own resolution is used (the Microsoft tool reached 98.4% recall and 95.6% version accuracy for Java versus 37–55% recall for Syft/Trivy/GitHub).
 
 ### Cited Findings
+
 - [V] Zhou, Dacier, Konstantinou, "A Reality Check on SBOM-based Vulnerability Management" (CODASPY '26): 2,414 repositories — Python/Poetry 243, Rust/Cargo 1,033, Ruby/Bundler 757, PHP/Composer 381. Starting from the same lock files, Syft and Trivy reached Jaccard similarity 1.0 on every repository and 100% accuracy against lock-file ground truth (1,997 Python, 237,576 Rust, 29,420 Ruby, 2,683 PHP dependencies). Only name and version were checked. Automated lock generation succeeded for 96.4% Rust, 76.3% Ruby, 54.5% PHP, 19.1% Python repos. Recommendation: "utilizing lock files as input is the best practice for SBOM tools". They also report Syft and Trivy produced empty SBOMs for `package-lock.json` in their setup. — [arXiv 2511.20313](https://arxiv.org/html/2511.20313v2)
 - [V] Bhuiyan et al., "Beyond Compliance: A Large Scale Study on the Completeness and Consistency of the GitHub SBOMs" (arXiv, July 2026; 10,000 repositories, ten ecosystems; ground truth built from native tooling — `pip freeze`, `mvn dependency:tree`, lockfiles). Component detection precision / recall: Python — GitHub 33.7 / 57.3, Microsoft SBOM Tool 44.4 / 66.4, Trivy 20.3 / 32.3, Syft 13.2 / 34.1. Java — GitHub 46.8 / 38.2, Microsoft 79.3 / 98.4, Trivy 55.7 / 54.9, Syft 55.7 / 36.9. JavaScript — GitHub 88.2 / 86.7, Microsoft 87.9 / 80.3, Trivy 65.1 / 26.5, Syft 63.8 / 40.0. Version accuracy: Python — GitHub 21.6%, Microsoft 69.8%, Trivy 27.4%, Syft 31.0%; Java — 53.7%, 95.6%, 81.9%, 73.5%; JavaScript — 90.4%, 88.8%, 66.9%, 69.2%. "A higher component count does not imply higher accuracy." JavaScript does well because lockfiles provide pinned versions. — [arXiv 2607.04614](https://arxiv.org/html/2607.04614)
 - [V] Benedetti, Cofano, Brighente, Conti, "The Impact of SBOM Generators on Vulnerability Assessment in Python" (2024). Ground truth: install the package in a virtualenv, `pip freeze`, scan with pip-audit; metrics are on the resulting vulnerability sets. Jaccard / precision / recall: cdxgen 49.77 / 17.08 / 21.42; ORT 36.50 / 16.31 / 19.93; Syft 26.33 / 12.39 / 15.61; Trivy 23.63 / 12.17 / 14.01; GitHub SBOM 23.98 / 5.57 / 8.10; the authors' pip-resolver-based `PIP-sbom` 78.39 / 80.95 / 80.26. On average 75% of dependencies listed in the SBOMs were not actually installed. Tools that install into an environment (cdxgen) did best among existing tools. — [arXiv 2409.06390](https://arxiv.org/html/2409.06390v1)
@@ -251,12 +288,14 @@ The studies agree: with a lockfile, generic SBOM tools are exact on name and ver
 - [S] Practitioner comparison (LeanIX): the CycloneDX Gradle plugin (runs inside the build) extracted transitive dependencies that Syft and Trivy lacked; Endor Labs reports missing transitive dependencies and versions declared in a parent POM's `dependencyManagement`. — [LeanIX engineering: choosing the right SBOM plugin](https://engineering.leanix.net/blog/choosing-right-sbom-plugin/); [Endor Labs: measuring SBOM accuracy](https://www.endorlabs.com/learn/how-to-quickly-measure-sbom-accuracy-for-free)
 
 ### Inferences
+
 - The numbers measure *tool input mode* more than tool quality: every tool is exact on a lockfile and poor on a range-bearing manifest. The lesson for an extractor is to make "obtain or generate a lock/resolved dump" the first-class step and treat manifest-only parsing as a low-confidence fallback.
 - The Microsoft SBOM Tool's Java lead (it is built on `component-detection`, which uses build-tool output for Maven) and PIP-sbom's Python lead (uses pip's resolver) both show that reusing the native resolver is what produces accuracy.
 - A 100% lockfile result only covers name + version; edges, scopes (dev/test/optional), hashes and source location are not validated by these studies.
 - The 19.1% Python lock-generation success rate is a warning that step 2 of the ladder (run the native tool) will fail on many Python repositories without a prepared environment.
 
 ### Gaps
+
 - Per-tool numbers from the Java S&P 2023 paper and the DSN'24 differential study could not be extracted (PDF text extraction was unavailable in this session); only abstract/snippet level facts are recorded.
 - No study was found that measures accuracy of *edges* (who depends on whom) or of git-sourced dependencies.
 - No independent, repeatable 2026 head-to-head of Syft vs Trivy vs cdxgen on identical targets was found; vendor blog numbers are unverified.
@@ -265,9 +304,11 @@ The studies agree: with a lockfile, generic SBOM tools are exact on name and ver
 ## 7. From pinned versions to API surface or source, without building
 
 ### Takeaway
+
 Once a coordinate and version are pinned, every major registry serves an immutable source or binary artifact by a predictable URL, and most developer machines already hold it in a local cache; the gaps are Maven artifacts published without `-sources`, Python packages without type information, and anything from a private registry or git commit that needs credentials.
 
 ### Cited Findings
+
 - [V] Go: the module cache lives under `GOPATH/pkg/mod`; `go mod download -json` reports local paths of each module's `Info`, `GoMod` and `Zip`; `go mod vendor` puts sources in `vendor/`. Module source is the artifact, so pinned version ⇒ full source. — [Go Modules Reference](https://go.dev/ref/mod)
 - [U] Go proxy protocol: `$GOPROXY/<module>/@v/<version>.info|.mod|.zip` and `/@v/list`. — [Go Modules Reference: GOPROXY protocol](https://go.dev/ref/mod#goproxy-protocol)
 - [V] npm: the lockfile's `resolved` is the tarball URL and `integrity` its hash, so the exact tarball can be fetched and verified; after install the package is in `node_modules`. — [npm docs: package-lock.json](https://docs.npmjs.com/cli/v11/configuring-npm/package-lock-json)
@@ -283,11 +324,13 @@ Once a coordinate and version are pinned, every major registry serves an immutab
 - [U] SwiftPM, Bundler-git, Composer: dependencies are source checkouts at a recorded revision (`.build/checkouts`, `vendor/`), so source is available once fetched. — [Swift Package Manager docs](https://docs.swift.org/swiftpm/documentation/packagemanagerdocs/)
 
 ### Inferences
+
 - The cheapest sources of API surface on a developer machine are the existing caches (`node_modules`, `~/.m2/repository`, `~/.gradle/caches/modules-2`, `GOMODCACHE`, `~/.cargo/registry/src`, site-packages / uv cache, `~/.nuget/packages`): no network, no build, already credentialed. Fetching by pinned URL + hash is the fallback.
 - For JVM and .NET, compiled metadata (class files, reference assemblies) is a complete and build-free description of the public API, so `-sources` is only needed for documentation and bodies; for Python and JavaScript the source or stubs are the API, and stub versions (`@types/*`, `types-*`) are separate pinned dependencies that may be absent or mismatched.
 - Fetching sources of a pinned dependency never requires executing project build scripts; only *resolution* does (Gradle configuration, `setup.py`-based sdists, Maven extensions).
 
 ### Gaps
+
 - Most findings here are [U]; Maven Central requirements, PEP 561, the Go proxy protocol section, NuGet flat container and docs.rs rustdoc-JSON hosting were not re-fetched.
 - No source was found quantifying what share of Maven Central artifacts ship `-sources.jar`, what share of npm packages bundle `.d.ts`, or what share of PyPI packages ship `py.typed`.
 - Whether `pip install --dry-run --report` builds sdists (executing build backends) to obtain metadata is not stated on the pip report page; prior knowledge says it does when no wheel or static metadata is available, but this was not verified.

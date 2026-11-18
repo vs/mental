@@ -58,27 +58,35 @@ When one of these lookups fails, nothing fails loudly. The port, effect or write
 Later sections refer to these as R1 to R8.
 
 ### R1. Every reference site has exactly one outcome
+
 Every site where the code names something gets one of three outcomes: `Resolved`, `External` or `Unresolved` with a reason. Nothing is dropped. This extends the conservation rule (X8) from calls, decorators and branches to every site kind in [section 4](#4-reference-sites-and-outcomes).
 
 ### R2. No gap is silent
+
 **The closure property:** every unresolved site that could hide a port, an effect, a write site or a call edge is either reported as a gap or lies in code that no entry point can reach unless a reported gap intervenes. This is what "complete" means for a model: not that every reference resolved, but that **every reference is accounted for**.
 
 ### R3. `mentalc` executes nothing the repository controls
+
 No build tool, package manager, interpreter or script. Resolution reads files as data. When only an executing tool can supply a missing input, `mentalc` names the command and stops; it does not run it ([section 12](#12-execution-and-trust)).
 
 ### R4. Evidence has a rank, and every fact says which rank it has
+
 What is written in a committed file outranks what happens to be installed on this machine, which outranks a default. `mentalc` never fills a hole with the most likely answer.
 
 ### R5. Version classes, not version values
+
 A dependency's exact version matters to the model only where it selects between packs. The model reasons about classes of versions, as it reasons about classes of input (P3). A version that slides inside one pack's range changes nothing.
 
 ### R6. Report root causes, not sites
+
 Three hundred unresolved calls into one unknown package are one problem with one fix. Gaps are grouped by cause and ranked by what they put at risk.
 
 ### R7. A gap is an input problem first
+
 The first answer to a gap is a missing input that someone can supply: a lockfile, an environment, a pack, an annotation, a checked-out submodule. Only when that is not possible may a gap be accepted, and then it becomes an explicit assumption record in the model, authored by a person or their agent in a committed file.
 
 ### R8. The LLM may propose a resolution; it may never dismiss a gap
+
 An LLM-proposed target or type counts only after a deterministic check re-derives it from the code. An LLM never declares a reference unimportant, a package harmless or a decorator inert. When an LLM filters static findings it loses 6 to 46% of true ones (F-U24, F-R3).
 
 ## 3. Terms
@@ -158,7 +166,7 @@ Two rules apply to every reason:
 
 An external symbol is a **package** plus an **access path** that starts at an import and uses the pack grammar of X11:
 
-```
+```text
 sqlalchemy.orm            Member[sessionmaker].ReturnValue.ReturnValue     an instance made by sessionmaker(...)()
 fastapi                   Member[FastAPI].ReturnValue.Member[post]         app.post, for app = FastAPI()
 celery                    Member[Celery].ReturnValue.Member[task].Decorates
@@ -390,7 +398,7 @@ A build's gap list is this table filled in, largest effect first: the number of 
 
 The gate runs after Extract and pack resolution and **before any LLM phase**. Its inputs are deterministic, so it costs no LLM call, and a build that will fail does not first spend paid answers.
 
-```
+```text
 detect ─▶ extract ─▶ resolve packs ─▶ GATE ─▶ vocabulary ─▶ … ─▶ check
                                        │
                                        └─ counting gaps without an acceptance: fail, exit 1,
@@ -417,7 +425,7 @@ G11 forbids a model that is later read as complete when it is not. The gate keep
 
 Exit code 1, and one diagnostic per root cause:
 
-```
+```text
 error: package pkg:pypi/stripe has no pack
   41 calls and 2 decorators in 3 modules; can affect ports:
     reports/api/port:post-charges, reports/worker/port:task-settle
@@ -497,7 +505,7 @@ Flipping a resolution assumption is an edit like any other (specification 15.1):
 
 `mentalc resolve` runs the deterministic phases up to the gate and prints the report. It calls no LLM and writes no model. It is the first command to run on a new repository, and it is the same computation the gate uses.
 
-```
+```text
 $ mentalc resolve
 import roots   src/   (declared: compose build context, service command `uvicorn app.api:app`)
 python         3.12   (declared: service base image)

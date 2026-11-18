@@ -5,9 +5,11 @@ Research date: 2026-11-14. Older studies are dated inline. "Search summary" afte
 ## 0. Grounding: which parts of Mental's model depend on reference resolution
 
 ### Takeaway
+
 Almost every structural record in the model sits downstream of the extractor's `resolve` step: ports (via slots), effects, state-variable write sites, call-graph edges, compile-unit ordering and wires. Mental already has the right primitive (`Resolved | External | Unresolved(Reason)` with a closed reason enum and a separate count), but the spec does not yet say when an unresolved fact fails the build, when it becomes an assumption, and how it propagates into "complete model" claims.
 
 ### Cited Findings
+
 - The extractor's "Resolve names" step produces the symbol table, import graph and call graph with "Mental's own resolver, driven by the type rows of packs"; "What it cannot resolve is recorded as `unresolved` with a reason, never guessed" — /Users/vs/workspace/mental/docs/specification.md §6.2.1
 - A call-graph edge is a distinct (caller, callee) pair where both functions are in the repository; a call that reaches a library through a pack becomes an effect or a slot; "A call that cannot be resolved is listed as `unresolved` and counted apart" — /Users/vs/workspace/mental/docs/specification.md §6.2.1
 - Every lookup returns `Resolved(id) | External(qualified_name) | Unresolved(Reason)`; `Reason` is a closed enum: `not_found`, `wildcard_import`, `dynamic_attr`, `eval`, `dynamic_import`, `ambiguous`, `no_pack`, `not_converged`; each `Unresolved` becomes a fact — /Users/vs/workspace/mental/docs/guidelines/extract.md (line 87)
@@ -27,19 +29,23 @@ Almost every structural record in the model sits downstream of the extractor's `
 - Mental's own finding F-R1: static call graphs are more complete than LLM-made ones, "about 85% against 60% on Python" — /Users/vs/workspace/mental/docs/findings.md (this matches the PyCG 84.9% vs mistral-large 60.3% "complete" figures in section 5 below)
 
 ### Inferences
+
 - The worst failure for Mental is not a missing call edge but a **missing port, effect or write site**, because those are silent: an unresolved decorator means no provided port, hence no behavior, hence no finding, and nothing downstream knows something is absent. A missing write site makes a lifecycle machine look cleaner than the code and can hide exactly the races the tool exists to find.
 - Mental's dependency on resolution is unusual: it needs library symbols resolved only up to **the pack's type rows**, not to library source. So the "external library unresolved" problem becomes "no pack" (`no_pack`) or "receiver type not inferable", which is narrower than whole-program analysis.
 - There is a tension to settle in the spec: "a build either produces a full model or fails" versus "each `Unresolved` becomes a fact". The evidence below suggests a threshold-plus-location rule (as CodeQL does) rather than either extreme.
 
 ### Gaps
+
 - The spec does not define which unresolved reasons are errors, which are diagnostics, and which become `assumption` records, nor a per-unit resolution-rate metric.
 
 ## 1. Which facts are lost or corrupted when references are unresolved
 
 ### Takeaway
+
 Measured recall of static call graphs is well below 100% even with a full build (median 0.884 for Java in 2020; about 70% for PyCG on real Python projects in 2021), and removing the build or the library code makes it worse in specific, predictable ways: missing call targets, missing types, missing generated code, and colliding class names. Framework-driven code is the extreme case, where conventional analyses reach only a small fraction of application code.
 
 ### Cited Findings
+
 - (2020) Sui et al., "On the Recall of Static Call Graph Construction in Practice" (ICSE 2020): 31 real-world Java programs, median recall 0.884 against dynamic baselines; the main sources of unsoundness were objects allocated or accessed through native methods and JVM-initiated invocations with no call site, rather than reflection (search summary) — [ICSE 2020](https://2020.icse-conferences.org/details/icse-2020-papers/47/On-the-Recall-of-Static-Call-Graph-Construction-in-Practice)
 - (2024) "Total Recall? How Good Are Static Call Graphs Really?" (ISSTA 2024) benchmarks eight call-graph implementations in four frameworks on four real-world Java programs against dynamic baselines built with fixed entry points, manual extension and coverage-guided fuzzing (search summary; I could not extract its numbers) — [ISSTA 2024](https://2024.issta.org/details/issta-2024-papers/10/Total-Recall-How-Good-Are-Static-Call-Graphs-Really-)
 - (2019) Judge (Reif et al., ISSTA 2019): soundness-relevant language features are common in modern Java bytecode and support for them varies widely across Soot, WALA, DOOP and OPAL, so graphs from the "same" algorithm in different frameworks are not comparable (search summary) — [ISSTA 2019](https://conf.researchr.org/event/issta-2019/issta-2019-technical-papers-judge-identifying-understanding-and-evaluating-sources-of-unsoundness-in-call-graphs)
@@ -62,12 +68,14 @@ Measured recall of static call graphs is well below 100% even with a full build 
 - Semgrep's cross-file analysis documents a concrete resolution gap: CommonJS functions defined and assigned to an export later are not tracked (search summary) — [Semgrep docs: cross-file analysis](https://semgrep.dev/docs/semgrep-code/semgrep-pro-engine-intro)
 
 ### Inferences
+
 - **External-only unresolved** (library symbols missing, repository symbols fine) loses: the type of anything returned by a library call, hence every method call on that value (a cascade, shown by CodeQL's `ErrorType` propagation); overload selection among in-repository methods whose arguments have library types; members inherited from library base classes (a call to `self.save()` on a subclass of a library class looks like `not_found`); callbacks the library makes into repository code (inverted edges, see section 2); and effect classification. In Mental these are the pack-covered facts: effects, slots, state-variable writes.
 - **In-repository unresolved** (no classpath or module graph at all) additionally loses: which of several same-named classes or functions is meant (the "colliding class names" case), re-exports and barrel files, wildcard imports, generated sources, conditional compilation, and multi-module edges whose module boundaries are defined only in the build configuration.
 - Recall figures of 70 to 88% with a full build mean an extractor cannot treat "everything resolved" as "everything found". Resolution rate and recall are different metrics; only the first can be measured without ground truth.
 - Tool disagreement (60% edge agreement across JavaScript tools) means a single tool's graph should carry its own coverage statement rather than be presented as the call graph.
 
 ### Gaps
+
 - I found no study that isolates call-graph recall with library code present versus absent on the same programs with a dynamic baseline. The closest are JackEE (framework modelling present versus absent) and CodeQL's qualitative no-build caveats.
 - No published figure for the accuracy difference between CodeQL build and no-build modes on the same corpus was found; GitHub's changelog posts announce the feature (beta March 2024, generally available 28 August 2024) without a comparison — [GitHub changelog 2024-08-28](https://github.blog/changelog/2024-08-28-codeql-code-scanning-can-analyze-java-and-c-codebases-without-needing-a-build-ga/)
 - No measured data found for specific constructs named in the question (extension functions, implicit receivers, generics) under missing dependencies.
@@ -75,9 +83,11 @@ Measured recall of static call graphs is well below 100% even with a full build 
 ## 2. Dynamic and non-static wiring that a perfect build still cannot resolve
 
 ### Takeaway
+
 Dependency injection, annotation routing, reflection and string-keyed messaging are not resolution failures; they are facts that live in framework semantics, and every serious tool recovers them with declarative framework models rather than with deeper analysis. This is the same idea as Mental's packs and slots, and the evidence says it is the single largest lever on completeness for framework-based code.
 
 ### Cited Findings
+
 - (2020) JackEE layers a framework-independent vocabulary (components, entry points, injection) over a per-framework mapping written as Datalog rules on Doop; for example Spring's `@Controller` marks a controller and entry-point class and `@RequestMapping` an entry-point method (search summary) — [the morning paper on JackEE](https://blog.acolyer.org/2020/09/25/jackee)
 - (2022) Jasmine (ASE 2022) extends Soot to model Spring core features (dependency injection, AOP), evaluated on Spring micro-benchmarks and 18 real-world Spring programs, improving Soot- and Doop-based tools (search summary) — [Jasmine, ASE 2022](https://conf.researchr.org/details/ase-2022/ase-2022-research-papers/26/Jasmine-A-Static-Analysis-Framework-for-Spring-Core-Technologies)
 - When Joern cannot resolve a method internally, it looks the method up in default and user-supplied "semantic definitions" (summaries of how data flows through an external method) (search summary) — [Joern blog (2024)](https://joern.io/blog/interproc-dataflow-2024)
@@ -87,19 +97,23 @@ Dependency injection, annotation routing, reflection and string-keyed messaging 
 - (2020) For Java, reflection was not the dominant measured source of missed edges; native allocation and JVM-initiated calls were (search summary) — [ICSE 2020](https://2020.icse-conferences.org/details/icse-2020-papers/47/On-the-Recall-of-Static-Call-Graph-Construction-in-Practice)
 
 ### Inferences
+
 - A useful split for Mental's reason enum: **unresolvable-by-construction** (`eval`, `dynamic_attr`, `dynamic_import`, monkey patching) versus **resolvable-with-a-model** (injection, routes, task names, `no_pack`) versus **resolvable-with-more-input** (`not_found` because a dependency or stub is absent). Only the third is helped by fetching dependencies; the second is helped only by packs; the first should become an explicit assumption or stub.
 - String-keyed edges (routes, topics, task names, bean names) are best recorded as key matches with the key as evidence, which Mental already does with `match: exact`.
 
 ### Gaps
+
 - I did not retrieve documentation for CodeQL's Spring/DI framework models or for IntelliJ's Spring bean resolution in this session; claims about them are omitted.
 - No measured recall figure for Angular, NestJS, Guice or Dagger wiring was found.
 
 ## 3. Representing what could not be resolved
 
 ### Takeaway
+
 Mature tools do three things instead of dropping an unresolved reference: label each result with how it was obtained (precise, syntactic, search-based), keep an explicit error or unknown node so the gap propagates visibly, and raise an analysis-level warning when the unresolved share crosses a threshold. CodeQL's threshold is concrete: 5% of expressions without a type or 5% of call targets unknown.
 
 ### Cited Findings
+
 - CodeQL Java no-build mode reports a warning on the tool status page only when there are "significant analysis problems", defined as 5% of expressions lacking a type or 5% of call targets being unknown (search summary of the Java library changelog mirror; verify against the official changelog) — [CodeQL Java CHANGELOG mirror](https://source-hub.etos-pro.ru/github/codeql/src/commit/addef2f1713ed270a56855304e46599e2c2b9d03/java/ql/lib/CHANGELOG.md)
 - CodeQL keeps unresolved callees in the database as expressions of `ErrorType` rather than omitting them (search summary, same source) — [CodeQL Java CHANGELOG mirror](https://source-hub.etos-pro.ru/github/codeql/src/commit/addef2f1713ed270a56855304e46599e2c2b9d03/java/ql/lib/CHANGELOG.md)
 - Sourcegraph uses a priority order: precise navigation (from an indexer, compiler-accurate, cross-repository) when available; a "syntactic" tier when no precise data exists; search-based navigation as the fallback, which can match unrelated same-named symbols (search summary) — [Sourcegraph docs: code navigation](https://sourcegraph.com/docs/code-navigation/syntactic-code-navigation)
@@ -111,6 +125,7 @@ Mature tools do three things instead of dropping an unresolved reference: label 
 - ruff's semantic model returns an explicit outcome enum for name reads (`Resolved`, `ImplicitGlobal`, `WildcardImport`, `UnboundLocal`, `NotFound`) and keeps unresolved references — /Users/vs/workspace/mental/docs/research/implementation-guidelines/notes/extract_static_analysis.md
 
 ### Inferences
+
 - A three-part representation fits Mental's existing vocabulary without new concepts:
   1. **Per-reference fact**: `unresolved` with reason (exists), plus the syntactic call shape (name, arity, receiver expression) and, where cheap, a **candidate set** of same-named in-repository definitions recorded as candidates, never as edges. This keeps the "no heuristic edges" rule while preserving what a later resolver or the LLM needs.
   2. **Per-unit metric**: resolved, external and unresolved counts per function, compile unit and module, by reason. This is what CodeQL's 5% rule is computed from.
@@ -120,6 +135,7 @@ Mature tools do three things instead of dropping an unresolved reference: label 
 - Provenance on edges (Sourcegraph's precise / syntactic / search-based) corresponds to Mental's wire `match` field; the same field on call facts would let agent-proposed resolutions (section 5) be stored without being confused with extractor facts.
 
 ### Gaps
+
 - Joern's placeholder strings for unresolved call targets (I recall `<unresolvedNamespace>` and `<unresolvedSignature>` in `methodFullName`) could not be confirmed from a source in this session.
 - SCIP's handling of unresolved or local symbols and CodeQL's per-language extraction-diagnostics queries were not retrieved.
 - The 5% thresholds come from a changelog mirror seen only as a search summary.
@@ -127,9 +143,11 @@ Mature tools do three things instead of dropping an unresolved reference: label 
 ## 4. Recovery without a full build
 
 ### Takeaway
+
 The best-documented no-build design is CodeQL's: query the build tool for dependency information without compiling, fall back to guessing dependencies from package names, and warn when quality drops. Partial-program inference recovers most but not all types (about 91% correct with 2.7% wrong in the classic 2008 study), which makes it a source of candidates rather than of facts under Mental's rules.
 
 ### Cited Findings
+
 - Tier 1, ask the build tool without building: CodeQL's Java no-build mode will "run Gradle or Maven to extract accurate dependency information (but not to invoke a build)"; each root project file is queried; an organisation's private Maven registry is used when defined — [GitHub Docs: CodeQL build options](https://docs.github.com/en/code-security/reference/code-scanning/codeql/codeql-build-options-and-steps-for-compiled-languages)
 - Tier 1 fallback: when build scripts cannot be queried, CodeQL guesses dependencies from Java package names, and says these guesses can be inaccurate — [GitHub Docs: CodeQL build options](https://docs.github.com/en/code-security/reference/code-scanning/codeql/codeql-build-options-and-steps-for-compiled-languages)
 - Tier 2, restore from manifests and lockfiles: CodeQL's C# no-build mode restores dependencies using "multiple heuristics and strategies" with project, solution, NuGet and lock files as inputs, and generates extra source files (global usings, Razor views) that "significantly increase the correctness of the CodeQL database" — [GitHub Docs: CodeQL build options](https://docs.github.com/en/code-security/reference/code-scanning/codeql/codeql-build-options-and-steps-for-compiled-languages)
@@ -144,6 +162,7 @@ The best-documented no-build design is CodeQL's: query the build tool for depend
 - Mental's current plan for infrastructure already uses a renderer of this kind: `docker compose config` — /Users/vs/workspace/mental/docs/specification.md §6.2.1
 
 ### Inferences
+
 - What each tier recovers, mapped to Mental:
 
 | Tier | Recovers | Does not recover | Runs repository code? |
@@ -159,6 +178,7 @@ The best-documented no-build design is CodeQL's: query the build tool for depend
 - CodeQL's two-step (query, else guess from package names, and warn) is a degrade-with-warning policy. Mental's stated principle argues for the stricter variant: query or pinned lookup, else an explicit `not_found` with the package named, and a build failure when the affected share or location crosses the gate.
 
 ### Gaps
+
 - Not fetched this session, so stated here without citation: `go list -json`, `cargo metadata`, `mvn dependency:build-classpath`, the Gradle Tooling API and `tsconfig.json` resolution are the usual tier-1 interfaces. From background knowledge, `go list` and `cargo metadata` read manifests without running build scripts, while Gradle configuration executes build scripts and Maven can execute extensions and plugins; this should be verified against current documentation before the report relies on it.
 - No measurement found of how much each tier recovers on a common corpus. Rustdoc JSON, typeshed coverage and `.d.ts` availability rates were not researched.
 - Newer partial-program work surfaced only as titles (a constraint-based approach at ISSTA 2026 and "Incompleter" for Python, reported as 37% higher F1 than LExecutor); not verified — [ISSTA 2026 paper PDF (not opened)](https://cs.uwaterloo.ca/~cnsun/public/publication/issta26-a/issta26-a.pdf)
@@ -166,10 +186,13 @@ The best-documented no-build design is CodeQL's: query the build tool for depend
 ## 5. An LLM coding agent as the resolver of last resort
 
 ### Takeaway
+
 Agents can set up environments, but not reliably: published success rates range from about 7% to 86% depending on language, benchmark difficulty and whether the agent gets execution feedback, at minutes to over an hour per repository. For direct resolution, LLMs are strong at local type inference (over 90% exact match on a micro-benchmark) and weak at whole call graphs (about 60% complete against 85% for PyCG), so the defensible role is to propose a resolution for a specific unresolved site that a deterministic checker then confirms.
 
 ### Cited Findings
+
 Environment and build setup:
+
 - (2025) ExecutionAgent (Bouzenia and Pradel, ISSTA 2025): successfully ran test suites for 33 of 50 projects; test results deviated from ground truth by 7.5%; average 74 minutes and about $0.16 of LLM cost per project; generic LLM-generated scripts managed 5 of 50 and AutoGPT 4 of 50 (search summary) — [arXiv 2412.10133](https://arxiv.org/abs/2412.10133v2)
 - (2025) Repo2Run: built executable Docker environments for 361 of 420 Python repositories (86.0%), which the authors report as 77.0 percentage points above SWE-agent (authors' numbers; search summary) — [arXiv 2502.13681](https://arxiv.org/html/2502.13681v4)
 - (2025) EnvBench (JetBrains Research; 329 Python and 665 JVM repositories chosen to exclude those a simple deterministic script can configure): the best approach configured 29.47% of JVM and 6.69% of Python repositories, using GPT-4o and GPT-4o-mini; success is checked by compilation (JVM) and a static missing-imports check (Python); approaches without error feedback commonly produce wrong setup scripts (search summary) — [EnvBench, arXiv 2503.14443](https://arxiv.org/pdf/2503.14443)
@@ -178,16 +201,19 @@ Environment and build setup:
 - These benchmarks differ in scope and scoring, so the rates are not directly comparable; Repo2Run's 86% is Python-only on its own benchmark — [Repo2Run](https://arxiv.org/html/2502.13681v4), [EnvBench](https://arxiv.org/pdf/2503.14443)
 
 Type inference and call resolution:
+
 - (2024) On the TypeEvalPy micro-benchmark (860 annotations), exact matches: gpt-4o 806 (93.7%), mistral-large-2407 804 (93.5%), gpt-4o-mini 783 (91.0%), llama3.1-70b 770 (89.5%), against HeaderGen 563 (65.5%) and HiTyper 367 (42.7%) — [Venkatesh et al., arXiv 2410.00603v2](https://arxiv.org/html/2410.00603v2)
 - (2024) On call graphs in the same study: PyCG complete on 107 of 126 cases (84.9%), sound on 110 (87.3%); the best LLM (mistral-large-2407) complete on 76 (60.3%), sound on 79 (62.6%); gpt-4o complete on 63, sound on 75. The LLMs missed edges through multi-level returns and indirect imports. On JavaScript, mistral-large was complete on 51 of 126 (40.5%) and sound on 54 (42.8%) against Jelly's 49 and 85. The study covered 24 LLMs — [arXiv 2410.00603v2](https://arxiv.org/html/2410.00603v2)
 - The same study's TypeEvalPy benchmark was expanded from 860 to 77,268 annotations by auto-generation; mistral-large surpassed gpt-4o there (no figures retrieved) — [arXiv 2410.00603](https://arxiv.org/abs/2410.00603)
 
 Hybrid static plus LLM:
+
 - (January 2026) SemTaint runs CodeQL's JavaScript call-graph builder and hands only the unresolved call edges on vulnerability paths of interest to an LLM "CallGraph Agent", to limit cost; no precision or recall figures were visible (search summary) — [SemTaint, arXiv 2601.10865](https://arxiv.org/abs/2601.10865)
 - (January 2026) iResolveX: a conservative analysis gives a high-recall candidate set and a learned step assigns confidence (search summary) — [arXiv 2601.17888](https://arxiv.org/abs/2601.17888)
 - Mental's own rule set already encodes the division: the LLM never removes a branch or decides feasibility (F-R3: 27.5 to 45% of confirmed bugs lost when an LLM filters), and LLM-written specifications fed to a static engine double what it finds (F-R2: 27 to 55 known vulnerabilities) — /Users/vs/workspace/mental/docs/findings.md
 
 ### Inferences
+
 - LLM type inference at about 90 to 94% exact match is in the same band as PPA's 91% (2008): good enough to propose, not good enough to assert. The remaining 6 to 10% would be silent errors in write sites and effects if accepted unverified.
 - Deterministic verification of an agent-proposed resolution is straightforward when the proposal is shaped as a checkable claim:
   - **Proposed target symbol**: accept only if the symbol exists at the stated location (Mental's anchor check: the quote must be found in the file), the name matches the call site, the arity and keyword arguments are compatible, and, for a method, the proposed receiver type defines or inherits it. If the target is in the candidate set from section 3, the agent is choosing among extractor-found candidates, not inventing.
@@ -199,6 +225,7 @@ Hybrid static plus LLM:
 - Hallucination risk is asymmetric: a hallucinated edge can be rejected by the checks above; a hallucinated "this cannot be resolved, ignore it" must not be accepted at all, consistent with F-R3.
 
 ### Gaps
+
 - Installamatic and TypeGen were not retrieved; no figures for them are given.
 - No 2026 study was found that measures precision and recall of LLM resolution of individual unresolved call sites in Python with a deterministic verifier; SemTaint is the nearest and reports no such figures in what I saw.
 - All LLM results above use 2024-era models (GPT-4o class). Results for 2026 models were not found and are likely better, but that is unverified.
@@ -207,9 +234,11 @@ Hybrid static plus LLM:
 ## 6. Reusing what the developer's machine already has
 
 ### Takeaway
+
 By 2026 the developer's coding agent can commonly reach a live, fully resolved index: Claude Code exposes a language-server tool through plugins, JetBrains IDEs ship a built-in MCP server, and Serena wraps language servers or the JetBrains engine. These give resolution answers without `mentalc` shipping an indexer, but they depend on the user's environment being set up, so they suit the role of an optional oracle for verification rather than a required input.
 
 ### Cited Findings
+
 - Serena is an MCP server for symbol-level retrieval and editing with two backends: language servers (described as supporting over 40 languages) and a paid JetBrains plugin that uses the IDE's analysis engine. Tools include find-referencing-symbols, find-declaration and find-implementations; the JetBrains backend adds type hierarchy (search summary of directory listings) — [Serena on mcpservers.org](https://mcpservers.org/servers/oraios/serena)
 - Starting with version 2025.2, IntelliJ IDEA includes an integrated MCP server that external clients such as Claude Code and Codex can use; tools are individually enabled under Settings | Tools | MCP Server | Exposed Tools; `get_symbol_info` returns Quick Documentation content for the symbol at a position (search summary) — [IntelliJ IDEA help: MCP server](https://www.jetbrains.com/help/idea/2026.2/mcp-server.html)
 - Find-references and go-to-definition were not among the built-in JetBrains MCP tool names in what I saw; a third-party "IDE Index MCP Server" plugin exposes them (search summary) — [jetbrains-index-mcp-plugin listing](https://claudemarket.ai/mcp/hechtcarmel/jetbrains-index-mcp-plugin)
@@ -219,6 +248,7 @@ By 2026 the developer's coding agent can commonly reach a live, fully resolved i
 - Mental's `agent` backend already lets the agent "read more code with its own tools", and "no task depends on it" — /Users/vs/workspace/mental/docs/specification.md §6.5
 
 ### Inferences
+
 - Two ways to reuse local state without new infrastructure:
   1. **Read-only caches as an artifact source** for tier 2/3: an existing virtualenv's `site-packages` (including `py.typed` packages and installed stubs), `node_modules` with `.d.ts`, `~/.m2`, the Gradle and Go module caches. Reading files executes nothing. The version found must equal the lockfile's version, otherwise it is a different input and should be rejected or flagged.
   2. **The agent's language-server or IDE tools as an oracle** inside a resolution task: the agent asks go-to-definition for an unresolved site and submits the target; `mentalc` verifies it deterministically as in section 5. The oracle's answer is then evidence the agent used, not something the model depends on.
@@ -226,6 +256,7 @@ By 2026 the developer's coding agent can commonly reach a live, fully resolved i
 - A cache-derived resolution should record where the artifact came from (path, version, hash), in the spirit of `packs.lock`.
 
 ### Gaps
+
 - The official Claude Code documentation page for code-intelligence plugins was not opened; details above are from third-party sources.
 - No tool was found that documents building a code graph specifically from local build caches with lockfile verification; CI-artifact reuse was not researched.
 - Serena details come from directory listings rather than its repository documentation.
@@ -233,9 +264,11 @@ By 2026 the developer's coding agent can commonly reach a live, fully resolved i
 ## 7. Safety of running build tools from an untrusted repository
 
 ### Takeaway
+
 Asking a build tool for its resolved model usually means executing repository-controlled code, and both major IDE families treat that as requiring explicit trust. For a tool that is supposed to run without human involvement, the safe default is to read only declarative inputs (lockfiles, manifests, caches) and never to run installs or build scripts; the JavaScript ecosystem moved the same way in 2025 to 2026 by turning install scripts off by default.
 
 ### Cited Findings
+
 - VS Code opens an unfamiliar folder in Restricted Mode, which disables workspace settings that point to executables, tasks, debugging, and extensions that have not opted in to Workspace Trust; the documentation notes that Workspace Trust cannot stop a malicious extension from ignoring it (search summary) — [VS Code docs: Workspace Trust](https://code.visualstudio.com/docs/editing/workspaces/workspace-trust)
 - (February 2026) A VS Code team member is reported as saying Restricted Mode is for browsing and navigation, not active development, since development needs execution and therefore trust (secondary source; search summary) — [Visual Studio Magazine 2026-02-03](https://visualstudiomagazine.com/articles/2026/02/03/vs-code-team-member-blames-user-trust-decisions-in-repo-based-attacks.aspx)
 - IntelliJ IDEA's safe mode disables the import for Gradle, Maven and sbt projects, "so no build scripts are executed and no dependencies are resolved"; trusted locations can be configured to load projects automatically (search summary) — [IntelliJ IDEA help: Project security](https://www.jetbrains.com/help/idea/2025.3/project-security.html)
@@ -248,6 +281,7 @@ Asking a build tool for its resolved model usually means executing repository-co
 - Mental's design rule that packs "are declarative data. They never execute" is the same boundary applied to library models — /Users/vs/workspace/mental/docs/specification.md §7
 
 ### Inferences
+
 - A safety ladder for `mentalc`, from no execution upward:
   1. Parse lockfiles and static manifests; read existing caches. Nothing executes.
   2. Download pinned artifacts or stubs from a registry and read them as data (no install scripts, no `setup.py`). Network access, no code execution.
@@ -258,6 +292,7 @@ Asking a build tool for its resolved model usually means executing repository-co
 - A build that needs step 4 and lacks trust should fail with a clear error naming the missing input and the command the user could run, consistent with "fail rather than degrade".
 
 ### Gaps
+
 - Whether rust-analyzer's handling of `build.rs` and procedural macros in untrusted workspaces has changed by 2026 was not found; no source retrieved for Rust-specific risks.
 - No source retrieved on sandboxing features of coding agents (for example container or OS-level sandboxes) as a mitigation.
 - The npm 12 and pnpm 11 details rest on secondary reporting and should be checked against official release notes.

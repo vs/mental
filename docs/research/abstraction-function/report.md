@@ -422,7 +422,7 @@ One dependency these proposals carry: in the experiment an observer is real code
 
 ## 10. Sources
 
-**Our own files**
+### Our own files
 
 - [notes/experiments.md](notes/experiments.md): design, controls, results.
 - [notes/survey.md](notes/survey.md): the survey, with evidence tags.

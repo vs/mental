@@ -5,11 +5,13 @@ Scope note: these notes build on `docs/research/static-analysis-llm-system-model
 ## 1. LLMs generating executable models, specifications, simulators and mocks from code
 
 ### Takeaway
+
 As of late 2026, code-to-model translation works when it is agentic and has a checker in the loop, and fails when it is one-shot. The leading system, Specula (July 2026), gets 100% on SysMoBench's conformance metric by validating every model against traces from the instrumented code. One-shot prompting on large systems such as etcd Raft gets 0–15% conformance. The recurring errors are wrong grain of atomicity, oversimplified concurrency, omitted behaviors, "textbook" behavior copied from training data where the code deliberately deviates, and repair that cheats by weakening guards. LLM-simulated services (MIRAGE) reach 94–99% status fidelity, but only for HTTP/JSON and only on three systems.
 
 ### Cited Findings
 
-**SysMoBench (TLA+ from system code), details beyond the prior report**
+#### SysMoBench (TLA+ from system code), details beyond the prior report
+
 - SysMoBench v3 (28 Jan 2026) has 11 artifacts: concurrent (Asterinas Spinlock, Mutex, Rwmutex, Ringbuffer), distributed (etcd Raft, Redis Raft, Xline CURP, ZooKeeper FLE), and PGo-generated (dqueue, locksvc, raftkvs) — [SysMoBench HTML v3](https://arxiv.org/html/2509.23130v3)
 - Four metrics are applied in sequence:
   - Syntax: a SANY check; 100% for a full pass, 50% when only every per-action check passes. Only 100%-syntax models go on.
@@ -28,7 +30,8 @@ As of late 2026, code-to-model translation works when it is agentic and has a ch
 - Basic agents do badly on the PGo-generated systems, whose code is repetitive and uses synthetic variable names. This points to reliance on familiar names and priors rather than on the code itself — [SysMoBench HTML v3](https://arxiv.org/html/2509.23130v3)
 - Alloy and PAT results were near zero, which the authors attribute to LLM unfamiliarity with those languages. Target-language familiarity therefore matters a great deal — [SysMoBench HTML v3](https://arxiv.org/html/2509.23130v3)
 
-**Specula (state of the art, July 2026)**
+#### Specula (state of the art, July 2026)
+
 - Pipeline:
   1. Infer protocol-level and code-level invariants, each with cited evidence from code, comments, issues, commits and tests.
   2. Write a reference TLA+ model whose abstraction level is chosen by those invariants.
@@ -55,18 +58,21 @@ As of late 2026, code-to-model translation works when it is agentic and has a ch
   — [Specula](https://arxiv.org/html/2607.25333v1)
 - Stated limitation: agents struggle to tell a model error from a real code bug, and the loop may not converge if the agents misjudge the invariants — [Specula](https://arxiv.org/html/2607.25333v1)
 
-**Other TLA+/Quint/formal-model generation**
+#### Other TLA+/Quint/formal-model generation
+
 - The TLA+ community maintains agent skills, including `tlaplus-from-source`, which derives a high-level TLA+ model from C, C++, Rust and similar code in an analyze → abstract → specify → propose workflow — [tlaplus/AgentSkills](https://github.com/tlaplus/AgentSkills)
 - TLA-Prover fine-tunes for TLA+ synthesis with preference optimization over LoRA (snippet only; not read in full) — [arXiv 2606.06133](https://arxiv.org/pdf/2606.06133)
 - Informal Systems (Nov 2025) used an LLM on the Malachite BFT engine. The LLM edited a Quint spec from an English protocol description, with `quint parse` and `quint typecheck` run after each edit; humans validated the spec by querying reachable scenarios; the LLM then changed the code from the old spec, the new spec and their diff, and wrote model-based-testing glue that replays spec scenarios against the implementation in CI. Spec work took about 2 days, code and tests about 1 week, against a months-long estimate. Validation found 2 bugs in the English spec in one afternoon. Their lesson: "validation is the bottleneck, not generation"; "LLMs don't think, they translate" — [Quint blog](https://quint.sh/posts/llm_era)
 - A 2025 paper with Informal Systems authors used an LLM to fill stubs of a Quint model and catalogued its syntactic and semantic hallucinations (snippet only) — [arXiv 2501.12972](https://arxiv.org/html/2501.12972v1)
 
-**State machines from code (beyond the prior report)**
+#### State machines from code (beyond the prior report)
+
 - State-inferer combines program slicing, an LLM and model checking. It reports a macro strict transition-level F-score of 95.2, against 78.9 for the best baseline, on 7 TLS/IKEv2/SSH implementations. It is an unreviewed Research Square preprint (Nov 2026) — [State-inferer](https://www.researchsquare.com/article/rs-11391337/v1)
 - An architecture-description study (Nov 2025) found that LLM-generated state diagrams from code keep the source terminology but almost entirely miss **self-transitions**, which are often timeouts. This is a concrete "missing transitions" error class — [arXiv 2511.05165](https://arxiv.org/html/2511.05165v1)
 - On spec-style inputs, the best transition F1 was 0.75 (Claude 3.5 Sonnet) while guard F1 dropped to 0.23 (GPT-4o): guards are the weakest element. These are older model generations — [arXiv 2604.00275](https://arxiv.org/html/2604.00275)
 
-**LLM-simulated services and mocks (service virtualization)**
+#### LLM-simulated services and mocks (service virtualization)
+
 - MIRAGE (2026) has an LLM answer each dependency request online, keeping cross-request state, instead of generating static mocks. It contrasts this with Prism, which builds interface-faithful but not behavior-faithful mocks from OpenAPI (for example, it returns 200 where the real service declines a payment) — [MIRAGE, arXiv 2604.04806](https://arxiv.org/html/2604.04806v3)
 - MIRAGE fidelity over 110 scenarios on 3 systems:
 
@@ -82,6 +88,7 @@ As of late 2026, code-to-model translation works when it is agentic and has a ch
 - MirrorAPI fine-tunes LLMs on request–response pairs from 7,000+ RapidAPI APIs as tool-environment simulators. Its authors claim results "comparable to real-world APIs" as a StableToolBench environment (Findings of ACL 2025) — [MirrorAPI, arXiv 2503.20527](https://arxiv.org/pdf/2503.20527)
 
 ### Inferences
+
 - For our compiler, the right reference point is Specula, not SysMoBench's basic agent. Specula's key moves map onto our design:
   - Its evidence-backed invariants play the role of our anchored predicates.
   - Its reference model plus per-scenario projections is our model plus scripts.
@@ -98,6 +105,7 @@ As of late 2026, code-to-model translation works when it is agentic and has a ch
 - MIRAGE also shows that an LLM can itself serve as a co-simulation fallback for an unmodeled port. Its outputs would have to be marked `assumed`, and it is not deterministic, which conflicts with reverse stepping.
 
 ### Gaps
+
 - No published system compiles code into a *statechart/XState* or *DEVS* model and validates it against the implementation. Search found protocol FSM extraction and TLA+/Quint/P, not DEVS or XState targets.
 - No paper reports LLM generation of **P** models from code with conformance numbers. PObserve is used with hand-written P specs.
 - MirrorAPI's fidelity figures (89.9 BLEU, 94.1% cosine) came only from an aggregator snippet and were not verified.
@@ -106,7 +114,9 @@ As of late 2026, code-to-model translation works when it is agentic and has a ch
 ## 2. Validating a model against an implementation
 
 ### Takeaway
+
 There are three mature families of techniques:
+
 - **Trace validation**: implementation traces checked against the model, as TLC constrained model checking (Cirstea/Kuppe/Merz 2024, CCF, etcd) and as P/PObserve on logs at AWS.
 - **Model-based test generation**: model to tests to real code (MongoDB Realm Sync at 100% branch coverage; Quint/Modelator; ioco theory).
 - **Mutation-based adequacy checks** on generated specifications.
@@ -115,7 +125,8 @@ The industrial record shows that trace validation finds discrepancies every time
 
 ### Cited Findings
 
-**Trace validation against TLA+**
+#### Trace validation against TLA+
+
 - Cirstea, Kuppe, Loillier and Merz (2024) built:
   - a Java library that logs operations as TLA+ transitions and variable updates;
   - a trace spec that constrains the original spec by the recorded trace;
@@ -144,13 +155,16 @@ The industrial record shows that trace validation finds discrepancies every time
 - TLC documents trace validation as a supported workflow — [TLA+ docs: trace validation](https://docs.tlapl.us/_export/xhtml/using:tlc:trace_validation)
 - ModelFuzz uses a TLA+ model to guide fuzzing of the implementation and found 13 new bugs in etcd-raft and RedisRaft — [arXiv 2410.02307](https://www.arxiv.org/pdf/2410.02307v2)
 
-**Industrial negative result and positive MBT result (MongoDB, VLDB 2020)**
+#### Industrial negative result and positive MBT result (MongoDB, VLDB 2020)
+
 - Model-based trace-checking of the MongoDB Server's replication protocol against a highly abstract spec was judged **impractical** and cancelled as "more effort than it was worth". Model-based test-case generation for MongoDB Realm Sync was "highly successful" and reached 100% branch coverage of the specified algorithm — [Davis, Hirschhorn, Schvimer, arXiv 2006.00915](https://arxiv.org/abs/2006.00915v1); [Davis blog](https://emptysqua.re/blog/extreme-modelling-in-practice/)
 
-**P / PObserve (AWS)**
+#### P / PObserve (AWS)
+
 - PObserve (2023) checks P specifications, typically global invariants, against service logs parsed into time-stamped events, in both testing and production, without extra instrumentation. P itself has been developed at AWS since 2019 — [Brooker & Desai, CACM 2025](https://cacm.acm.org/practice/systems-correctness-practices-at-amazon-web-services); [PObserve docs](https://p-org.github.io/P/advanced/pobserve/pobserve); [P case studies](https://p-org.github.io/P/casestudies)
 
-**Model-based testing (model → tests → code)**
+#### Model-based testing (model → tests → code)
+
 - Quint's approach: since the spec is executable, the same scenarios run against spec and implementation and the results are compared (MBT). Trace validation checks real-environment traces against the spec. Quint Connect is a Rust library that replays generated traces against an implementation — [Quint MBT docs](https://quint-lang.org/docs/model-based-testing); [Quint blog](https://quint-lang.org/blog)
 - Modelator takes TLA+ models and uses Apalache to generate tests that run against an implementation. Its last release (0.4.2) dates from January 2022, so it is dormant and superseded by Quint tooling — [modelator on docs.rs](https://docs.rs/crate/modelator/latest)
 - Informal Systems' Tendermint light-client MBT used TLA+ and Apalache — [tendermint-rs MBT](https://github.com/informalsystems/tendermint-rs/blob/HEAD/light-client/tests/support/model_based/Abstract.md)
@@ -158,19 +172,22 @@ The industrial record shows that trace validation finds discrepancies every time
 - Known ioco limitations: it is hard to reconcile with stable-failures refinement, and for underspecified inputs it supports only positive testing, which rests on optimistic assumptions — [CONCUR 2023](https://drops.dagstuhl.de/storage/00lipics/lipics-vol279-concur2023/LIPIcs.CONCUR.2023.4/LIPIcs.CONCUR.2023.4.pdf); [arXiv 1606.09035](https://arxiv.org/pdf/1606.09035)
 - ioco decomposes across components under conditions studied in "Decomposability in ioco" — [arXiv 1303.1009](https://arxiv.org/pdf/1303.1009)
 
-**Mutation-based validation of generated specifications**
+#### Mutation-based validation of generated specifications
+
 - LLM-generated RTL assertions are refined until an "effective kill rate" (invalid mutants excluded) exceeds 85%. Runs typically converge to 90–100%, and surviving mutants are fed back to the LLM — [arXiv 2606.21451](https://arxiv.org/pdf/2606.21451)
 - Mutated implementations serve as negative tests to detect *over-permissive* LLM-generated specifications that would accept faulty code (snippet-level) — [arXiv 2608.13077](https://arxiv.org/pdf/2608.13077)
 - Mutation scores expose weak oracles: some LLM test suites reach 100% coverage but a 4% mutation score (snippet-level) — [arXiv 2506.02954](https://arxiv.org/pdf/2506.02954v6)
 - Meta uses mutation-guided LLM test generation in production (ACH) — [arXiv 2501.12862](https://arxiv.org/pdf/2501.12862)
 
 ### Inferences
+
 - Trace validation detects only *over-restriction*: the code did something the model does not allow, i.e. a missing transition or a wrong guard. It cannot detect over-approximation (the model allows things the code never does). Model-to-test generation, in the MBT/ioco direction, covers the other half. A faithful-compiler check needs both directions: traces → model (completeness) and model → tests on the code (soundness of the model's claims).
 - The MongoDB failure and the Cirstea/CCF atomicity findings point the same way: trace validation is cheap only if the model's step granularity can be logged. Our refinement levels help, because the coarse level can be validated against coarse logs (HTTP spans, queue events) and the fine level against function-level tracing. Stutter steps (forwarding-only) are exactly what Cirstea et al. treat as stuttering.
 - ioco's quiescence is the formal version of our "stuck configuration" check. A model that predicts no output where the code responds (or the reverse) is a conformance failure.
 - Mutation of the *code* (does the model notice when the code changes behavior?) and mutation of the *model* (do the existing traces and tests kill the mutant model?) are both cheap adequacy metrics for a compiled model, although no paper applies them to code-to-model compilers specifically.
 
 ### Gaps
+
 - No public, quantified report of etcd-raft trace-validation findings (only issue and PR pointers).
 - No study of trace validation for *web/microservice* systems (HTTP, queues, DBs) as opposed to consensus protocols. All the evidence is from distributed protocols.
 - No source applies ioco or MBT to LLM-generated models specifically.
@@ -179,9 +196,11 @@ The industrial record shows that trace validation finds discrepancies every time
 ## 3. Iterative repair loops driven by checker feedback
 
 ### Takeaway
+
 Checker-in-the-loop repair is necessary but shows sharply diminishing returns: most gains come in the first 3–4 iterations, and workflow and feedback design matter more than the model. The specific danger in model repair is *overfitting*: the LLM weakens guards or hard-codes trace updates to make a trace pass. The countermeasure is to re-check repaired models against independent invariants, as Specula does. Verifier loops are the closest analogues: AutoVerus passes over 90% of 150 Verus proof tasks, and Clover's Dafny consistency check accepts 87% of correct instances.
 
 ### Cited Findings
+
 - Kiecker et al. (July 2026, NIER) studied repair loops across code generation, test generation and translation with low-cost LLMs. The first **3–4 iterations capture most of the achievable gains**, later ones add only marginal improvement, and repair behavior depends more on workflow orchestration and feedback design than on the model. They argue repair budgets should be an explicit experimental variable — [arXiv 2607.05197](https://arxiv.org/abs/2607.05197)
 - SysMoBench caps feedback at 3 iterations, takes the best of 5 runs, and still gets low runtime pass rates on etcd Raft for most models (2025 models) — [SysMoBench](https://arxiv.org/html/2509.23130v3)
 - Specula's repair loop fixes either the model or the instrumentation. To block overfitting, repaired models are model-checked against the protocol invariants; a Kudu-Raft case shows a repaired model violating State Machine Safety. The overfitting patterns observed are weakened guards, permissive transitions and hard-coded trace updates — [Specula](https://arxiv.org/html/2607.25333v1)
@@ -193,20 +212,24 @@ Checker-in-the-loop repair is necessary but shows sharply diminishing returns: m
 - A 2026 preregistered study suggests self-repair feedback effects in small frozen code models may be largely placebo-like. Only the title and snippet were seen, so this is unconfirmed — [arXiv 2606.31511](https://arxiv.org/pdf/2606.31511)
 
 ### Inferences
+
 - Budget per compilation unit: about 3 repair iterations, then escalate (a stronger model, a k-sample vote, or mark the record `assumed` and surface it).
 - The repair loop must have an *anti-overfitting oracle* independent of the failing check. For us that is the coverage obligations (every extracted branch and effect must still be accounted for), the guard-algebra checks, and the original anchored predicates. A repair that makes a trace pass by turning a guard into `true` or deleting a case should fail tier 3/4. Repairs should be scored as diffs: "guard weakened" and "case removed" deserve extra scrutiny.
 - Specula's open problem (is it a model bug or a code bug?) is exactly our `provenance` question. A divergence between model and trace should create a record ("model gap" or "code bug candidate") rather than an automatic repair.
 
 ### Gaps
+
 - No found source gives per-iteration success curves for TLA+/model repair specifically. Specula's loop-effectiveness section was not read.
 - The cost per repair iteration for model compilation is unreported, apart from Specula's whole-pipeline $19–$168.
 
 ## 4. Granularity and compositionality
 
 ### Takeaway
+
 LLMs succeed locally and fail on composition. DafnyComp (ICLR 2026) shows 95.7% syntactic correctness but only 3.7% verification on multi-function programs, with failure growing faster than linearly in the number of functions. Successful systems decompose. Specula splits one reference model into per-scenario projections; SysMoBench's translation agent works statement by statement; State-inferer feeds program slices; MIRAGE models one dependency at a time. Composition is verified mechanically rather than trusted. Direct, quantified modular-versus-whole comparisons for *model* generation were not found.
 
 ### Cited Findings
+
 - DafnyComp: 300 multi-function Dafny programs. Models do well on single functions but drop sharply when composing: about 95.7% syntactic correctness against 3.7% verified, and failure grows superlinearly with the number of functions. The failure modes are specification fragility, implementation–proof misalignment and reasoning instability — [Local Success Does Not Compose, ICLR 2026](https://arxiv.org/html/2509.23061v1); [ICLR proceedings](https://proceedings.iclr.cc/paper_files/paper/2026/hash/c04d37be05ba74419d2d5705972a9d64-Abstract-Conference.html)
 - NLForge/"Natural Language based Specification and Verification" (May 2026) generates natural-language function summaries bottom-up (callee to caller) and reuses them for compositional verification. Only "preliminary results ... promising" is stated; no numbers were found — [arXiv 2605.11315](https://arxiv.org/abs/2605.11315)
 - FM-Agent derives function specifications top-down from caller usage (Hoare-style) to scale formal methods to large systems (snippet only) — [arXiv 2604.11556](https://www.alphaxiv.org/abs/2604.11556)
@@ -217,19 +240,23 @@ LLMs succeed locally and fail on composition. DafnyComp (ICLR 2026) shows 95.7% 
 - ioco has compositional results: under conditions, conformance of components implies conformance of the composition — [Bijl/Rensink/Tretmans](https://ftp.cs.ru.nl/CSI/SoftwEng.FunctLang/papers/2003/bijm2003-compositional_testing_ioco.pdf); [arXiv 1303.1009](https://arxiv.org/pdf/1303.1009)
 
 ### Inferences
+
 - "One port's behavior per LLM call", with callee summaries supplied as already-checked records, is well supported. It is the locally-succeeds regime. DafnyComp's lesson is that *summaries passed between units are the fragile part*. Each callee summary must be validated on its own before callers consume it (bottom-up checking), and the caller's call must be checked to use only cases the callee summary declares.
 - Compositional conformance (ioco-style) gives a principled reason to validate per port: if each port's behavior conforms to its traces and tests, composition along wires inherits conformance under input-enabledness conditions. That argues for making every provided port input-enabled in the model, with an explicit `reject` or `unknown` case.
 
 ### Gaps
+
 - No measured accuracy-versus-cost comparison of per-component and whole-system *model* generation was found.
 - No study measures how the quality of callee summaries affects caller-model accuracy for LLM-generated behavioral models.
 
 ## 5. Incremental re-compilation and spec drift
 
 ### Takeaway
+
 There is little research on keeping LLM-generated models in sync with changing code. The practice that works is to run conformance checks in CI (CCF trace validation; Quint MBT glue in CI) and use deterministic code-path-to-spec mapping to flag drift, with LLMs proposing updates rather than auto-overwriting. Semantic drift builds up over successive LLM-driven updates. LLMs are unreliable as standalone drift detectors.
 
 ### Cited Findings
+
 - Cirstea et al. recommend running trace validation in CI to keep spec and implementation in sync, as CCF does — [arXiv 2404.16075](https://arxiv.org/html/2404.16075v2); [CCF smart casual verification](https://decentralizedthoughts.github.io/2025-05-23-smart-casual-verification)
 - Informal Systems ran the code change from the spec diff (old spec, new spec, diff to the LLM), with MBT glue in CI as the regression check — [Quint blog](https://quint.sh/posts/llm_era)
 - A 2026 paper on a verified spec layer for LLM-driven codebase maintenance reports that semantic drift between spec graph and code builds up over successive updates. It measures drift by regenerating a reference spec from the code and comparing fidelity (snippet-level) — [arXiv 2609.06383](https://arxiv.org/pdf/2609.06383)
@@ -238,6 +265,7 @@ There is little research on keeping LLM-generated models in sync with changing c
 - Specula notes that bug counts for most systems come from earlier Specula versions because of budget, so re-running the whole pipeline per version is expensive (median $57 per project) — [Specula](https://arxiv.org/html/2607.25333v1)
 
 ### Inferences
+
 - Whole-pipeline regeneration per commit is unaffordable at Specula-like cost, so incremental compilation (the Salsa-style memoization from the prior report) is necessary, not an optimization.
 - A cheap drift signal has two layers:
   1. Deterministic: anchors re-resolved, and AST hashes of anchored slices changed.
@@ -245,14 +273,17 @@ There is little research on keeping LLM-generated models in sync with changing c
   Only units whose anchors changed *or* whose conformance tests now fail need recompilation. A conformance failure without an anchor change points to a missed dependency (an unanchored effect), which is itself a useful compiler bug signal.
 
 ### Gaps
+
 - No peer-reviewed system was found that incrementally regenerates only the affected parts of an LLM-generated formal model on code change, or that measures model-staleness rates over commit histories.
 
 ## 6. Benchmarks and datasets for code-to-model translation
 
 ### Takeaway
+
 SysMoBench (11 artifacts, TLA+, automated conformance via trace validation) is the only benchmark found that scores *model-to-implementation conformance* automatically. Specula already saturates it: 100% with Opus-4.8, and 93% with Sonnet-4.6. Adjacent benchmarks score spec generation (DafnyComp, Verus-Bench, CloverBench) or simulator fidelity (MIRAGE, MirrorAPI-Bench). None covers web or microservice systems as executable models, polyglot stacks, or port and behavior models like ours.
 
 ### Cited Findings
+
 - SysMoBench: 11 artifacts (concurrency primitives, Raft variants, ZooKeeper FLE, PGo-generated systems), TLA+, with automated syntax, runtime, conformance and invariant metrics — [SysMoBench](https://arxiv.org/html/2509.23130v3)
 - Specula at 100% on SysMoBench with Opus-4.8 indicates saturation as of mid-2026 — [Specula](https://arxiv.org/html/2607.25333v1)
 - DafnyComp (300 compositional Dafny programs) — [arXiv 2509.23061](https://arxiv.org/html/2509.23061v1). Verus-Bench (150 proof tasks) — [AutoVerus](https://arxiv.org/abs/2409.13082v3). CloverBench (textbook Dafny) — [Clover](https://arxiv.org/abs/2310.17807v4)
@@ -261,19 +292,23 @@ SysMoBench (11 artifacts, TLA+, automated conformance via trace validation) is t
 - PSMBench (named in the assignment): **not found** in these searches; it could not be verified.
 
 ### Inferences
+
 - We will need our own benchmark: a few gold models (login, queue-and-worker, CLI) with instrumented reference implementations, so conformance can be computed SysMoBench-style (the fraction of instrumented code actions admitted by the model) and per port.
 - Contamination is a known risk: SysMoBench's PGo results show models leaning on familiar names. The gold set should include code with renamed identifiers to measure prior-driven hallucination, like the perturbation study in the prior report.
 
 ### Gaps
+
 - No benchmark for code-to-statechart/XState, code-to-DEVS, or IaC-to-executable-model translation.
 - No benchmark measures over-approximation (model behaviors the code cannot exhibit) automatically. SysMoBench's conformance measures only whether code behavior is admitted.
 
 ## 7. Recommendations for the compiler stage and its verification loop
 
 ### Takeaway
+
 Treat the compiler like Specula scaled down to one port at a time: per-port units with checked callee summaries; evidence-anchored predicates and invariants before behaviors; a model-to-code mapping emitted at generation time so that instrumentation and trace alignment are mechanical; two-directional conformance (traces into the model, model-generated tests on the code); a repair loop capped at about 3 iterations and guarded against overfitting; and incremental recompilation keyed on anchors plus conformance regressions. The metrics should separate syntax, runtime and stuckness, conformance, and over-approximation, as SysMoBench does, plus repair, cost and drift metrics.
 
 ### Cited Findings (bases for the recommendations)
+
 - Evidence-backed invariants first, which then set the abstraction level — [Specula](https://arxiv.org/html/2607.25333v1)
 - A model-to-code mapping recorded during generation enables automated instrumentation — [Specula](https://arxiv.org/html/2607.25333v1). An LLM-produced model-name-to-code-name mapping is used in SysMoBench conformance — [SysMoBench](https://arxiv.org/html/2509.23130v3)
 - Partial logs work if they record shared-state changes, but logging too little explodes the search — [arXiv 2404.16075](https://arxiv.org/html/2404.16075v2)
@@ -286,31 +321,44 @@ Treat the compiler like Specula scaled down to one port at a time: per-port unit
 
 ### Inferences (concrete recommendations)
 
-**A. Unit of compilation and order**
+#### A. Unit of compilation and order
+
 1. Compile one provided port at a time, bottom-up within a service: callees first, and a callee summary must pass its own checks before a caller may consume it. Go outside-in across services. Each unit's input is the handler slice, the extracted obligations (branches, effects, state writes), already-checked callee summaries, and packs.
 2. Two passes per unit, in Specula's order: (i) predicates and invariants with anchors, i.e. what must be true and why, citing code, tests or comments; (ii) cases and transitions that refer only to those predicates. Invariants become the anti-overfitting oracle for repair.
 3. Emit a model-to-code map with every transition, making the anchor the instrumentation point: a function entry or exit, a send or receive site, a state write site, and the abstract variables observable there. This is what turns trace validation into a mechanical step rather than a second LLM task. It is SysMoBench's name-mapping step done at compile time.
 
-**B. Intermediate representations**
+#### B. Intermediate representations
+
 4. Keep the constrained record DSL from the prior report as the compiler target; do not target TLA+ directly. SysMoBench and Specula show syntax and config errors consume early iterations, and DSL schema checks remove that class. Keep an *export* to TLA+/Quint/P for exhaustive exploration and for reuse of TLC trace validation. Quint's typechecker, used after each edit, is the model for a fast compiler front end.
+
 5. Make the grain of atomicity explicit per transition. Mark `atomic` and the lock, transaction or none, and allow declared stutter steps and composite steps, so that coarse logs can be aligned to fine models and the reverse. This is the direct remedy for the most common divergence cause across Cirstea, CCF, SysMoBench and Specula.
+
 6. Make every provided port input-enabled: an explicit `reject` or `unknown` case for unmatched inputs. That way ioco-style quiescence and stuckness checks are meaningful and compositional conformance arguments apply.
 
-**C. Checker-in-the-loop repair**
+#### C. Checker-in-the-loop repair
+
 7. Order the checks cheapest first: schema → anchors → coverage obligations → guard algebra → interpreter run (stuck configurations = SysMoBench's "runtime") → conformance. Cap repair at 3 iterations per unit, then escalate to a stronger model or k-sample voting, or downgrade to `assumed` and surface the record.
+
 8. Guard against repair overfitting: diff each repair, and reject or flag repairs that weaken a guard, add a catch-all transition, delete a case or hard-code values, unless the coverage obligations and invariants still hold. Record each repair's kind in `checks` or provenance.
+
 9. When the model and the code diverge, do not auto-repair blindly. Classify the divergence as one of: model gap (fix the model), instrumentation or logging error, atomicity mismatch (fix the granularity), or code-bug candidate (show the user). This is Specula's stated open problem.
 
-**D. Validation against the real code (two directions)**
+#### D. Validation against the real code (two directions)
+
 10. Completeness, code → model: run existing test suites and recorded executions with lightweight instrumentation at the anchors, then align the traces in the interpreter in lockstep (PObserve/TLC style). A trace event with no enabled transition is a missing transition or guard.
+
 11. Soundness, model → code: generate tests from the model (one per case or per input class, plus Specula-style scenario projections), execute them against the real code with stubs at required ports, and compare the observable outputs at ports. This is MBT/ioco and catches over-approximation and invented behavior. MongoDB's experience says this direction is the more practical one for abstract models.
+
 12. Mutation adequacy: mutate the *model* (drop a case, negate a guard, merge two steps) and check that the conformance suite kills each mutant. Mutate the *code* at anchored sites and check that the model-based tests detect the change. Use the kill rate as a refinement trigger, with 85% as the one published threshold.
+
 13. For ports whose implementation is unavailable (third-party services), an LLM simulator in the MIRAGE style can stand in during co-simulation, marked `assumed`. Prefer packs built from the real source where possible, given the 53–69% versus 100% body-shape fidelity gap.
 
-**E. Incrementality**
+#### E. Incrementality
+
 14. Recompile a unit when its anchors' AST hashes change *or* its stored conformance tests or traces now fail. A failure without an anchor change is a compiler dependency bug, so log it as such. Run the conformance suite in CI as CCF and Quint do.
 
 **F. Metrics to track** (per unit and per system; adapted from SysMoBench and Specula)
+
 - Syntax/schema pass rate on first emission; check failures by tier.
 - Stuck-configuration rate in interpreter runs (the analogue of SysMoBench runtime).
 - Conformance: the fraction of instrumented code actions or trace events admitted by the model (SysMoBench M_c), per port.
@@ -324,5 +372,6 @@ Treat the compiler like Specula scaled down to one port at a time: per-port unit
 - Robustness: conformance on identifier-renamed variants of the gold code (contamination and priors).
 
 ### Gaps
+
 - None of these recommendations has been tested on HTTP/queue/DB application systems. All the conformance evidence comes from consensus protocols, concurrency primitives and three microservice demo systems (MIRAGE).
 - No source reports how much instrumentation overhead or developer effort per-port trace capture costs in web stacks. OpenTelemetry spans may suffice at the coarse level, but this is unverified.

@@ -119,6 +119,7 @@ SysMoBench asks LLMs to write TLA+ for 11 real systems and checks four phases (r
 | invariant | safety and liveness properties hold | about 41%; the weakest LLM 16%, Gemini 3.1 81% |
 
 The two failure modes it describes map exactly onto the two directions of 2.1 (read):
+
 - **Extra states.** A ZooKeeper election spec kept received votes as a set union; the code overwrites a peer's old vote. The spec followed "a formalization template" rather than the code.
 - **Missing states.** The LLM fused two code steps into one guard; the real code first raises the logical clock, then processes the message. "The LLM knows what Raft and ZAB look like as protocols, but it does not know how Etcd or ZooKeeper splits a particular action."
 

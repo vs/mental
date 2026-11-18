@@ -5,6 +5,7 @@
 Every term in **bold** on first use is defined in the [glossary](glossary.md). Facts from trials and research are in [findings](findings.md) and cited as F-numbers.
 
 Each section carries a status:
+
 - **Decided:** confirmed by the owner.
 - **Proposed:** the working answer, not yet confirmed.
 - **Experiment:** under test; the experiment that settles it is named.
@@ -318,6 +319,7 @@ The model is a flat set of **records** that refer to each other by ID. Every rec
 | artifact, launch, configuration input | `reports/artifact:app`, `reports/launch:worker`, `reports/launch:worker/cfg:database-url` |
 
 Rules:
+
 - The root slug is the system's name: `name` in `mentalc.toml`, else the compose project name, else the directory name.
 - Slugs are ASCII `[a-z0-9]+(-[a-z0-9]+)*`, made from a code name by one function. No counters and no positions; a collision is resolved by adding another code name. `[n]` is allowed on instances only, because it comes from configuration.
 - An ID has one canonical text form; a non-canonical ID is rejected, never normalized. Stored references are always full IDs.
@@ -343,7 +345,7 @@ The fields of each kind are fixed in the implementation plan of the milestone th
 
 ### 7.5 Storage
 
-```
+```text
 .mental/                       not committed
   model/                       one sorted JSONL file per record kind, plus format.json
   anchors.jsonl                record ID → file, lines, quote
@@ -529,7 +531,7 @@ The levels of [11.2](#112-kinds-of-level-and-their-closing-rules) start at the e
 
 ### 12.1 Configuration and steps
 
-```
+```text
 C = ⟨ E, S, L, Ch, A, T, φ, now ⟩
 E instances · S state variables · L locks and transactions · Ch one channel per wire instance
 A activations · T timers · φ predicate values assumed so far · now a logical time tag

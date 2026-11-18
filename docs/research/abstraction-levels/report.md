@@ -29,7 +29,7 @@ Sources the agents could not open are listed in each note. They include Pnueli e
 
 ## Each solution in brief
 
-**Formal refinement methods**
+### Formal refinement methods
 
 | Solution | What it is | How it handles levels | Take for Mental |
 | --- | --- | --- | --- |
@@ -44,7 +44,7 @@ Sources the agents could not open are listed in each note. They include Pnueli e
 | mCRL2 | Process algebra toolset | Hide actions, then minimise modulo branching bisimulation | Compute "hide" levels instead of authoring them |
 | LLM refinement pipelines | Event-B Agent, Specula (2026) | LLM proposes levels, gluing invariants or abstraction choices; ProB, provers and TLC judge | Mental is not alone; copy the loop and its anti-overfitting guard |
 
-**Layered verified systems**
+### Layered verified systems
 
 | Solution | What it is | How it handles levels | Take for Mental |
 | --- | --- | --- | --- |
@@ -60,7 +60,7 @@ Sources the agents could not open are listed in each note. They include Pnueli e
 | AWS (ShardStore, Cedar, authorization engine) | Production systems | Reference model about 1% of code size; conformance by property-based or differential testing | A tiny model checked per run works in production |
 | Kondo, LLM provers | Tools writing invariants and proofs | Kondo generates the asynchronous level and routine invariants; LLMs fill proofs under a human spec | LLMs succeed only with a checker; state-machine obligations stay hard |
 
-**Compilers and computed abstractions**
+### Compilers and computed abstractions
 
 | Solution | What it is | How it handles levels | Take for Mental |
 | --- | --- | --- | --- |
@@ -76,7 +76,7 @@ Sources the agents could not open are listed in each note. They include Pnueli e
 | LLM + checker (Lemur, Loopy, LORIS) | LLM proposes invariants, verifier decides | Filter, repair, backtrack | Generation works (78–93%); repair does not (16%) |
 | LLM abstractions (NeuroAbs, PolyVer) | LLM proposes abstraction or contract, solver checks | Refined by counterexample | Prior art for "LLM proposes, checker validates" |
 
-**Hardware, simulation and planning**
+### Hardware, simulation and planning
 
 | Solution | What it is | How it handles levels | Take for Mental |
 | --- | --- | --- | --- |
@@ -92,7 +92,7 @@ Sources the agents could not open are listed in each note. They include Pnueli e
 | ChatHTN, Ada | LLM-proposed decompositions with a checker | Proposals kept only if their effects hold below | Score each proposed upper step by success rate |
 | Netsem TCP | TCP specified at protocol and service level | Testable abstraction function checked on captured traces | Precedent for projection checks on real protocols |
 
-**Architecture models and conformance**
+### Architecture models and conformance
 
 | Solution | What it is | How it handles levels | Take for Mental |
 | --- | --- | --- | --- |

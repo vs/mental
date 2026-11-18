@@ -3,6 +3,7 @@
 Scope: source-code reading of six projects, shallow-cloned on 2026-11-14. Nothing was built or run. Every claim cites a file at a pinned commit. Mental context comes from `docs/specification.md` §2 (P1-P4) and §8, and from `docs/research/model-interpreter-semantics/report.md`.
 
 One line per product:
+
 - **Stateright** (Rust, commit `ab8c8be`, 2025-07-27): explicit-state checker over a `Model` trait (`init_states`/`actions`/`next_state`). Has BFS, DFS, simulation and on-demand checkers, an actor layer with lossy and duplicating networks, symmetry by representative, and 64-bit fingerprints. Witnesses are action-index paths.
 - **Shuttle** (Rust, `72bdbdb`, 2026-11-12): randomized concurrency tester. Re-runs real code under a `Scheduler` trait (random, PCT, DFS, replay). A schedule is a seed plus task IDs, encoded as a compact string. No state hashing, no POR, no shrinker.
 - **loom** (Rust, `9d549cd`, 2026-11-08): stateless exhaustive explorer. Re-runs real code over a recorded `Path` of branch points and uses DPOR with vector clocks plus an optional preemption bound.
@@ -11,6 +12,7 @@ One line per product:
 - **proptest** (Rust, `70cf37d`, 2026-10-10; shrinking only): a `ValueTree` with `simplify`/`complicate`; vectors shrink by deleting elements and then shrinking each element.
 
 URL bases used below:
+
 - SR = `https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/`
 - SH = `https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/`
 - LO = `https://github.com/tokio-rs/loom/blob/9d549cd5357a5485900f4c53951fc1726319659f/`
@@ -21,15 +23,19 @@ URL bases used below:
 ## Q1. What is the smallest clean Rust API for enabled/fire plus pluggable strategies, where all nondeterminism goes through one recorded choice point?
 
 ### Takeaway
+
 Stateright's three-method `Model` trait is already Mental's `enabled`/`fire` pair. Shuttle's one-method-per-decision `Scheduler` trait is the right shape for strategies. Mental should merge them: a pure `fire(&Model, &Config, &Choice)`, and one `Chooser` that picks from the sorted `enabled` list. A choice should be a semantic-ID enum, not an index or a seed, because replay on a changed model has to match choices by name. P's replay strategy shows exactly which mismatch cases a replay verdict must name.
 
 ### Cited Findings
-**Step function shape**
+
+#### Step function shape
+
 - Stateright's whole model interface is `init_states(&self) -> Vec<State>`, `actions(&self, &State, &mut Vec<Action>)` and `next_state(&self, &State, Action) -> Option<State>`. Every checker (BFS, DFS, simulation, on-demand, explorer UI) is written against these alone. — [SR src/lib.rs L158-L179](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/lib.rs#L158-L179)
 - Stateright's actor layer turns every source of nondeterminism into one `ActorModelAction` enum: `Deliver{src,dst,msg}`, `Drop(Envelope)`, `Timeout(Id,Timer)`, `Crash(Id)`, `Recover(Id)`, `SelectRandom{actor,key,random}`. Actors never call an RNG; `Command::ChooseRandom(key, Vec<Random>)` publishes the options, and the checker turns them into actions. This maps one-to-one onto Mental's `sched`/`env`/`data`/`pick`. — [SR src/actor/model.rs L46-L66](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/actor/model.rs#L46-L66); [SR src/actor.rs L162-L172](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/actor.rs#L162-L172)
 - `next_state` returns `Option<State>`, and the actor model returns `None` for "no-op" deliveries to prune them. The code itself warns: "Strictly speaking, this state should be updated regardless … only safe if invariants do not relate to the existence of envelopes on the network". The pruning is a hidden reduction inside the step function. — [SR src/actor/model.rs L418-L440](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/actor/model.rs#L418-L440)
 
-**Strategy interfaces**
+#### Strategy interfaces
+
 - Shuttle's `Scheduler` trait has three methods:
   - `new_execution() -> Option<Schedule>`
   - `next_task(runnable: &[&Task], current: Option<TaskId>, is_yielding) -> Option<TaskId>`
@@ -40,7 +46,8 @@ Stateright's three-method `Model` trait is already Mental's `enabled`/`fire` pai
 - Because of that split, P's exhaustive DFS keeps three parallel stacks (`ScheduleStack`, `BoolNondetStack`, `IntNondetStack`) with two indices. Backtracking has to coordinate them. — [P …/Strategies/Exhaustive/DFSStrategy.cs L27-L49, L209-L230](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PChecker/CheckerCore/SystematicTesting/Strategies/Exhaustive/DFSStrategy.cs)
 - Stateright's simulation strategy takes a `Chooser` trait. It is built with `new_state(seed)` and has `choose_initial_state` and `choose_action(&mut state, &M::State, &[Action]) -> usize`, so random search is just "pick an index from the action list". — [SR src/checker/simulation.rs L22-L39](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker/simulation.rs#L22-L39)
 
-**Schedule representation**
+#### Schedule representation
+
 - Shuttle's schedule is `Schedule { seed: u64, steps: Vec<ScheduleStep> }` with `enum ScheduleStep { Task(TaskId), Random }`. Random values are not stored; replay regenerates them from the seed. — [SH shuttle-engine/src/scheduler/mod.rs L10-L28](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-engine/src/scheduler/mod.rs)
 - The schedule is serialized as a varint-and-bitvector string: "[task id bitwidth] [number of schedule steps] [seed] [step]*". — [SH shuttle-engine/src/scheduler/serialization.rs](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-engine/src/scheduler/serialization.rs)
 - Stateright records witnesses as `Vec<usize>` action indices from an init-state index (`type Job<State> = (State, Vec<usize>, EventuallyBits, NonZeroUsize)`), and rebuilds the path by re-running `actions`/`next_state` (`Path::from_action_indices`). — [SR src/checker/dfs.rs L31](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker/dfs.rs#L31); [SR src/checker/path.rs L21-L90](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker/path.rs#L21-L90)
@@ -48,7 +55,8 @@ Stateright's three-method `Model` trait is already Mental's `enabled`/`fire` pai
 - P records `ScheduleStep { Type: SchedulingChoice | NondeterministicChoice, ScheduledOperationId, BooleanChoice?, IntegerChoice? }`. Values are stored explicitly, not derived from a seed. — [P …/SystematicTesting/Traces/ScheduleStep.cs](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PChecker/CheckerCore/SystematicTesting/Traces/ScheduleStep.cs)
 - loom records a `Path` of typed branch entries (`Schedule`, `Load`, `Spurious`). Each entry keeps the exploration state of every alternative (thread states `Disabled/Skip/Yield/Pending/Active/Visited`), so the record doubles as the DFS work-list. It is serde-serializable under a `checkpoint` feature. — [LO src/rt/path.rs L1-L90](https://github.com/tokio-rs/loom/blob/9d549cd5357a5485900f4c53951fc1726319659f/src/rt/path.rs)
 
-**Replay**
+#### Replay
+
 - Shuttle's `ReplayScheduler::next_task` panics with "schedule ended early" or "scheduled task is not runnable, expected to run {next:?}, but choices were {runnable:?}" unless `allow_incomplete` is set. — [SH shuttle-schedulers/src/replay.rs L82, L122](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-schedulers/src/replay.rs)
 - Shuttle's replay can also take a `target_clock`. It then skips schedule steps that are not causally before the failure, which is a causal slice of the witness. — [SH shuttle-schedulers/src/replay.rs L64-L115](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-schedulers/src/replay.rs#L64-L115)
 - P's `ReplayStrategy` names its failure modes:
@@ -59,14 +67,18 @@ Stateright's three-method `Model` trait is already Mental's `enabled`/`fire` pai
   — [P …/Strategies/Special/ReplayStrategy.cs L93-L107](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PChecker/CheckerCore/SystematicTesting/Strategies/Special/ReplayStrategy.cs#L93-L107)
 - P's replay takes an optional `SuffixStrategy`. On the first mismatch it sets `IsReplaying = false` and hands control to that strategy, so it replays a prefix and then keeps exploring. — [P …/Strategies/Special/ReplayStrategy.cs](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PChecker/CheckerCore/SystematicTesting/Strategies/Special/ReplayStrategy.cs)
 
-**P semantics for unhandled events**
+#### P semantics for unhandled events
+
 - When no state in the stack handles an event, P raises `UnhandledEventException` and then `Assert(isHalting, "{0} received event '{1}' that cannot be handled.")`. The only exception is `PHalt`, which halts gracefully. — [P Src/PChecker/CheckerCore/Runtime/StateMachines/StateMachine.cs L1043-L1070, L833-L866](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PChecker/CheckerCore/Runtime/StateMachines/StateMachine.cs#L1043-L1070)
 
-**Reductions that live in the enabled list**
+#### Reductions that live in the enabled list
+
 - PEx's choice generator returns only the machine that creates another machine whenever one exists ("prioritize create machine events"). Otherwise it returns every machine whose send-buffer head targets a running machine. This is a built-in reduction in `enabled`. — [P Src/PEx/…/explicit/ExplicitSearchScheduler.java L552-L568](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PEx/src/main/java/pex/runtime/scheduler/explicit/ExplicitSearchScheduler.java#L552-L568)
 
 ### Inferences
+
 - **Proposed core API.** All of it is pure, does no I/O and needs no threads, so it compiles to `wasm32-unknown-unknown`:
+
   ```rust
   pub fn initial(m: &Model, b: &Binding) -> Config;
   pub fn enabled(m: &Model, c: &Config) -> Vec<Choice>;            // sorted, deduplicated
@@ -80,6 +92,7 @@ Stateright's three-method `Model` trait is already Mental's `enabled`/`fire` pai
   pub fn explore(m: &Model, b: &Binding, bounds: &Bounds) -> Report;                 // owns its own frontier
   pub fn replay(m: &Model, b: &Binding, s: &Schedule) -> Replay;                     // per-choice verdicts
   ```
+
   This is Stateright's trait as free functions over data, with Shuttle's chooser shape. Bool and int choices fold into `Choice::Data`, which avoids P's three parallel DFS stacks.
 - **One `Choice` enum.** One enum, one `Vec<Choice>` schedule and one DFS stack is the smallest design that still names every kind of nondeterminism. Shuttle's `Random` step that stores no value does not suit Mental, because a `data` value must survive a model change. Store values, as P does.
 - **Index-based witnesses break under model change.** Stateright's `Vec<usize>` witnesses only replay against the exact same model; its own panic text blames HashMap order. Mental's replay on a changed model needs choices named by semantic IDs, matched by equality as in `Path::from_actions`.
@@ -96,14 +109,17 @@ Stateright's three-method `Model` trait is already Mental's `enabled`/`fire` pai
 - **Keep reductions out of `fire` and `enabled`.** Stateright's no-op pruning and PEx's create-first rule show that semantics and reduction get mixed up easily. Mental should keep `enabled` complete and do all pruning in strategies, where a test can switch it off.
 
 ### Gaps
+
 - None of the projects carries a path condition φ. The symbolic strategy (forking on unknown predicates) has no direct precedent in these codebases; it is only "a `Data` choice with both values enabled".
 
 ## Q2. Persistent/immutable configurations vs clone-on-step vs undo logs: trade-offs for clarity, speed and WebAssembly
 
 ### Takeaway
+
 None of the projects uses undo logs. The checkers that own their state (Stateright, TLC, PEx) clone on step, and Stateright makes cloning cheap by keeping each actor's state behind an `Arc` and using `Cow`. The testers that run real code (Shuttle, loom, the P C# checker) cannot snapshot, so they re-execute from the start on every path. For `mentalvm`, a value-typed `Config` that is cloned on step, with `Arc` around per-instance parts, is the simplest choice and fully WebAssembly-safe.
 
 ### Cited Findings
+
 - Stateright's actor system state is `ActorModelState { actor_states: Vec<Arc<A::State>>, network, timers_set, random_choices, crashed: Vec<bool>, history, actor_storages }`. Cloning it copies the vector of `Arc`s, not the actors. — [SR src/actor/model_state.rs L15-L23](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/actor/model_state.rs#L15-L23)
 - On delivery, Stateright runs the actor handler on a `Cow::Borrowed` actor state. It clones the system state (`last_sys_state.clone()`) and replaces only that actor's `Arc` if the handler produced `Cow::Owned`. — [SR src/actor/model.rs L402-L450](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/actor/model.rs#L402-L450)
 - PEx keeps mutable machines. For stateful backtracking it snapshots with `StepState.copyState()` (deep copy of per-machine local state) and restores with `setTo(...)`. When no snapshot exists, it resets to zero and re-executes the prefix. — [P Src/PEx/…/explicit/StepState.java](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PEx/src/main/java/pex/runtime/scheduler/explicit/StepState.java); [P …/ExplicitSearchScheduler.java L520-L545](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PEx/src/main/java/pex/runtime/scheduler/explicit/ExplicitSearchScheduler.java)
@@ -118,6 +134,7 @@ None of the projects uses undo logs. The checkers that own their state (Staterig
 - TLC keeps a mutable state class (`TLCStateMut`) but generates a fresh successor per transition. Its trace file stores no states at all, only `(predecessorLoc, fingerprint)` pairs of 12 bytes. — [TL src/tlc2/tool/TLCTrace.java L77-L81](https://github.com/tlaplus/tlaplus/blob/d8fb231de4e4b5d02c1b2ed1ac759c086f694021/tlatools/org.lamport.tlatools/src/tlc2/tool/TLCTrace.java#L77-L81)
 
 ### Inferences
+
 - **Clone on step.** Mental's spec already says "two configurations are equal however they were reached" (§8.1). `fire(&C) -> C` with `#[derive(Clone, Eq, Hash, Ord)]` on `Config` makes snapshots, stepping backwards (keep the old value) and DFS backtracking (pop the stack) free of extra code.
 - **No undo logs.** An undo log needs inverse operations for every step kind (deliver, write, lock, spawn, duplicate…), which roughly doubles the step code and its tests. That cuts against "compact code".
 - **Make clones cheap the way Stateright does.** Put `Arc<Instance>` or `Arc<ActivationState>` inside vectors or `BTreeMap`s keyed by ID, and use `Arc::make_mut` in `fire`. `Arc` works on wasm32 (single-threaded, atomics compile to plain ops).
@@ -125,25 +142,31 @@ None of the projects uses undo logs. The checkers that own their state (Staterig
 - **No persistent-collection crate in v1.** `im` or `rpds` would be a new dependency. Add one only if profiling shows clone cost dominates; report-jobs bounds are tiny.
 
 ### Gaps
+
 - No source here measures clone-on-step against undo logs for actor-style models. The choice above rests on simplicity, not on benchmarks.
 
 ## Q3. How to fingerprint states deterministically and make runs reproducible bit-for-bit
 
 ### Takeaway
+
 Every project has been bitten by unstable iteration order or unstable hashing:
+
 - Stateright sorts its action list for that reason and hand-rolls order-independent hashing for hash sets.
 - Stateright's "stable" hasher is ahash with fixed keys, which ahash's own README says differs across machines.
 - PEx combines hashes with XOR.
 - TLC alone uses a fingerprint with a fixed specification (Rabin, irreducible polynomial) and reports the collision probability.
 
 For Mental:
+
 - `BTreeMap`/`Vec` only inside `Config`.
 - `enabled` returns a sorted list.
 - A portable seeded RNG (a PCG variant, as Shuttle uses).
 - An exact visited set in v1, with a fixed-spec 64- or 128-bit fingerprint only when memory requires it.
 
 ### Cited Findings
-**Fingerprints**
+
+#### Fingerprints
+
 - Stateright: `type Fingerprint = NonZeroU64`, computed by `fingerprint<T: Hash>(value)` with `stable::hasher()`. That is ahash `RandomState::with_seeds(KEY1, KEY2, 0, 0)`, and the source carries `// TODO: how to get these?` on the last two keys. — [SR src/lib.rs L344-L390](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/lib.rs#L344-L390)
 - ahash's README: "Because it does not have a fixed standard, different computers or computers on different versions of the code will observe different hash values." Stateright's fingerprints are therefore not portable across machines, versions, or native vs wasm builds. — ahash 0.8.12 README L22 (read from the local cargo registry; upstream [github.com/tkaitchuck/aHash](https://github.com/tkaitchuck/aHash))
 - Stateright's `HashableHashSet::hash` hashes each element with the stable hasher into a buffer, then `sort_unstable()` and feeds the sorted u64s. This is order-independent hashing of an unordered set. — [SR src/util.rs L137-L158](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/util.rs#L137-L158)
@@ -152,26 +175,32 @@ For Mental:
 - TLC fingerprints with `FP64` (a Rabin fingerprint over a fixed irreducible polynomial, `IrredPoly`). The state fingerprint extends it variable by variable: `fp = minVals[i].fingerPrint(fp)`. With VIEW, it fingerprints the value of the view expression instead, so only part of the state is abstracted for deduplication. — [TL src/tlc2/util/FP64.java](https://github.com/tlaplus/tlaplus/blob/d8fb231de4e4b5d02c1b2ed1ac759c086f694021/tlatools/org.lamport.tlatools/src/tlc2/util/FP64.java); [TL src/tlc2/tool/TLCStateMut.java L171-L272](https://github.com/tlaplus/tlaplus/blob/d8fb231de4e4b5d02c1b2ed1ac759c086f694021/tlatools/org.lamport.tlatools/src/tlc2/tool/TLCStateMut.java#L171-L272)
 - TLC reports the probability of a fingerprint collision at the end of every run. It first computes an "optimistic" probability and computes the actual one (`checkFPs()`, based on the observed fingerprint distribution) only when the optimistic one exceeds 1e-10. — [TL src/tlc2/tool/ModelChecker.java L962-L972](https://github.com/tlaplus/tlaplus/blob/d8fb231de4e4b5d02c1b2ed1ac759c086f694021/tlatools/org.lamport.tlatools/src/tlc2/tool/ModelChecker.java#L962-L972)
 
-**Symmetry**
+#### Symmetry
+
 - TLC symmetry: the fingerprint is taken of the lexicographically smallest permutation of the state, computed by trying all permutations (O(|perms|·|vars|); the comment notes the constructive orbit problem is NP-hard). — [TL src/tlc2/tool/TLCStateMut.java L174-L247](https://github.com/tlaplus/tlaplus/blob/d8fb231de4e4b5d02c1b2ed1ac759c086f694021/tlatools/org.lamport.tlatools/src/tlc2/tool/TLCStateMut.java#L174-L247)
 - Stateright symmetry: a `Representative::representative(&self) -> Self` trait, with `RewritePlan::from_values_to_sort` to sort and reindex symmetric actors. Only the representative is fingerprinted. — [SR src/checker/representative.rs](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker/representative.rs); [SR examples/2pc.rs L149-L160](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/examples/2pc.rs#L149-L160)
 
-**Determinism of order**
+#### Determinism of order
+
 - Stateright's actor model sorts the action list before returning it: "Action indices based `Path` construction relies on the consistent ordering of the returned actions. Some iterators like `HashableHashSet` do not guarantee a stable order. For simplicity, we sort actions here." — [SR src/actor/model.rs L342-L386](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/actor/model.rs#L342-L386)
 - Stateright's path reconstruction panics with a diagnosis naming the usual causes: "iterating over a `HashMap` or `HashableHashMap` does not always happen in the same order … the file system, a thread local `RefCell`, or a source of randomness". — [SR src/checker/path.rs L28-L75](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker/path.rs#L28-L75)
 
-**RNG**
+#### RNG
+
 - Stateright's `UniformChooserState` uses `StdRng` under the comment `// FIXME: use a reproducible rng, one that will not change over versions.` — [SR src/checker/simulation.rs L46-L48](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker/simulation.rs#L46-L48)
 - Shuttle's PCT and random schedulers use `rand_pcg::Pcg64Mcg::seed_from_u64(seed)`, a named algorithm. The seed can be overridden by the `SHUTTLE_RANDOM_SEED` environment variable (`seed_from_env`). — [SH shuttle-schedulers/src/pct.rs L50](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-schedulers/src/pct.rs#L50)
 - Shuttle's DFS fixes its data seed (`const DFS_RANDOM_SEED: u64 = 0x12345678`), so every DFS execution sees the same "random" values. Its doc says enabling random data "makes the DFS search incomplete". — [SH shuttle-schedulers/src/dfs.rs L6, L22-L28](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-schedulers/src/dfs.rs)
 
-**Run-time nondeterminism checks**
+#### Run-time nondeterminism checks
+
 - Shuttle's `UncontrolledNondeterminismCheckScheduler` wraps any scheduler and replays each schedule once. It checks "that the schedule is still valid and that the set of runnable tasks is the same at each step". — [SH shuttle-schedulers/src/uncontrolled_nondeterminism.rs L1-L30](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-schedulers/src/uncontrolled_nondeterminism.rs)
 
-**Visited set and cycles**
+#### Visited set and cycles
+
 - PEx uses the visited set to detect cycles. If the same state key reappears within the same schedule, it reports "Cycle detected: Infinite loop found due to revisiting a state multiple times in the same schedule". If it was seen in another schedule, it prunes ("done with this schedule"). — [P …/ExplicitSearchScheduler.java L249-L290](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PEx/src/main/java/pex/runtime/scheduler/explicit/ExplicitSearchScheduler.java#L249-L290)
 
 ### Inferences
+
 - **Determinism by construction.** Three rules:
   - No `HashMap`/`HashSet` in the `mentalvm` core. Enforce with clippy `disallowed-types` in `clippy.toml`.
   - `enabled` returns `Vec<Choice>` sorted by `Choice: Ord`.
@@ -190,21 +219,25 @@ For Mental:
 - **Symmetry is v2.** Mental's "worker[0]/worker[1]" replicas are symmetric, so Stateright's `representative` approach (sort replicas by state, reindex) is the simple form. Treat it as a later optimisation with a differential test (see Q6).
 
 ### Gaps
+
 - Did not read Rust `std` docs here to cite the instability of `DefaultHasher`. That claim comes from prior knowledge and should be verified.
 - No project measures how often fingerprint collisions happen at Mental's scale; TLC's bound formula is the only quantitative tool, and it was not read in detail.
 
 ## Q4. Which partial-order reduction is simplest to implement correctly, and how do these projects test that POR does not miss bugs?
 
 ### Takeaway
+
 Only loom implements POR among the six: a DPOR driven by vector clocks, with a "last dependent access" per object, a conservative "explore all threads" fallback, and an extra backtrack point under preemption bounding. Stateright, Shuttle, the P C# checker, PEx and TLC rely on bounds, symmetry, state caching or randomness instead.
 
 No project directly compares POR against unreduced search in a test. The nearest patterns are:
+
 - loom's outcome-set tests (assert the exact set of observable results);
 - Stateright's reduced-vs-unreduced symmetry test, which pins both state counts and requires the same property verdicts.
 
 For `mentalvm` v1, bounded DFS with an exact visited set and a preemption bound may be enough. If POR is added, start with sleep sets over static footprints, behind a differential test against unreduced search on the whole corpus.
 
 ### Cited Findings
+
 - loom's `Execution::schedule()` ("Implementation of the DPOR algorithm"):
   - For every thread with a pending operation, it fetches `objects.last_dependent_access(operation)`.
   - If that access does not happen-before the thread's `dpor_vv` vector clock, it calls `path.backtrack(access.path_id(), th_id)`.
@@ -221,6 +254,7 @@ For `mentalvm` v1, bounded DFS with an exact visited set and a preemption bound 
 - PEx prunes with state caching only after the backtrack choice number ("perform state caching only if beyond backtrack choice number") and uses the create-machine-first heuristic. Neither is POR in the textbook sense. — [P …/ExplicitSearchScheduler.java L249-L260, L552-L568](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PEx/src/main/java/pex/runtime/scheduler/explicit/ExplicitSearchScheduler.java)
 
 ### Inferences
+
 - **Why loom's DPOR does not transfer.** loom's DPOR is tightly coupled to its runtime objects (each object type implements `last_dependent_access`/`set_last_access`) and to stateless re-execution. It cannot be lifted out as a module. A DPOR in `mentalvm` would need vector clocks per activation, last-access tracking per state variable, lock and channel, and the conservative fallbacks loom adds. That is a lot of subtle code for v1.
 - **Simplest correct option: no POR in v1.** Mental's actual bounds (1 request, 2 workers, 1 duplicate, 1 preemption) are small. "Activations run until they wait" already removes the intra-activation interleavings, which is the coarse step granularity P uses. The visited set merges the different orders of independent steps that reach the same configuration. Bounded DFS with an exact visited set, plus a preemption bound counted the way loom counts it, is complete for the stated bounds with no POR code at all.
 - **If POR is needed: sleep sets over static footprints.**
@@ -232,13 +266,16 @@ For `mentalvm` v1, bounded DFS with an exact visited set and a preemption bound 
 - **Count preemptions as loom does.** A preemption is a `sched` choice of a different activation while the current activation is still runnable (it has not reached a wait). Each DFS node carries a `preemptions_left` counter, which then has to be part of the visited key (Q3).
 
 ### Gaps
+
 - No studied project has a test that runs DPOR and full search side by side. Only loom has DPOR, and it relies on litmus outcome sets.
 - I did not find sleep-set code in any of the six repos, so the sleep-set recommendation rests on the literature, not on a code precedent.
 
 ## Q5. How do they minimize a counterexample schedule?
 
 ### Takeaway
+
 None of the five checkers or testers has a schedule shrinker in its source:
+
 - Stateright and TLC get short witnesses by construction from BFS.
 - Shuttle ships no minimizer; it relies on running inside proptest, and its `shrink.rs` test only replays hand-shrunk schedules.
 - P and PEx have none.
@@ -246,6 +283,7 @@ None of the five checkers or testers has a schedule shrinker in its source:
 proptest's `ValueTree` gives the cleanest algorithm to borrow: delete elements one at a time, then simplify each remaining element, and step back with `complicate` when a candidate stops failing. For Mental, find the witness with shortest-first search, then run a delete-one-choice pass that re-checks each candidate by replay.
 
 ### Cited Findings
+
 - Stateright documents that BFS "will find the shortest `Path` to each discovery if checking is single threaded", while DFS does not. — [SR src/checker.rs, `spawn_bfs` doc](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker.rs)
 - Stateright's BFS originally rebuilt paths from parent fingerprints (`DashMap<Fingerprint, Option<Fingerprint>>`) and now also stores `Vec<usize>` per job. The comment says "with action indices encoding, this is not possible, so we must store a Vec (like in dfs.rs)". — [SR src/checker/bfs.rs L20-L37](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker/bfs.rs#L20-L37)
 - TLC rebuilds traces from (predecessor pointer, fingerprint) records. For each record it calls `tool.getState(fp, predecessor.state)`, which regenerates the predecessor's successors and keeps the one whose fingerprint matches. BFS order makes this trace shortest. — [TL src/tlc2/tool/TLCTrace.java L201-L230](https://github.com/tlaplus/tlaplus/blob/d8fb231de4e4b5d02c1b2ed1ac759c086f694021/tlatools/org.lamport.tlatools/src/tlc2/tool/TLCTrace.java#L201-L230)
@@ -256,6 +294,7 @@ proptest's `ValueTree` gives the cleanest algorithm to borrow: delete elements o
 - proptest's shrink loop keeps the candidate while it still fails and calls `complicate()` when a candidate passes. It is bounded by `max_shrink_iters` and `max_shrink_time`, and on bail-out "Move back to the most recent failing case". — [PT test_runner/runner.rs L769-L880](https://github.com/proptest-rs/proptest/blob/70cf37d46b7d83393b6ed94c611f8c52209f585d/proptest/src/test_runner/runner.rs#L769-L880)
 
 ### Inferences
+
 - **Define "minimal" so it can be tested.** Order candidates lexicographically by:
   1. fewest choices that are not forced (choices made where `enabled` had one element do not count, as Shuttle's PCT skips steps with `runnable.len() == 1`, [SH pct.rs L141](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-schedulers/src/pct.rs#L141));
   2. fewest preemptions;
@@ -271,12 +310,15 @@ proptest's `ValueTree` gives the cleanest algorithm to borrow: delete elements o
 - **The acceptance test can pin the result.** The report-jobs witness (spec §8.6 schedule, 7 choices) can be snapshot-tested with insta: the minimizer must reproduce exactly that schedule or a shorter one.
 
 ### Gaps
+
 - None of the codebases measures minimizer quality. The expected minimal size for report-jobs comes only from the spec's example schedule.
 
 ## Q6. How do model checkers test themselves?
 
 ### Takeaway
+
 Six patterns recur:
+
 1. A known-bug corpus with expected errors, and a correct corpus that must pass (P: 145 `DynamicError` programs).
 2. Golden state or execution counts (TLC: 282 test files assert `TLC_STATS`; Stateright: `unique_state_count`; Shuttle: DFS iteration counts).
 3. Differential runs across strategies or reductions (Stateright BFS vs DFS give equal counts; symmetric vs plain give the same verdicts).
@@ -285,6 +327,7 @@ Six patterns recur:
 6. Replay round-trip and determinism checkers (Shuttle). Shuttle's replay round-trip tests are currently disabled because the replay mechanism broke, which shows why that test must gate CI.
 
 ### Cited Findings
+
 - P's regression suite is laid out by feature (`Feature1SMLevelDecls` … `Feature5ModuleSystem`, `Combined`, `Liveness`), each with `Correct/`, `DynamicError/` and `StaticError/` folders. 145 `DynamicError` programs (a known-bug corpus) and the `Correct` programs are loaded by `TestCaseLoader.FindTestCasesInDirectory(..., new[] { "DynamicError", "Correct" })`. Expected checker logs live in `Tst/CorrectLogs`. — [P Tst/RegressionTests](https://github.com/p-org/P/tree/260da928f67569ca7a8c0039a02d0bad7cde6096/Tst/RegressionTests); [P Tst/UnitTests/RegressionTests.cs L59, L91](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Tst/UnitTests/RegressionTests.cs); [P Tst/UnitTests/PCheckerLogGeneratorTests.cs L28-L31](https://github.com/p-org/P/blob/260da928f67569ca7a8c0039a02d0bad7cde6096/Tst/UnitTests/PCheckerLogGeneratorTests.cs)
 - TLC tests assert exact statistics through a message recorder, for example `recorder.recordedWithStringValues(EC.TLC_STATS, "950", "555", "89")` (generated, distinct, left). 282 test files under `test/tlc2/tool` reference `TLC_STATS`, against about 511 spec directories in `test-model`. — [TL test/tlc2/tool/EvalExceptionLivenessTest.java L50-L51](https://github.com/tlaplus/tlaplus/blob/d8fb231de4e4b5d02c1b2ed1ac759c086f694021/tlatools/org.lamport.tlatools/test/tlc2/tool/EvalExceptionLivenessTest.java#L50-L51)
 - TLC also asserts the exact error trace (`assertTraceWith(recorder.getRecords(EC.TLC_STATE_PRINT2), expectedTrace)`). — [TL test/tlc2/tool/ActionCompositionBTest.java L61-L67](https://github.com/tlaplus/tlaplus/blob/d8fb231de4e4b5d02c1b2ed1ac759c086f694021/tlatools/org.lamport.tlatools/test/tlc2/tool/ActionCompositionBTest.java#L61-L67)
@@ -297,7 +340,9 @@ Six patterns recur:
 - Stateright's path rebuilding panics with tests for that panic (`panics_if_unable_to_reconstruct_init_state`, `panics_if_unable_to_reconstruct_next_state`), so its nondeterminism diagnostic is tested too. — [SR src/checker/path.rs L221-L244](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker/path.rs#L221-L244)
 
 ### Inferences
+
 **Test suite for `mentalvm`, in order of value:**
+
 1. **Corpus** (`crates/mentalvm/tests/corpus/`, P-style): tiny models, each with a sidecar `expect` giving the outcome kind, the node, and an insta snapshot of the minimal witness and of the counts (configs, transitions, max depth). It needs one model per outcome kind:
    - normal end
    - model gap (unhandled message)
@@ -324,12 +369,15 @@ Six patterns recur:
 **No probability-based tests for v1.** Use fixed seeds instead. Shuttle's probability-justified iteration counts suit PCT, which v1 does not need.
 
 ### Gaps
+
 - None of the projects documents a mutation-testing or coverage gate. The "100% diff coverage" and cargo-mutants requirements have no precedent in these repos.
 
 ## Q7. What mentalvm should copy and avoid, and candidate guidelines
 
 ### Takeaway
+
 Copy:
+
 - Stateright's step interface and its sorted action list;
 - Shuttle's single scheduler trait;
 - P's explicit, value-carrying schedule entries, named replay failures, and replay-then-continue;
@@ -339,6 +387,7 @@ Copy:
 - proptest's delete-then-simplify shrinking.
 
 Avoid:
+
 - index or seed-based schedules;
 - ahash, `StdRng`, XOR hashing;
 - hidden reductions inside the step function;
@@ -347,6 +396,7 @@ Avoid:
 - replay tests that are allowed to be ignored.
 
 Flagged as bloat for v1:
+
 - Stateright's web explorer, threads, DashMap job broker and on-demand checker;
 - Shuttle's about 20 wrapper crates, PCT, URW and annotations;
 - loom's relaxed-memory model and checkpoint files;
@@ -357,6 +407,7 @@ Flagged as bloat for v1:
 v1 needs concrete runs, bounded-exhaustive DFS and replay. Sampled search is about 30 lines on top (a seeded `Chooser`) and is optional.
 
 ### Cited Findings
+
 - Stateright's checker builder pulls in multi-threading (`threads(n)`, `JobBroker`, `DashMap`/`DashSet`, `nohash-hasher`), an HTTP explorer (`tiny_http`, `serve()`), timeouts and visitors. Its dependencies include `ahash`, `dashmap`, `tiny_http`, `parking_lot`, `rand`, `serde_json`. — [SR src/checker.rs L58-L300](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/src/checker.rs); [SR Cargo.toml](https://github.com/stateright/stateright/blob/ab8c8be9341505e0f71edbe5dd88ed275bd976a4/Cargo.toml)
 - Shuttle's scheduler crate alone has 12 files: `random`, `pct`, `dfs`, `replay`, `round_robin`, `urw`, `annotation`, `uncontrolled_nondeterminism`, `check`, and more. The repository adds wrapper crates for tokio, dashmap, parking_lot and collections. The core trait is 26 lines. — [SH shuttle-schedulers/src/](https://github.com/awslabs/shuttle/tree/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-schedulers/src); [SH shuttle-engine/src/scheduler/mod.rs](https://github.com/awslabs/shuttle/blob/72bdbdb612c2311905c84bbc73d59f12a5b17e43/shuttle-engine/src/scheduler/mod.rs)
 - P's C# strategies directory holds Exhaustive (DFS), Probabilistic (Random, PCT, QLearning, ProbabilisticRandom), Feedback (PCT, POS, Random, ScenarioSteering, TimelineObserver), Liveness and Special (Combo, Replay): about 3,770 lines in total. — [P Src/PChecker/CheckerCore/SystematicTesting/Strategies](https://github.com/p-org/P/tree/260da928f67569ca7a8c0039a02d0bad7cde6096/Src/PChecker/CheckerCore/SystematicTesting/Strategies)
@@ -367,7 +418,7 @@ v1 needs concrete runs, bounded-exhaustive DFS and replay. Sampled search is abo
 
 Each rule gives its rationale, source, and how it is enforced.
 
-**State and step**
+#### State and step
 
 | # | Rule | Rationale | Source | Enforcement |
 |---|---|---|---|---|
@@ -376,7 +427,7 @@ Each rule gives its rationale, source, and how it is enforced.
 | G3 | The step function contains no pruning. Every legal choice appears in `enabled` and every enabled choice fires. Reductions (visited set, POR, preemption bound, symmetry) live only in strategies and each can be switched off. | Hidden pruning in the step changes semantics silently. | Stateright's no-op `None` with its own caveat (SR model.rs L418-L440); PEx create-first rule (ExplicitSearchScheduler.java L552-L568) | Proptest: for every generated config, every `c in enabled(cfg)` gives `Fired::Next` or `Fired::End`, never a panic. Reviewer. |
 | G4 | Every run outcome (model gap, deadlock, illegal write, zero-time cycle, invariant violated, normal end) is a value of `enum Outcome` returned by `fire`/`run`. `panic!`/`unwrap` is reserved for internal invariants. | Outcomes are data to report, minimize and replay. Unlike Shuttle and P, Mental runs no real code that throws. | P unhandled-event assert (StateMachine.cs L1043-L1070); Shuttle panic-based failure (replay.rs L82, L122) | Clippy `unwrap_used`, `expect_used`, `panic` = deny in core (allow with a comment for invariants); one corpus model per outcome kind |
 
-**Choices, schedules and replay**
+#### Choices, schedules and replay
 
 | # | Rule | Rationale | Source | Enforcement |
 |---|---|---|---|---|
@@ -385,7 +436,7 @@ Each rule gives its rationale, source, and how it is enforced.
 | G7 | Strategies are a single `Chooser` trait with one method (`choose(&Config, &[Choice]) -> Option<Choice>`) driving one `run` loop. `explore` is a separate function that owns its DFS stack. There are no separate bool, int or schedule choice methods. | One choice point, one stack. P's three parallel DFS stacks show the cost of splitting. | Shuttle `Scheduler` (scheduler/mod.rs L75-L100); Stateright `Chooser` (simulation.rs L22-L39); P DFSStrategy.cs L27-L49 | Reviewer; grep in CI that no other code path calls an RNG |
 | G8 | `replay` gives a verdict per choice: `matched`; `infeasible` (the named choice is not in `enabled`); `diverged` (the kind or position no longer lines up, or the run ends before or after the schedule). An optional continuation strategy takes over after the first non-match. | Mental §8.9. P's three named "not reproducible" cases map onto it. Replay-then-continue is P's suffix strategy. | P ReplayStrategy.cs L93-L107 and suffix fallback; Shuttle `allow_incomplete` (replay.rs) | Unit tests, one per verdict, in `replay/tests.rs`; insta snapshot of the report-jobs post-fix replay |
 
-**Search**
+#### Search
 
 | # | Rule | Rationale | Source | Enforcement |
 |---|---|---|---|---|
@@ -395,7 +446,7 @@ Each rule gives its rationale, source, and how it is enforced.
 | G12 | Fingerprints, if introduced, hash a canonical serialization with an algorithm whose output is specified and version-pinned (not ahash, not `DefaultHasher`). Keep ≥64 bits, report a collision bound as TLC does, and keep exact mode as a test oracle. | Portable across native and wasm and across versions. ahash says its output differs by machine. | SR lib.rs L371-L390; ahash README L22; TLC FP64 and ModelChecker.java L962-L972; PEx ComputeHash XOR (avoid) | Differential test exact vs fingerprint on the whole corpus; wasm test of identical fingerprints (wasm-bindgen-test or wasmtime) |
 | G13 | Sampled search uses one named PRNG (PCG or SplitMix64) seeded from the run file. The core never reads entropy; the CLI prints the seed it picked. | Reproducibility. Stateright carries a FIXME about `StdRng` instability. | SR simulation.rs L46-L48; SH pct.rs L50 | Clippy `disallowed-methods` (`rand::thread_rng`, `OsRng`, `getrandom`) in core; a test that the same seed gives byte-identical reports |
 
-**Determinism, minimization and reduction**
+#### Determinism, minimization and reduction
 
 | # | Rule | Rationale | Source | Enforcement |
 |---|---|---|---|---|
@@ -403,7 +454,7 @@ Each rule gives its rationale, source, and how it is enforced.
 | G15 | The witness minimizer is a delete-one-choice fixpoint over the schedule. Each candidate is re-checked by replay, where skipped choices fall back to the default non-preempting choice. It keeps candidates with the same outcome kind at the same node and returns the best found (proptest bail-out rule). Search order (fewest preemptions first) supplies a near-minimal witness to start from. | No precedent shrinker exists in the checkers; proptest's `VecValueTree` delete phase is the simplest proven loop. BFS shortest-first is the cheap half. | PT collection.rs L591-L650, runner.rs L769-L880; Stateright BFS shortest doc; TLC trace rebuilding | Proptest: output fails, is no longer than input, and is a fixpoint. Insta snapshot of the report-jobs minimal witness. |
 | G16 | POR is not in v1 unless report-jobs bounds turn out too slow. If added, it is sleep sets over static footprints and ships only with a differential test: same set of `(outcome kind, node)` with POR on and off on every corpus model plus proptest-generated tiny models, with both state counts pinned. | Only loom has DPOR, and it is coupled to its runtime. No project tests POR against full search, so Mental must. | loom execution.rs L134-L160, path.rs L336-L385, L493-L520; Stateright 2pc 8,832 vs 665 (examples/2pc.rs L183-L198); loom litmus outcome sets (tests/spec.rs) | CI differential test; cargo-mutants on the independence function |
 
-**Testing and scope**
+#### Testing and scope
 
 | # | Rule | Rationale | Source | Enforcement |
 |---|---|---|---|---|
@@ -414,6 +465,7 @@ Each rule gives its rationale, source, and how it is enforced.
 | G21 | The core must build for `wasm32-unknown-unknown` with no `std::fs`, `std::time`, `std::thread` or `std::env`. Bounds replace time limits; the CLI owns files, clocks and the env-var seed. | Spec §8 (no I/O, WebAssembly). Stateright, Shuttle and loom read env vars and wall clocks in their checkers (`timeout`, `LOOM_MAX_*`, `SHUTTLE_RANDOM_SEED`). | SR checker.rs `timeout`; LO model.rs L39-L120; SH pct.rs `seed_from_env` | CI job `cargo build -p mentalvm --target wasm32-unknown-unknown`; clippy `disallowed-methods` for `std::env::var`, `Instant::now`, `SystemTime::now` |
 
 ### Gaps
+
 - None of the projects carries a path condition, symbolic forking or lifecycle-machine checks on writes. Those parts of `mentalvm` have no code precedent here; the related precedents are the semantics report's (Coyote, Rebeca, BIP), which this note did not re-read in code.
 - The exact interplay of sleep sets with a budgeted visited set (G9 + G16) needs a design note before implementation; no studied code shows it.
 - I did not read the P C# `PCTStrategy` or TLC's liveness checking in detail; neither is needed for v1.

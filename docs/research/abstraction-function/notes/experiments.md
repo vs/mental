@@ -140,7 +140,6 @@ Ablations:
 
 The name-stability and partition-agreement figures come from a one-off computation in the session (flattening each sample's `abstract()` output over all bound-2 snapshots); they are not stored in `results/`.
 
-
 - **Coverage.** Every sample covered jobs, queues and workers, some also results and executions, with 30 to 50 atomic variables and 16 to 30 invariants. All 8 ran without error on every snapshot.
 - **Name stability.** The pairwise Jaccard overlap of variable names between samples has a median of 0.54 (minimum 0.16, maximum 0.79). The induced partitions agree better (pairwise V-measure: median 0.81, minimum 0.79).
 - **Agreement with the reference partition** (V-measure): Opus 0.61–0.78, Sonnet 0.79–0.80. Opus wrote longer functions (370–480 lines) with more implementation detail; Sonnet wrote 170–320 lines.

@@ -38,7 +38,8 @@ for v in v3.0 v2.0 v1.16.2; do ./pipeline.sh $PY src/rq-$v graphs/$v src/rq-v2.1
 # LLM answers: build prompts with afexp/llm.py build_prompt, run them through `claude -p`
 # (flags in notes/experiments.md), store the JSON answers in llm/use/
 $PY -I run.py evaluate --graphs graphs/v2.12 --out results/eval-v2.12.json --llm llm/use
-$PY -I run.py compare --base graphs/v2.12 --mutants graphs/mut --versions graphs/v3.0 graphs/v2.0 graphs/v1.16.2 --llm llm/use --out results/compare.json
+$PY -I run.py compare --base graphs/v2.12 --mutants graphs/mut \
+  --versions graphs/v3.0 graphs/v2.0 graphs/v1.16.2 --llm llm/use --out results/compare.json
 ```
 
 Exploration is deterministic: the clock is frozen, ids are derived from actor names, and normalised snapshots drop clock values, so the graphs are byte-stable across runs. The LLM answers are not; the eight answers used are kept in `results/llm-answers/`.

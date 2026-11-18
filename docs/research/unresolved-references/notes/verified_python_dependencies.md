@@ -7,11 +7,13 @@ Rendered equivalents: `pypa/packaging.python.org/.../specifications/X.rst` rende
 ## 1. Lockfile formats: exact fields, git sources, documented vs tool-internal, PEP 751 status and tool support
 
 ### Takeaway
+
 Only `pylock.toml` (PEP 751, Final, accepted 31-Mar-2025) is a specified, tool-neutral format; `uv.lock`, `poetry.lock`, `pdm.lock` are tool-internal and their field names can only be taken from source code and sample files. All four TOML formats and `direct_url.json` store the resolved commit for a git dependency. As of November 2026 uv, pip, PDM write `pylock.toml` (pip and PDM label it experimental), pip and uv read it, Poetry only exports it through a plugin.
 
 ### Cited Findings
 
-**pylock.toml (PEP 751)**
+#### pylock.toml (PEP 751)
+
 - CONFIRMED. PEP 751 header: `Status: Final`, `Created: 24-Jul-2024`, `Resolution: 31-Mar-2025`, `Replaces: 665`, with a banner pointing to the PyPA spec as canonical. — [PEP 751 source](https://github.com/python/peps/blob/main/peps/pep-0751.rst)
 - CONFIRMED. Spec history: "April 2025: Initial version, approved via PEP 751." and "March 2026: Clarify file name precedence for archives, sdists, and wheels." — [pylock.toml spec](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/pylock-toml.rst)
 - CONFIRMED. File name: "A lock file MUST be named `pylock.toml` or match the regular expression `r"^pylock\.([^.]+)\.toml$"`". — [pylock.toml spec](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/pylock-toml.rst)
@@ -25,7 +27,8 @@ Only `pylock.toml` (PEP 751, Final, accepted 31-Mar-2025) is a specified, tool-n
 - CONFIRMED. Dependency edges exist but are informational: "Tools MUST NOT use this information when doing installation; it is purely informational for auditing purposes." — [pylock.toml spec](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/pylock-toml.rst)
 - CONFIRMED. A package may appear several times: "Packages MAY be listed multiple times with varying data, but all packages to be installed MUST narrow down to a single entry at install time." — [pylock.toml spec](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/pylock-toml.rst)
 
-**Who writes / reads pylock.toml**
+#### Who writes / reads pylock.toml
+
 - CONFIRMED (uv writes and reads). "uv supports `pylock.toml` as an export target and in the `uv pip` CLI"; commands listed: `uv export -o pylock.toml`, `uv pip compile requirements.in -o pylock.toml`, `uv pip sync pylock.toml`, `uv pip install -r pylock.toml`. — [uv project layout](https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/layout.md)
 - CONFIRMED (uv does not use it as its project lock). "Some of uv's functionality cannot be expressed in the `pylock.toml` format; as such, uv will continue to use the `uv.lock` format within the project interface." — [uv project layout](https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/layout.md)
 - CONFIRMED (pip writes, experimental). pip 25.1 (2025-04-26): "Add a new, *experimental*, `pip lock` command, implementing PEP 751." The command still warns "pip lock is currently an experimental command." and defaults `--output` to `pylock.toml`. — [pip NEWS](https://github.com/pypa/pip/blob/main/NEWS.rst), [pip lock command source](https://github.com/pypa/pip/blob/main/src/pip/_internal/commands/lock.py)
@@ -35,42 +38,48 @@ Only `pylock.toml` (PEP 751, Final, accepted 31-Mar-2025) is a specified, tool-n
 - CONFIRMED (Poetry: export only, via plugin). Poetry 2.3.0 (2026-01-18): "Add support for exporting `pylock.toml` files with `poetry-plugin-export`". The plugin README lists `--format (-f)` with "`constraints.txt` and `pylock.toml` are supported." — [Poetry CHANGELOG](https://github.com/python-poetry/poetry/blob/main/CHANGELOG.md), [poetry-plugin-export README](https://github.com/python-poetry/poetry-plugin-export/blob/main/README.md)
 - NOT FOUND. No statement in Poetry's docs (`basic-usage.md`, `cli.md`, `configuration.md`, `dependency-specification.md`) that Poetry installs from or natively locks to `pylock.toml`; the word "pylock" does not occur in those four files.
 
-**uv.lock (tool-internal)**
+#### uv.lock (tool-internal)
+
 - CONFIRMED (tool-internal). "The `uv.lock` format is specific to uv and not usable by other tools." and "`uv.lock` is a human-readable TOML file but is managed by uv and should not be edited manually." — [uv project layout](https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/layout.md)
 - CONFIRMED (not stable; supported alternative exists). "If you want access to the information in a `uv.lock` or script lockfile, prefer this command's output: the lockfile format is not guaranteed to be stable." (about `uv workspace metadata`, which emits JSON). — [uv internals: workspace metadata](https://github.com/astral-sh/uv/blob/main/docs/reference/internals/metadata.md)
-- CONFIRMED (universal, committed). "`uv.lock` is a _universal_ or _cross-platform_ lockfile that captures the packages that would be installed across all possible Python markers" and "This file should be checked into version control". — [uv project layout](https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/layout.md)
+- CONFIRMED (universal, committed). "`uv.lock` is a *universal* or *cross-platform* lockfile that captures the packages that would be installed across all possible Python markers" and "This file should be checked into version control". — [uv project layout](https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/layout.md)
 - CONFIRMED (versioned schema). "The `uv.lock` file uses a versioned schema. The schema version is included in the `version` field of the lockfile." — [uv resolution docs](https://github.com/astral-sh/uv/blob/main/docs/concepts/resolution.md)
 - CONFIRMED (source kinds, from source code). The deserialisation enum `SourceWire` has exactly seven variants keyed `registry`, `git`, `url` (+ optional `subdirectory`), `path`, `directory`, `editable`, `virtual`; doc comments: "A registry or `--find-links` index", "A Git repository", "A direct HTTP(S) URL", "A path to a local source or built archive", "A path to a local directory", "...installed as editable", "...should not be built or installed". — [uv-lock/src/lock/mod.rs](https://github.com/astral-sh/uv/blob/main/crates/uv-lock/src/lock/mod.rs)
 - CONFIRMED (fields, from uv's own committed lock file). Top level: `version = 1`, `revision = 5`, `requires-python`, `resolution-markers = [...]`, `[options]`, `[manifest]`. Per `[[package]]`: `name`, `version`, `source = { registry = "https://pypi.org/simple" }`, `dependencies = [{ name = "idna" }, { name = "typing-extensions", marker = "python_full_version < '3.13'" }]`, `sdist = { url, hash = "sha256:...", size, upload-time }`, `wheels = [{ url, hash, size, upload-time }]`. — [uv's own uv.lock](https://github.com/astral-sh/uv/blob/main/uv.lock)
 - CONFIRMED (git commit stored). In ruff's committed `uv.lock`: `source = { git = "https://github.com/astral-sh/docstring-adder.git#a2c7f662beaa33867d6e9120bcb68858d571d882" }` and, with a requested rev, `source = { git = "https://github.com/hauntsaninja/mypy_primer?rev=4bec1e88...#4bec1e883f8f9900d8ccfd682a0b2ed7f34b7acd" }`. The resolved commit is the URL fragment; the parser has error variants `MissingSha` and `InvalidSha`, so a git source without a commit is rejected. — [ruff uv.lock](https://github.com/astral-sh/ruff/blob/main/uv.lock), [uv-lock/src/lock/mod.rs](https://github.com/astral-sh/uv/blob/main/crates/uv-lock/src/lock/mod.rs)
 - CONFIRMED. "if a Git dependency references the `main` branch, uv will prefer the locked commit SHA in an existing `uv.lock` file over the latest commit on the `main` branch, unless the `--upgrade` or `--upgrade-package` flags are used." — [uv locking and syncing](https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/sync.md)
 
-**poetry.lock (tool-internal)**
+#### poetry.lock (tool-internal)
+
 - CONFIRMED (fields, from Poetry's own committed lock, generated by Poetry 2.5.1). Header "This file is automatically @generated by Poetry 2.5.1 and should not be changed by hand." Per `[[package]]`: `name`, `version`, `description`, `optional`, `python-versions`, `groups = ["main"]`, `markers`, `files = [{file = "...", hash = "sha256:..."}]`, `[package.dependencies]` (name → constraint string or `{version = ">=4.16.0", markers = "..."}`), `[package.extras]`. Footer `[metadata]`: `lock-version = "2.1"`, `python-versions`, `content-hash`. — [Poetry's own poetry.lock](https://github.com/python-poetry/poetry/blob/main/poetry.lock)
 - CONFIRMED (source table and git commit, from source code). The locker writes `[package.source]` with `type`, `url`, `reference`, `resolved_reference`, `subdirectory`; the reader treats `type` values `git`, `directory`, `url`, `file` specially; for `directory` and `git` it also writes `develop`. Paths for `file`/`directory` are stored "relative to the root project". — [poetry/packages/locker.py](https://github.com/python-poetry/poetry/blob/main/src/poetry/packages/locker.py)
 - CONFIRMED (commit advice). "You should commit the `poetry.lock` file to your project repo so that all people working on the project are locked to the same versions of dependencies". — [Poetry basic usage](https://github.com/python-poetry/poetry/blob/main/docs/basic-usage.md)
 - NOT FOUND. No page in Poetry's docs that specifies the `poetry.lock` schema; the field list above comes from the sample file and `locker.py`.
 
-**pdm.lock (tool-internal)**
+#### pdm.lock (tool-internal)
+
 - CONFIRMED (documented content, at prose level). The lock file contains "All packages and their versions", "The file names and hashes of the packages", "Optionally, the origin URLs to download the packages", "The dependencies and markers of each package". — [PDM lock file docs](https://github.com/pdm-project/pdm/blob/main/docs/usage/lockfile.md)
 - CONFIRMED (fields, from PDM's own committed lock). `[metadata]`: `groups`, `strategy = ["inherit_metadata"]`, `lock_version = "4.5.1"`, `content_hash = "sha256:..."`, `[[metadata.targets]]` with `requires_python`. Per `[[package]]`: `name`, `version`, `requires_python`, `summary`, `groups`, `dependencies = ["idna>=2.8", "typing-extensions>=4.5; python_version < \"3.13\""]` (PEP 508 strings), `files = [{file, hash}]`. — [PDM's own pdm.lock](https://github.com/pdm-project/pdm/blob/main/pdm.lock)
 - CONFIRMED (git commit, from source code). `Candidate.as_lockfile_entry` emits `name`, `version`, `extras`, `requires_python`, `editable`, `subdirectory`; for VCS requirements it adds `<vcs>: <repo>` (for example `git = "..."`), `ref`, and `revision=self.get_revision()` "if not self.req.editable"; otherwise `path` (local) or `url`. So an editable VCS dependency has no `revision` in `pdm.lock`. — [pdm/models/candidates.py](https://github.com/pdm-project/pdm/blob/main/src/pdm/models/candidates.py)
 - CONFIRMED. "By default, PDM only stores the filenames of the packages in the lockfile"; URLs only with `--strategy static_urls`. — [PDM lock file docs](https://github.com/pdm-project/pdm/blob/main/docs/usage/lockfile.md)
 - CONFIRMED (not always committed). "if your project is a library and you want CI to mimic the installation on user site ... then do not submit the `pdm.lock` file." — [PDM lock file docs](https://github.com/pdm-project/pdm/blob/main/docs/usage/lockfile.md)
 
-**Pipfile.lock**
+#### Pipfile.lock
+
 - CONFIRMED (documented structure, JSON). "`Pipfile.lock` | Records exact versions and hashes of all resolved dependencies | Pipenv automatically | JSON". Documented shape: `_meta` with `hash.sha256`, `pipfile-spec: 6`, `requires.python_version`, `sources[] {name, url, verify_ssl}`; then one object per category (`default`, `develop`, custom names) mapping package name → `{hashes: ["sha256:..."], index, version: "==1.2.3"}`. — [pipenv Pipfile docs](https://github.com/pypa/pipenv/blob/main/docs/pipfile.md)
 - CONFIRMED (markers, no edges; from pipenv's own lock). Entries carry `"markers": "python_version >= '3.11'"`; there is no dependency-edge field in the entries (the file is a flat name → pin map). — [pipenv's own Pipfile.lock](https://github.com/pypa/pipenv/blob/main/Pipfile.lock)
 - CONFIRMED. "Both files should be committed to version control to ensure consistent environments across development and deployment." — [pipenv Pipfile docs](https://github.com/pypa/pipenv/blob/main/docs/pipfile.md)
 - NOT FOUND. How `Pipfile.lock` records a git dependency (whether the resolved commit goes in `ref`). The docs I read show only the `Pipfile` side: `requests = {editable = true, git = "https://github.com/requests/requests.git", ref = "v2.31.0"}` ([pipenv specifiers](https://github.com/pypa/pipenv/blob/main/docs/specifiers.md)); pipenv's own lock has no VCS entry to inspect.
 
 ### Inferences
+
 - A reader that wants one code path should parse `pylock.toml` by the spec and treat the other three as best-effort, versioned-by-`lock-version`/`version` parsers, failing clearly on an unknown schema version (uv states its lock format is not stable).
 - `pylock.toml` cannot always give a version: entries from `vcs` or `directory` sources must omit `version`. The pin for those is the commit id or the path, and the version has to come from the checked-out project's metadata.
 - Dependency edges differ in kind: uv stores resolved edges (`{name, marker}` pointing at another locked package), Poetry and PDM store the package's declared requirement strings, `Pipfile.lock` stores none, and `pylock.toml` edges are optional and informational.
 - `uv export --format pylock.toml` and `uv workspace metadata` are officially supported ways to get uv's resolution, but both require running the `uv` binary (not repository code).
 
 ### Gaps
+
 - The lock file of pip-tools is a `requirements.txt`; see question 2.
 - `Pipfile.lock` VCS entry format not confirmed from a primary source.
 - I did not verify which exact uv release first supported `pylock.toml`, nor whether Poetry has a roadmap to adopt it natively.
@@ -78,9 +87,11 @@ Only `pylock.toml` (PEP 751, Final, accepted 31-Mar-2025) is a specified, tool-n
 ## 2. requirements.txt: what the format allows; pip freeze, pip-compile, uv pip compile output
 
 ### Takeaway
+
 The requirements file format is pip's own, documented as "only intended for consumption by pip", and may contain unpinned names, ranges, includes, constraints, editables, VCS URLs, direct URLs, markers, per-line `--hash` and index options, so a `requirements.txt` is only a pin set when every line is `==` or a commit-pinned URL. `pip freeze` writes VCS installs as `name @ vcs+url@<commit_id>` taken from `direct_url.json`.
 
 ### Cited Findings
+
 - CONFIRMED (not an interchange format). "the full syntax, as described here, is only intended for consumption by pip, and other tools should take that into account before using it for their own purposes." — [pip requirements file format](https://github.com/pypa/pip/blob/main/docs/html/reference/requirements-file-format.md)
 - CONFIRMED (line forms). "The following forms are supported: `[[--option]...]`, `<requirement specifier>`, `<archive url/path>`, `[-e] <local project path>`, `[-e] <vcs project url>`". — [pip requirements file format](https://github.com/pypa/pip/blob/main/docs/html/reference/requirements-file-format.md)
 - CONFIRMED (unpinned names, ranges, markers, extras, direct URL in the doc's own example). `pytest`; `docopt == 0.6.1`; `requests [security] >= 2.8.1, == 2.8.* ; python_version < "2.7"`; `urllib3 @ https://github.com/urllib3/urllib3/archive/refs/tags/1.26.8.zip`; `-r other-requirements.txt`; `-c constraints.txt`; `./downloads/numpy-1.9.2-cp34-none-win32.whl`. — [pip requirements file format](https://github.com/pypa/pip/blob/main/docs/html/reference/requirements-file-format.md)
@@ -101,21 +112,25 @@ The requirements file format is pip's own, documented as "only intended for cons
 - CONFIRMED (the stable machine-readable alternative from pip). `pip install --dry-run --report` JSON has `version` ("the string `1`"), `pip_version`, `install[]` items with `metadata`, `is_direct`, `is_yanked`, `download_info` (direct URL data structure, so `vcs_info.commit_id` for VCS), `requested`, `requested_extras`, and `environment`. "it is *not* a PyPA interoperability standard". — [pip installation report](https://github.com/pypa/pip/blob/main/docs/html/reference/installation-report.md)
 
 ### Inferences
+
 - A static reader can classify each requirements line as pinned (`==X`, or VCS URL whose ref is a 40-hex commit, or archive URL with a hash) or unpinned (everything else); `-r`/`-c` must be followed, and `${VAR}` and index options make a file environment-dependent.
 - A file whose header matches the pip-compile or uv autogenerated comment is a resolver output for one environment (or for uv with `--universal`, which I did not verify here) and is the closest thing to a lock in the requirements format.
 
 ### Gaps
+
 - VCS handling in compiled outputs (above).
 - I did not read the dependency-specifiers (PEP 508) spec page itself in this pass; marker and direct-reference grammar are cited only through pip's pages.
 
 ## 3. An installed environment as evidence
 
 ### Takeaway
+
 The standard guarantees only `{name}-{version}.dist-info/METADATA`; `RECORD`, `INSTALLER`, `entry_points.txt`, `direct_url.json` are optional, `REQUESTED` has been demoted to a tool-specific extension, and `top_level.txt` is a setuptools egg-era file that is in no PyPA specification. Import name → distribution can be computed without running Python by replicating `importlib.metadata.packages_distributions` over `top_level.txt` and `RECORD`. uv and PDM put the environment in `<project>/.venv` by default; Poetry, pipenv and conda do not.
 
 ### Cited Findings
 
-**dist-info layout**
+#### dist-info layout
+
 - CONFIRMED. "This directory is named as `{name}-{version}.dist-info`, with `name` and `version` fields corresponding to Core metadata. Both fields must be normalized ... and replace dash (`-`) characters with underscore (`_`) characters". — [Recording installed projects](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/recording-installed-packages.rst)
 - CONFIRMED (must tolerate unnormalised names). "Tools consuming `.dist-info` directories should expect those fields to be unnormalized, and treat them as equivalent to their normalized counterparts." — [Recording installed projects](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/recording-installed-packages.rst)
 - CONFIRMED. "The `METADATA` file is mandatory. All other files may be omitted at the installing tool's discretion. Additional installer-specific files may be present." Listed files: `METADATA`, `RECORD`, `INSTALLER`, `entry_points.txt`, `direct_url.json`; directories `licenses/`, `sboms/`. — [Recording installed projects](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/recording-installed-packages.rst)
@@ -127,6 +142,7 @@ The standard guarantees only `{name}-{version}.dist-info/METADATA`; `RECORD`, `I
 - CONFIRMED (`direct_url.json` presence rule). "This file MUST be created by installers when installing a distribution from a requirement specifying a direct URL reference (including a VCS URL). This file MUST NOT be created when installing a distribution from an other type of requirement (i.e. name plus version specifier)." — [Recording installed projects](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/recording-installed-packages.rst)
 
 **direct_url.json (PEP 610, Final)**
+
 - CONFIRMED. Top level: `url` plus exactly one of `vcs_info`, `archive_info`, `dir_info`; optional top-level `subdirectory`. — [Direct URL data structure](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/direct-url-data-structure.rst)
 - CONFIRMED (`vcs_info`). `vcs` ("one of `git`, `hg`, `bzr`, `svn`"); `requested_revision` "MAY be present ... MUST NOT exist when the user did not select a specific revision"; "A `commit_id` key (type `string`) MUST be present, containing the exact commit/revision number that was/is to be installed." For Git: "A commit hash (40 hexadecimal characters sha1)." — [Direct URL data structure](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/direct-url-data-structure.rst)
 - CONFIRMED (`archive_info`). "A `hashes` key SHOULD be present as a dictionary mapping a hash name to a hex encoded digest of the file." A deprecated `hash` key (`<hash-algorithm>=<expected-hash>`) may also appear. `hashes` was added January 2023. — [Direct URL data structure](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/direct-url-data-structure.rst)
@@ -134,23 +150,27 @@ The standard guarantees only `{name}-{version}.dist-info/METADATA`; `RECORD`, `I
 - CONFIRMED (editable installs must write it). PEP 660: "Frontends must create a `direct_url.json` file in the `.dist-info` directory of the installed distribution ... the `dir_info` value must be `{'editable': true}`." — [PEP 660 source](https://github.com/python/peps/blob/main/peps/pep-0660.rst)
 
 **top_level.txt and import-name → distribution**
+
 - REFUTED (that `top_level.txt` is standardized). It is not mentioned in the Recording-installed-projects spec. It is documented only in setuptools' deprecated egg-format page: "This file is a list of the top-level module or package names provided by the project, one Python identifier per line." — [setuptools: Python eggs (deprecated docs)](https://github.com/pypa/setuptools/blob/main/docs/deprecated/python_eggs.rst)
 - CONFIRMED (the stdlib algorithm, from source). `packages_distributions()` does `for pkg in _top_level_declared(dist) or _top_level_inferred(dist): pkg_to_dist[pkg].append(dist.metadata['Name'])`; `_top_level_declared` is `(dist.read_text('top_level.txt') or '').split()`; `_top_level_inferred` maps every entry of `dist.files` (i.e. `RECORD`) through `_get_toplevel_name` (first path component, or the module name of a top-level file) and keeps names without a `.`. Return type is `Mapping[str, list[str]]`: one import name can map to several distributions. — [CPython importlib/metadata/__init__.py](https://github.com/python/cpython/blob/main/Lib/importlib/metadata/__init__.py)
 - CONFIRMED (uv exposes the same mapping). `uv workspace metadata`: "`modules` maps importable module names to objects whose `owners` array contains `package_id` references to `environment.packages`." — [uv internals: workspace metadata](https://github.com/astral-sh/uv/blob/main/docs/reference/internals/metadata.md)
 
-**pyvenv.cfg**
+#### pyvenv.cfg
+
 - CONFIRMED. `venv` "places a `pyvenv.cfg` file in it with a `home` key pointing to the Python installation from which the command was run" and creates `lib/pythonX.Y/site-packages` ("on Windows, this is `Lib\site-packages`"). "The created `pyvenv.cfg` file also includes the `include-system-site-packages` key". — [CPython venv docs](https://github.com/python/cpython/blob/main/Doc/library/venv.rst)
 - CONFIRMED (keys written by stdlib venv, from source). `home = ...`, `include-system-site-packages = true|false`, `version = %d.%d.%d`, optional `prompt = ...`, `executable = ...`, `command = <python> -m venv <args>`. — [CPython venv/__init__.py](https://github.com/python/cpython/blob/main/Lib/venv/__init__.py)
 - CONFIRMED (spec-level minimum). "a Python virtual environment in its simplest form consists of nothing more than a copy or symlink of the Python binary accompanied by a `site-packages` directory and a `pyvenv.cfg` file with a `home` key". — [Python virtual environments spec](https://github.com/pypa/packaging.python.org/blob/main/source/specifications/virtual-environments.rst)
 
-**Editable installs**
+#### Editable installs
+
 - CONFIRMED (`.pth` semantics). "`{name}.pth` contains additional items (one per line) to be appended to `sys.path`." "For backward compatibility, lines starting with `import` (followed by space or tab) are executed with `exec`." — [CPython site docs](https://github.com/python/cpython/blob/main/Doc/library/site.rst)
 - CONFIRMED (changing in 3.15; main-branch docs). "`.pth` file lines starting with `import` are deprecated" (3.15), with new `{name}.start` files for startup entry points; "`import` lines ... will be silently ignored in Python 3.18 and 3.19." — [CPython site docs](https://github.com/python/cpython/blob/main/Doc/library/site.rst)
 - CONFIRMED (setuptools uses either technique, no guarantee). "setuptools will try to create a special `.pth file` in the target directory ... that extends the `PYTHONPATH` or install a custom import hook." and "`Setuptools` offers **no guarantee** of which technique will be used to perform an editable installation." — [setuptools development mode](https://github.com/pypa/setuptools/blob/main/docs/userguide/development_mode.rst)
 - CONFIRMED (file names, from source). setuptools writes `__editable__.{name}.pth` and a finder module named from `f"__editable__.{self.name}.finder"`; strict mode uses a `build/__editable__.*` link farm added via `.pth`. — [setuptools editable_wheel.py](https://github.com/pypa/setuptools/blob/main/setuptools/command/editable_wheel.py), [setuptools development mode](https://github.com/pypa/setuptools/blob/main/docs/userguide/development_mode.rst)
 - CONFIRMED (static tools cannot follow hooks). "because resolving module locations using an import hook requires executing Python code, they are not usable by Pyright and other static analysis tools." "Notably, setuptools uses import hooks by default." "The `uv_build` backend always uses path-based `.pth` files." Hatchling and PDM "uses path-based `.pth` files by default." — [Pyright import resolution](https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md)
 
-**Default environment locations**
+#### Default environment locations
+
 - CONFIRMED (uv: in project). "uv also manages a persistent environment with the project and its dependencies in a `.venv` directory next to the `pyproject.toml`. By default, it is stored inside the project to make it easy for editors to find". Overrides: `UV_PROJECT_ENVIRONMENT`, `--active`; a preview feature `centralized-project-envs` moves it to the cache and leaves `.venv` as a link. — [uv project layout](https://github.com/astral-sh/uv/blob/main/docs/concepts/projects/layout.md)
 - CONFIRMED (PDM: in project). "PDM will create a virtualenv in `<project_root>/.venv`"; "You can disable the in-project virtualenv creation by `pdm config venv.in_project false`"; auto-detected names: "`venv`, `env`, `.venv` directories in the project root". — [PDM venv docs](https://github.com/pdm-project/pdm/blob/main/docs/usage/venv.md)
 - CONFIRMED (Poetry: not in project by default). "If not set explicitly, `poetry` by default will create a virtual environment under `{cache-dir}/virtualenvs` or use the `{project-dir}/.venv` directory if one already exists." `cache-dir` defaults: macOS `~/Library/Caches/pypoetry`, Windows `C:\Users\<username>\AppData\Local\pypoetry\Cache`, Unix `~/.cache/pypoetry`. Path is printed by `poetry env info --path`. — [Poetry configuration](https://github.com/python-poetry/poetry/blob/main/docs/configuration.md)
@@ -158,6 +178,7 @@ The standard guarantees only `{name}-{version}.dist-info/METADATA`; `RECORD`, `I
 - CONFIRMED (conda: named envs under the install's `envs` folder). `conda create --name myenv` "creates the myenv environment in `/envs/`"; example listing `/home/username/miniconda/envs/myenv`; `--prefix ./envs` puts one elsewhere, after which "Conda can no longer find your environment with the `--name` flag." — [conda manage environments](https://github.com/conda/conda/blob/main/docs/source/user-guide/tasks/manage-environments.rst)
 
 ### Inferences
+
 - Reading order for a static tool: find `pyvenv.cfg` → `lib/python*/site-packages` (or `Lib\site-packages`) → every `*.dist-info/METADATA` for name and version → `direct_url.json` for source kind and commit → `top_level.txt` else `RECORD` for import names. Each step is file reads only.
 - An installed environment gives exact versions for one platform and one Python version, and for a git install gives the commit (`vcs_info.commit_id`), which a `requirements.txt` with a branch ref does not.
 - `REQUESTED` and `INSTALLER` are hints only: direct vs transitive cannot be relied on from the environment.
@@ -165,6 +186,7 @@ The standard guarantees only `{name}-{version}.dist-info/METADATA`; `RECORD`, `I
 - For Poetry and pipenv the environment path depends on a hash and on user configuration, so it cannot be derived from the repository alone; only a pre-existing `<project>/.venv` is discoverable statically.
 
 ### Gaps
+
 - conda environments record conda packages in `<prefix>/conda-meta/*.json`; I saw only an incidental mention of `conda-meta` and did not verify that format.
 - The entry-points spec file was downloaded but I did not extract quotes from it; `entry_points.txt` is confirmed only as an optional file whose "detailed specification is at" the entry-points page.
 - I did not verify what keys uv writes to `pyvenv.cfg`.
@@ -173,11 +195,13 @@ The standard guarantees only `{name}-{version}.dist-info/METADATA`; `RECORD`, `I
 ## 4. Type surface: PEP 561, typeshed, Pyright, mypy
 
 ### Takeaway
+
 PEP 561 is Final and its living text is the typing spec's "Distributing type information" chapter, which now lists six resolution steps (the original PEP lists five). typeshed publishes third-party stubs as `types-<distribution>` whose version prefix tracks the runtime version, and it cannot hold stubs for more than one version of a library. Pyright types what it cannot infer as `Unknown`; mypy types a missing or unfollowed module as `Any`.
 
 ### Cited Findings
 
-**PEP 561 / typing spec**
+#### PEP 561 / typing spec
+
 - CONFIRMED. PEP 561 `Status: Final`, `Python-Version: 3.7`, with a banner pointing to the typing spec as canonical. — [PEP 561 source](https://github.com/python/peps/blob/main/peps/pep-0561.rst)
 - CONFIRMED (`py.typed`). "Package maintainers who wish to support type checking of their code MUST add a marker file named `py.typed` to their package supporting typing. This marker applies recursively". — [typing spec: distributing](https://github.com/python/typing/blob/main/docs/spec/distributing.rst)
 - CONFIRMED (stub-only packages). "The name of the stub package MUST follow the scheme `foopkg-stubs` for type stubs for the package named `foopkg`." And: "The name of the distribution SHOULD NOT be `types-*`, since this is conventionally used for stub-only packages provided by typeshed." — [typing spec: distributing](https://github.com/python/typing/blob/main/docs/spec/distributing.rst)
@@ -189,7 +213,8 @@ PEP 561 is Final and its living text is the typing spec's "Distributing type inf
 - CONFIRMED (public surface rules). "Symbols whose names begin with an underscore (but are not dunder names) are considered private." "Imported symbols are considered private by default." `__all__` "overrides all other rules above"; re-export forms are `import X as X`, `from Y import X as X`, `from Y import *`. — [typing spec: distributing](https://github.com/python/typing/blob/main/docs/spec/distributing.rst)
 - CONFIRMED (version targeting of stub packages is optional). "stub-only distributions MAY indicate which version(s) of the runtime package are targeted by indicating the runtime distribution's version(s) through normal dependency data." — [typing spec: distributing](https://github.com/python/typing/blob/main/docs/spec/distributing.rst)
 
-**typeshed**
+#### typeshed
+
 - CONFIRMED (layout). "Stubs for third-party packages go into the `stubs` directory. Each subdirectory there represents a PyPI distribution, and contains the following: `METADATA.toml`, describing the package", plus `*.pyi` files. — [typeshed CONTRIBUTING](https://github.com/python/typeshed/blob/main/CONTRIBUTING.md)
 - CONFIRMED (`types-<dist>` naming). `stub-distribution` "(optional): Distribution name to be uploaded to PyPI. This defaults to `types-<distribution>` and should only be set in special cases." — [typeshed CONTRIBUTING](https://github.com/python/typeshed/blob/main/CONTRIBUTING.md)
 - CONFIRMED (`METADATA.toml` keys). `version`, `dependencies`, `optional-dependencies`, `extra-description`, `stub-distribution`, `upstream-repository`, `obsolete-since`, `no-longer-updated` (list continues past where I read). Example read: `stubs/PyYAML/METADATA.toml` has `version = "6.0.*"`. — [typeshed CONTRIBUTING](https://github.com/python/typeshed/blob/main/CONTRIBUTING.md), [stubs/PyYAML/METADATA.toml](https://github.com/python/typeshed/blob/main/stubs/PyYAML/METADATA.toml)
@@ -200,7 +225,8 @@ PEP 561 is Final and its living text is the typing spec's "Distributing type inf
 - CONFIRMED (stdlib `VERSIONS`). "Lines contain the name of a module, followed by a colon, a space, and a version range (for example: `symbol: 3.0-3.9`)." "If a submodule is not listed separately, it has the same lifetime as its parent module." — [typeshed stdlib/VERSIONS](https://github.com/python/typeshed/blob/main/stdlib/VERSIONS)
 - CONFIRMED (supported Python range, bundling). "Typeshed supports Python versions 3.10 to 3.14." and "a copy of the standard library part of typeshed is bundled with type checkers." Stub packages "are automatically released (up to once a day)". — [typeshed README](https://github.com/python/typeshed/blob/main/README.md)
 
-**Pyright**
+#### Pyright
+
 - CONFIRMED (resolution order, absolute imports). 1 `stubPath`; 2 "code within the workspace" (root, `extraPaths`, local `src`); 3 "stubs or inlined types found within installed packages" (stub package → inline `.pyi` → `py.typed` inline annotations → library `.py` if `useLibraryCodeForTypes`); 4 "a **stdlib typeshed stub**"; 5 "a **third-party typeshed** stub"; 6 the importing file's directory and its parents. — [Pyright import resolution](https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md)
 - CONFIRMED (Pyright differs from the typing spec order: stdlib typeshed comes after site-packages). Same source, steps 3 and 4 above. — [Pyright import resolution](https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md)
 - CONFIRMED (Pyright may execute Python to find search paths). "If no site-packages directory can be found, Pyright attempts to run the configured Python interpreter and ask it for its search paths." — [Pyright import resolution](https://github.com/microsoft/pyright/blob/main/docs/import-resolution.md)
@@ -213,7 +239,8 @@ PEP 561 is Final and its living text is the typing spec's "Distributing type inf
 - CONFIRMED (scope and reporting of `--verifytypes`). It is "for a "py.typed" package"; "Private symbols are exempt"; `--verbose` lists all symbols; "can be combined with `--outputjson`"; `--ignoreexternal` ignores "incomplete types that are imported from other external packages". CLI table: "`--verifytypes <IMPORT>` | Verify completeness of types in py.typed package". — [Pyright typed libraries](https://github.com/microsoft/pyright/blob/main/docs/typed-libraries.md), [Pyright command line](https://github.com/microsoft/pyright/blob/main/docs/command-line.md)
 - CONFIRMED (what "known" means). For functions: "All input parameters have type annotations that refer to known types"; "The return parameter is annotated and refers to a known type". For classes: all visible class variables, instance variables and methods "are annotated and refer to known types". — [Pyright typed libraries](https://github.com/microsoft/pyright/blob/main/docs/typed-libraries.md)
 
-**mypy**
+#### mypy
+
 - CONFIRMED (missing import → `Any`). Suppressing "will ... make mypy stop reporting an error on the line containing the import: the imported module will continue to be of type `Any`, and mypy may not catch errors in its use." — [mypy running_mypy](https://github.com/python/mypy/blob/master/docs/source/running_mypy.rst)
 - CONFIRMED (`--ignore-missing-imports`). "This flag makes mypy ignore all missing imports. It is equivalent to adding `# type: ignore` comments to all unresolved imports within your codebase." It "does *not* suppress errors about missing names in successfully resolved modules." — [mypy command line](https://github.com/python/mypy/blob/master/docs/source/command_line.rst)
 - CONFIRMED (`follow_imports`). Four values; `normal` is the default; "`skip` will *not* follow imports and instead will silently replace the module (and *anything imported from it*) with an object of type `Any`"; `error` "behaves in the same way as `skip` but ... will flag the import as an error". — [mypy running_mypy](https://github.com/python/mypy/blob/master/docs/source/running_mypy.rst)
@@ -226,12 +253,14 @@ PEP 561 is Final and its living text is the typing spec's "Distributing type inf
 - CONFIRMED (`--linecount-report`). Docs: "a text file report documenting the functions and lines that are typed and untyped within your codebase." Source: per module `(imputed_annotated_lines, physical_lines, annotated_funcs, total_funcs)` where `imputed_annotated_lines = physical_lines * annotated_funcs // total_funcs`; written to `linecount.txt`. The line figure is an estimate from the function ratio, not a per-line measurement. — [mypy command line](https://github.com/python/mypy/blob/master/docs/source/command_line.rst), [mypy report.py](https://github.com/python/mypy/blob/master/mypy/report.py)
 
 ### Inferences
+
 - Lookup for a dependency's surface, statically, in spec order: `<pkg>-stubs/` in site-packages → `.pyi` next to the package → `.py` if `py.typed` present → vendored typeshed `stubs/<dist>/`. Whether to read `.py` without `py.typed` is a tool choice (Pyright: yes by default; mypy: no by default).
 - A typeshed stub applies to one runtime version line (`METADATA.toml` `version`); for a pinned dependency at a different version, the matching `types-<dist>` release must be chosen by version prefix, and the newest typeshed checkout may be wrong for it.
 - Mypy's "Unimported" Any category and Pyright's `Unknown` are existing, documented names for "type lost because a library could not be resolved"; they are precedents for how `mentalc` could label such gaps.
 - The mapping from stub directory to import names is by contained packages, not by `types-` name: `stubs/PyYAML/` contains the `yaml` package.
 
 ### Gaps
+
 - Pyright's exact typing of an unresolved import (above).
 - I did not read mypy's `config_file.rst` entries for `ignore_missing_imports` / `follow_imports` separately; the cited text is from `running_mypy.rst` and `command_line.rst`.
 - Remaining `METADATA.toml` keys after `no-longer-updated` (for example `partial-stub`, `requires-python`, `[tool.stubtest]`) were not read in full.
@@ -239,16 +268,18 @@ PEP 561 is Final and its living text is the typing spec's "Distributing type inf
 ## 5. Code execution during resolution
 
 ### Takeaway
+
 Every resolver studied will build a source distribution (run `setup.py` or a PEP 517 backend) when metadata is not otherwise available; uv and pip say so in their docs. The documented ways to prevent it are pip's `--only-binary :all:`, uv's `--no-build` (alias of `--only-binary :all:` in the pip interface), uv's `tool.uv.dependency-metadata`, and index-served metadata (PEP 658). Local directories, VCS sources and editables are still built even with those flags.
 
 ### Cited Findings
+
 - CONFIRMED (pip builds to get dependencies). "in the case of source distributions, the situation is even worse as the project must be built after being downloaded in order to determine the dependencies." — [pip: more on dependency resolution](https://github.com/pypa/pip/blob/main/docs/html/topics/more-dependency-resolution.md)
 - CONFIRMED (pip, local trees and explicit sdists). "For local directories, or explicitly specified source distributions (sdists), pip determines project metadata using the project's build backend. For sdists located via an index, the filename is parsed for the name and project version". — [pip install docs](https://github.com/pypa/pip/blob/main/docs/html/cli/pip_install.rst)
 - CONFIRMED (pip, before resolution). "for unpackaged source trees, pip needs to call the build backend to ask for that data. This is done before resolution proper starts." — [pip: more on dependency resolution](https://github.com/pypa/pip/blob/main/docs/html/topics/more-dependency-resolution.md)
 - CONFIRMED (pip metadata hook). "If PEP 517's `prepare_metadata_for_build_wheel` hook is provided by the build backend, that will be used to generate the packages' metadata. Otherwise, a wheel will be generated ... and the metadata contained within such a wheel will be used." — [pip build system interface](https://github.com/pypa/pip/blob/main/docs/html/reference/build-system.md)
 - CONFIRMED (pip default is unsafe). "By default, pip does not perform any checks to protect against remote tampering and involves running arbitrary code from distributions." Mitigation listed: "Disallow source distributions, by passing `--only-binary :all:`". — [pip secure installs](https://github.com/pypa/pip/blob/main/docs/html/topics/secure-installs.md)
 - CONFIRMED (`--only-binary` help text). "Do not use source packages. ... Accepts either ":all:" to disable all source packages ... Packages without binary distributions will fail to install when this option is used on them." — [pip cmdoptions.py](https://github.com/pypa/pip/blob/main/src/pip/_internal/cli/cmdoptions.py)
-- CONFIRMED (`--only-binary` gap for direct URLs and editables). "when a dependency is provided as a direct URL ..., pip does _not_ enforce `--only-binary`, and will build source distributions for all such packages." and "Both pip and uv allow editable requirements to be built and installed even when `--only-binary` is provided." — [uv pip compatibility](https://github.com/astral-sh/uv/blob/main/docs/pip/compatibility.md)
+- CONFIRMED (`--only-binary` gap for direct URLs and editables). "when a dependency is provided as a direct URL ..., pip does *not* enforce `--only-binary`, and will build source distributions for all such packages." and "Both pip and uv allow editable requirements to be built and installed even when `--only-binary` is provided." — [uv pip compatibility](https://github.com/astral-sh/uv/blob/main/docs/pip/compatibility.md)
 - CONFIRMED (`--dry-run` / `--report`). `--dry-run`: "Don't actually install anything, just print what would be. Can be used in combination with --ignore-installed to 'resolve' the requirements." `--report`: "Generate a JSON file describing what pip did to install the provided requirements." Neither help text says builds are skipped. — [pip install command source](https://github.com/pypa/pip/blob/main/src/pip/_internal/commands/install.py)
 - CONFIRMED (`pip lock` / `--dry-run` use PEP 658 when present). pip 25.3 (2025-10-24): "When PEP 658 metadata is available, full distribution files are no longer downloaded when using `pip lock` or `pip install --dry-run`." — [pip NEWS](https://github.com/pypa/pip/blob/main/NEWS.rst)
 - CONFIRMED (`pip download`). "`pip download` does the same resolution and downloading as `pip install`, but instead of installing the dependencies, it collects the downloaded distributions into the directory provided". — [pip download docs](https://github.com/pypa/pip/blob/main/docs/html/cli/pip_download.rst)
@@ -257,7 +288,7 @@ Every resolver studied will build a source distribution (run `setup.py` or a PEP
 - CONFIRMED (uv `dependency-metadata`). "The `tool.uv.dependency-metadata` table can be used to provide static metadata for such dependencies upfront, thereby allowing uv to skip the build step and use the provided metadata instead." Fields: `name`, `version`, `requires-dist`, `requires-python`, `provides-extra`. — [uv resolution docs](https://github.com/astral-sh/uv/blob/main/docs/concepts/resolution.md), [uv settings.rs](https://github.com/astral-sh/uv/blob/main/crates/uv-settings/src/settings.rs)
 - CONFIRMED (uv `no-build`, project interface). "Don't build source distributions. When enabled, uv will reuse cached wheels from previously built source distributions, but operations that require building a source distribution will exit with an error." Exceptions: "First-party packages, such as projects in the workspace, will still be built. uv will also still build editable requirements, and their build backends may run arbitrary Python code." — [uv settings.rs](https://github.com/astral-sh/uv/blob/main/crates/uv-settings/src/settings.rs)
 - CONFIRMED (uv `no-build`, pip interface). Same description, ending "Alias for `--only-binary :all:`." A per-package form `no-build-package` exists. — [uv settings.rs](https://github.com/astral-sh/uv/blob/main/crates/uv-settings/src/settings.rs)
-- CONFIRMED (uv, name unknown case). "uv _will_ build the source distribution at the given URL if it cannot infer the package name ahead of time". — [uv pip compatibility](https://github.com/astral-sh/uv/blob/main/docs/pip/compatibility.md)
+- CONFIRMED (uv, name unknown case). "uv *will* build the source distribution at the given URL if it cannot infer the package name ahead of time". — [uv pip compatibility](https://github.com/astral-sh/uv/blob/main/docs/pip/compatibility.md)
 - CONFIRMED (Poetry downloads packages to inspect them). "not all libraries on PyPI have properly declared their metadata ... At this point, Poetry has no choice but to download the packages and inspect them to get the necessary information." — [Poetry FAQ](https://github.com/python-poetry/poetry/blob/main/docs/faq.md)
 - CONFIRMED (Poetry `only-binary` does not affect locking). About `installer.no-binary` (and by reference `installer.only-binary`): "this is not taken into consideration when a lockfile is generated or dependencies are resolved. This is applied only when selecting which distribution for dependency should be installed". — [Poetry configuration](https://github.com/python-poetry/poetry/blob/main/docs/configuration.md)
 - CONFIRMED (Poetry wheel metadata without full download). `solver.lazy-wheel` (default `true`): "Do not download entire wheels to extract metadata but use HTTP range requests to only download the METADATA files of wheels." — [Poetry configuration](https://github.com/python-poetry/poetry/blob/main/docs/configuration.md)
@@ -267,11 +298,13 @@ Every resolver studied will build a source distribution (run `setup.py` or a PEP
 - REFUTED (minor: PEP 658's status is "Final"). The PEP header reads `Status: Accepted`. — [PEP 658 source](https://github.com/python/peps/blob/main/peps/pep-0658.rst)
 
 ### Inferences
+
 - Resolving an unlocked project with any of these tools is not guaranteed code-free. A tool that must execute no repository or dependency code can (a) only read an existing lock or environment, or (b) run a resolver with `--only-binary :all:` / `--no-build` and accept failure for sdist-only packages, noting that local-path, VCS and editable requirements bypass those flags.
 - Static metadata from an sdist is trustworthy only for fields not listed in `Dynamic` and only when `Metadata-Version` is at least 2.2; `Requires-Dist` is commonly dynamic.
 - With PEP 658 metadata from the index, dependency edges for a pinned wheel can be fetched as one small file without downloading or executing anything.
 
 ### Gaps
+
 - `uv lock` / `uv pip compile` are covered by the general uv resolution text; I found no per-command sentence. The rendered uv CLI and settings reference pages are generated and not in the repository, so flag text is quoted from `settings.rs` doc comments (their source).
 - PDM's behaviour for sdist-only packages during `pdm lock` was not checked.
 - PEP 517 itself was not opened in this pass.
@@ -279,9 +312,11 @@ Every resolver studied will build a source distribution (run `setup.py` or a PEP
 ## 6. Measured data: typed packages and committed lockfiles
 
 ### Takeaway
+
 I found no peer-reviewed count of top PyPI packages shipping `py.typed`. The best available numbers are two community posts (2024) on typeshed and stub-package coverage of the top 2,000 to 8,000 packages, one MSR-style paper (2026) on annotation presence in 11,021 libraries, and one arXiv study (2025) with lockfile commit rates for Poetry and Pipenv projects only.
 
 ### Cited Findings
+
 - CONFIRMED (lockfile commit rates; Gamage et al., "The Design Space of Lockfiles Across Package Managers", arXiv:2505.04834v3, 27 Oct 2025). Table: "Poetry 314 49.3% (155) 83.8% (263)" and "Pipenv 29 55.2% (16) 86.2% (25)" — columns are projects with the dependency specification file, projects with a lockfile within six months of creation, and projects with a lockfile now. Total across seven package managers: "Total 4,859 62.6% (3,040) 81.4% (3,956)". — [arXiv 2505.04834v3](https://arxiv.org/html/2505.04834v3)
 - CONFIRMED (that study's method). "we consider repositories created between September 30, 2019, and September 30, 2024, that have at least 42 stars, 10 contributors, and 300 commits", excluding projects "not been updated within the last three months"; package manager identified by the specification file in the repository root; Poetry requires a `[tool.poetry]` section. — [arXiv 2505.04834v3](https://arxiv.org/html/2505.04834v3)
 - CONFIRMED (typeshed and stub packages; forum post by yangdanny97, 7 Nov 2024, generated with a fork of the `type_coverage_py` script). "of the top 8k downloaded packages, 106 (1.3%) have stubs packages, and 15 (0.18%) are stubs packages." "Of the top 2000 packages, 114 have typeshed while only 74 have stubs packages. Interestingly, 10 packages have both". "the median stubs package is around ~280 days stale." Stub package means the `-stubs` naming convention. — [discuss.python.org thread 70457](https://discuss.python.org/t/prevalence-staleness-of-stubs-packages-in-pypi/70457)
@@ -292,11 +327,13 @@ I found no peer-reviewed count of top PyPI packages shipping `py.typed`. The bes
 - NOT FOUND. A measured share of all Python repositories (regardless of tool) that commit any lockfile, or any figure for `uv.lock`, `pdm.lock`, pinned `requirements.txt`, or `pylock.toml`. The arXiv study samples only projects already identified as Poetry or Pipenv users.
 
 ### Inferences
+
 - The lockfile figures are conditional on tool use and on a popularity filter (42+ stars, 10+ contributors, 300+ commits); they say that a project using Poetry or Pipenv usually commits its lock (about 84 to 86 percent), not that most Python repositories have one. The Pipenv sample is 29 projects.
 - From the 2024 post, about 114 of the top 2,000 packages (5.7 percent, my arithmetic) had typeshed stubs, so typeshed alone covers a small minority of popular third-party packages; most type information must come from the packages themselves.
 - The 83.39 percent "at least one annotation" figure is a weak lower bar: it does not mean the public API is typed (the paper's abstract states coverage "remains limited and uneven").
 
 ### Gaps
+
 - The Asare and Nadi PDF was read from text I extracted from the PDF streams with a small script (no PDF tool was available); ligatures and some spacing were lost, so quotes were checked against the abstract and methodology text but the venue line could not be confirmed (the copy carries a placeholder conference header). Treat the venue as unverified; the URL name suggests MSR 2026.
 - The forum posts are not peer reviewed and their data predates November 2026 by two years; no newer measurement was found in this pass.
 - Related tools that publish live numbers (`typestats`, `pypi-typing` with a `has_py_typed` flag) appeared in search results but were not opened, so no figure from them is reported.

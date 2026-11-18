@@ -5,10 +5,13 @@ Scope note: these notes cover classical and modern static analysis (IFDS/IDE, SP
 ## 1. State of the art in interprocedural data-flow analysis (IFDS/IDE, SPDS, sparse/demand-driven, abstract interpretation, Datalog, pointer analysis, dynamic-language call graphs, incremental)
 
 ### Takeaway
+
 The core algorithms are mature and mostly from 1995–2019 (IFDS/IDE, SPDS/Boomerang, sparse value-flow like Pinpoint, Datalog points-to like Doop). Work from 2019 to 2026 has been about scaling them (sparsification, disk-assisted solving, better call graphs) and about making dynamic languages tractable with soundy, hint-assisted call graphs (Jelly for JS/TS, PyCG/Jarvis for Python). The weakest link for TypeScript/Python web systems is still the call graph: published recall is about 70–90%, not 100%.
 
 ### Cited Findings
-**IFDS/IDE and descendants**
+
+#### IFDS/IDE and descendants
+
 - IFDS (Reps, Horwitz, Sagiv, POPL 1995) reduces interprocedural, finite, distributive subset problems to graph reachability over an "exploded supergraph", giving context-sensitive (realizable-path) results in polynomial time. IDE generalizes it to environment-transformer value domains (Sagiv, Reps, Horwitz 1996). These are the theoretical basis of FlowDroid, Heros, PhASAR and the core of IFDS-style taint engines. (foundational, not re-fetched this session) — [IFDS, POPL'95](https://dl.acm.org/doi/10.1145/199448.199462)
 - FlowDroid (PLDI 2014) is the canonical IFDS taint analysis: context-, flow-, field- and object-sensitive, with a precise Android lifecycle model. It is still the baseline new taint work compares against in 2026. (foundational, not re-fetched this session) — [FlowDroid, PLDI'14](https://dl.acm.org/doi/10.1145/2594291.2594299)
 - SPDS (Späth, Ali, Bodden, POPL 2019) encodes calls and returns as one CFL-reachability problem and field stores and loads as another, then "synchronizes" the two. This avoids k-limited access paths, which "do not scale very well when used to analyze programs with recursive data structures". It approximates only where both problems are satisfied but not along the same path. SPDS underlies the demand-driven pointer analysis Boomerang and the IDEal typestate framework. — [Paderborn record of POPL'19 paper](https://ris.uni-paderborn.de/record/20539); [Späth dissertation](https://digital.ub.uni-paderborn.de/hs/content/structure/3030984)
@@ -17,18 +20,22 @@ The core algorithms are mature and mostly from 1995–2019 (IFDS/IDE, SPDS/Boome
 - "Pick Your Call Graphs Well" (SOAP@PLDI 2025): precise context-sensitive call graphs significantly reduce IFDS runtime and improve precision, and there is a sweet spot between call-graph construction time and total runtime. — [SOAP 2025](https://pldi25.sigplan.org/details/SOAP-2025-papers/1/Pick-Your-Call-Graphs-Well-On-Scaling-IFDS-Based-Data-Flow-Analyses)
 - TnFix (ECOOP 2026) targets over-tainting caused by k-limiting. It analyzes 7 of 36 Android apps that FlowDroid cannot finish within 3 hours. — [ECOOP 2026, LIPIcs](https://drops.dagstuhl.de/storage/00lipics/lipics-vol372-ecoop2026/html/LIPIcs.ECOOP.2026.10/LIPIcs.ECOOP.2026.10.html)
 
-**Sparse value-flow and path-sensitive analysis**
+#### Sparse value-flow and path-sensitive analysis
+
 - Pinpoint (PLDI 2018) splits high-precision points-to analysis into precise local data dependence plus memoized, deferred interprocedural analysis. It slices on demand only the interprocedural dependence and path-feasibility queries a check needs and solves them with an SMT solver. It checks MySQL (~2 MLOC) in 1.5 h with a 14.3–23.6% false-positive rate and found 40+ real bugs. — [Pinpoint PLDI'18 PDF](https://www.cse.ust.hk/~charlesz/papers/pinpoint.pdf); [PLDI'18 listing](https://pldi18.sigplan.org/details/pldi-2018-papers/42/Pinpoint-Fast-and-Precise-Sparse-Value-Flow-Analysis-for-Million-Lines-of-Code)
 
-**Abstract interpretation frameworks**
+#### Abstract interpretation frameworks
+
 - Infer.AI is Infer's abstract-interpretation framework. A checker becomes interprocedural by defining a summary type and using callee summaries in its transfer functions (example: the SIOF checker). — [Infer absint framework docs](https://fbinfer.com/docs/absint-framework)
 - Frama-C/Eva (sound abstract interpretation for C) is still used in 2026 as the precise back end in LLM-assisted pipelines, for example in "Evident" (arXiv, June/Oct 2026). — [arXiv 2606.15122](https://arxiv.org/abs/2606.15122)
 
-**Datalog-based analysis**
+#### Datalog-based analysis
+
 - Doop expresses points-to and call-graph analyses for Java as declarative Datalog. JackEE (PLDI 2020) builds on Doop because Datalog rules suit framework modeling. — [JackEE summary (acolyer)](https://blog.acolyer.org/2020/09/25/jackee); [Doop repo with JackEE mode](https://github.com/kanaksad/doop); (foundational, not re-fetched: [Doop OOPSLA'09](https://dl.acm.org/doi/10.1145/1640089.1640108); [Soufflé](https://souffle-lang.github.io/))
 - CodeQL is a Datalog-family query language (QL) over an extracted relational database. Its library models are "extensible predicates" filled from YAML/JSON data extensions (see section 2). — [CodeQL JS library-model docs](https://codeql.github.com/docs/codeql-language-guides/customizing-library-models-for-javascript/)
 
-**Call graphs for dynamic languages**
+#### Call graphs for dynamic languages
+
 - JavaScript/TypeScript: Jelly (Aarhus) is a flow-insensitive control-flow and points-to analysis for Node.js JS/TS that uses access paths to track library usage. "Approximate interpretation" (PLDI 2024) is a forced-execution dynamic pre-analysis that emits hints about dynamic property accesses. On 36 projects with dynamic call graphs it raised call-graph recall from about 75.9% to 88.1% at a small precision cost, and it was evaluated on 141 Node.js apps and libraries. Jelly can also build dynamic call graphs through NodeProf to measure unsoundness. — [PLDI'24 paper page](https://cs.au.dk/~amoeller/papers/approx); [PLDI'24 PDF](https://www.cs.au.dk/~amoeller/papers/approx/paper.pdf); [Jelly GitHub](https://www.github.com/cs-au-dk/jelly)
 - Related JS work: automatic root-cause quantification of missing call-graph edges (ECOOP 2022) and indirection-bounded call graphs (ECOOP 2024, the basis of Jelly's `--max-indirections`). — [JS call-graph papers index](https://javascript-papers.readthedocs.io/en/latest/callgraph.html)
 - Python: PyCG reports ~99.2% precision and ~69.9% recall. That figure comes from a third-party listing of the ICSE 2021 paper. — [PyCG listing](https://arxiv.deeppaper.ai/papers/2103.00587v1)
@@ -37,7 +44,8 @@ The core algorithms are mature and mostly from 1995–2019 (IFDS/IDE, SPDS/Boome
 - Go: `golang.org/x/tools/go/callgraph/vta` implements Variable Type Analysis over a type-propagation graph. It refines an initial call graph and is sound only if that graph is sound, "modulo reflection and unsafe". The package is marked experimental. — [vta package docs](https://pkg.go.dev/golang.org/x/tools/go/callgraph/vta)
 - LLMs versus static call-graph tools (Empirical Software Engineering, 2025): 24 LLMs were evaluated on Python and JavaScript with new benchmarks SWARM-CG and SWARM-JS. Static tools (PyCG, Jelly) "consistently outperform" LLMs. On Python, PyCG reached about 84.9% completeness against about 60.3% for the best LLM (figure from a secondary summary). LLMs mishandle indirect imports through intermediate modules but sometimes catch dictionary-update calls PyCG misses, and they do much worse on JS than on Python. — [arXiv 2410.00603](https://arxiv.org/pdf/2410.00603); [EMSE article](https://link.springer.com/article/10.1007/s10664-025-10704-3)
 
-**Incremental analysis (industrial)**
+#### Incremental analysis (industrial)
+
 - CodeQL incremental PR analysis timeline:
   - May 2025: up to 20% faster for JS/TS, Java, Ruby and Python, with the most improved JS/TS scans 58% faster. Results are unchanged.
   - Sep 2025: extended to all CodeQL languages; Go about 20% faster, C#/C++ about 5%.
@@ -49,11 +57,13 @@ The core algorithms are mature and mostly from 1995–2019 (IFDS/IDE, SPDS/Boome
 - Semgrep redesigned its interfile engine in v1.158.0, reporting a 20–40% speedup (from release notes as relayed by search; not opened directly). — [Semgrep releases](https://github.com/returntocorp/semgrep/releases)
 
 ### Inferences
+
 - Theory is not the bottleneck for our use. A caller-specific query ("what does this handler do with `req.body.password`?") maps naturally onto demand-driven IFDS/SPDS or sparse value-flow. The real bottlenecks are call-graph recall in TS/Python and library/framework models.
 - Cache by content hash, and at function granularity. Compositional summaries plus overlay-style incremental databases (the CodeQL 2026 design) match the plan to cache deeper levels by the content hash of the code they cover.
 - Hybrid call graphs are the 2024–2026 consensus for dynamic languages: static analysis with hints (Jelly's approximate interpretation) or with LLM-resolved edges (SemTaint, section 2). LLM-only call graphs are measurably worse.
 
 ### Gaps
+
 - I found no 2023–2026 head-to-head benchmark of TypeScript call graphs (Jelly vs. CodeQL JS vs. TS-compiler-based tools) on typed TS code. Most JS studies target untyped Node.js.
 - I did not verify current maintenance status of PyCG, PhASAR, Heros or Doop in 2026.
 - I did not find recent primary sources on Soufflé performance or on incremental Datalog beyond CodeQL.
@@ -61,7 +71,9 @@ The core algorithms are mature and mostly from 1995–2019 (IFDS/IDE, SPDS/Boome
 ## 2. Compositional and summary-based analysis: how library summaries are represented, generated, versioned and composed; failure modes
 
 ### Takeaway
+
 Every production tool composes per-function or per-API summaries, but summary formats differ sharply:
+
 - **CodeQL models-as-data (MaD):** declarative rows: type, access path, input → output, kind, provenance. The closest existing precedent for a "behavior pack" registry.
 - **Infer bi-abduction and Pulse:** pre/post (disjunctive) specifications; richer, closer to path-sensitive behavior.
 - **Pysa:** type-stub-like `.pysa` annotations.
@@ -70,7 +82,9 @@ Every production tool composes per-function or per-API summaries, but summary fo
 Since 2024, summaries are increasingly LLM-generated (CodeQL `ai-generated` provenance, IRIS, SemTaint). The main failure modes are missing models (silent false negatives), over-approximate "fuzzy" models (false positives), and version drift.
 
 ### Cited Findings
-**Representations**
+
+#### Representations
+
 - CodeQL JS/TS MaD format:
   - Rows go into extensible predicates: `sourceModel(type, path, kind)`, `sinkModel(type, path, kind)`, `summaryModel(type, path, input, output, kind)`, `typeModel(type1, type2, path)`, `barrierModel`, and `barrierGuardModel(type, path, acceptingValue, kind)`.
   - The `type` column is an npm package name, `global`, a qualified name, or `file:<path>`.
@@ -102,7 +116,8 @@ Since 2024, summaries are increasingly LLM-generated (CodeQL `ai-generated` prov
   - Sources: [Pysa basics](https://pyre-check.org/docs/pysa-basics/); [Pysa tips](https://pyre-check.org/docs/pysa-tips); [shipping rules/models](https://pyre-check.org/docs/pysa-shipping-rules-models/); [Meta engineering post](https://engineering.fb.com/security/pysa/)
 - StubDroid (ICSE 2016) automatically generates context- and flow-sensitive library summaries for FlowDroid from library bytecode as access-path transfer rules. It avoids reanalyzing the JDK/Android framework per app. (foundational, not re-fetched: [StubDroid ICSE'16](https://dl.acm.org/doi/10.1145/2884781.2884816))
 
-**Generation (manual, mined, LLM)**
+#### Generation (manual, mined, LLM)
+
 - CodeQL ships `df-generated` models from a data-flow "model generator". The VS Code model editor is the recommended way to write models by hand, saved as YAML in a model pack. — [Java/Kotlin guide](https://codeql.github.com/docs/codeql-language-guides/customizing-library-models-for-java-and-kotlin); [model editor](https://docs.github.com/ru/code-security/how-tos/find-and-fix-code-vulnerabilities/scan-from-vs-code/use-the-model-editor)
 - A github/codeql PR adds YAML models produced by a tool called `codeql-mads-via-llm`, tagged `ai-generated` with "do not edit" headers (Apache Avro). This is evidence of LLM-generated MaD in the official repo, but it is a PR diff, not documentation. — [github/codeql PR #21754](https://github.zuike.workers.dev/github/codeql/pull/21754/files) (mirror URL)
 - Community tooling `codeql-summarize` generates MaD files from CodeQL databases and can run as a GitHub Action. — [advanced-security/codeql-summarize](https://www.github.com/advanced-security/codeql-summarize)
@@ -112,7 +127,8 @@ Since 2024, summaries are increasingly LLM-generated (CodeQL `ai-generated` prov
 - LATTE (binary taint) uses an LLM to summarize external library functions; first submitted 2023, revised January 2025. — [arXiv 2310.08275](https://arxiv.org/abs/2310.08275)
 - AdaTaint (arXiv Nov 2025) interleaves LLM-inferred specs with static analysis "while ensuring symbolic validation" (snippet only). — [arXiv 2511.04023](https://arxiv.org/pdf/2511.04023)
 
-**Failure modes (documented)**
+#### Failure modes (documented)
+
 - Missing specs mean missed vulnerabilities. Writing them by hand is laborious and leaves gaps; this is the stated motivation of IRIS. — [IRIS](https://arxiv.org/html/2405.17238v3)
 - Over-approximate models (`Fuzzy`, `GuardedRouteHandler`) cause false positives; type-based models fail without type annotations. — [CodeQL JS docs](https://codeql.github.com/docs/codeql-language-guides/customizing-library-models-for-javascript/)
 - Unknown or unmodeled callees: Pulse's optimistic havoc gives both false positives and false negatives. — [Pulse docs](https://fbinfer.com/docs/checker-pulse)
@@ -120,6 +136,7 @@ Since 2024, summaries are increasingly LLM-generated (CodeQL `ai-generated` prov
 - Format instability: CodeQL MaD and threat models are "in beta and subject to change". — [CodeQL JS docs](https://codeql.github.com/docs/codeql-language-guides/customizing-library-models-for-javascript/)
 
 ### Inferences
+
 - CodeQL MaD is the best-documented, multi-language, *data-only* summary format. Its design choices carry over directly to behavior packs:
   - access paths relative to a call
   - `taint` vs. `value` kinds
@@ -131,6 +148,7 @@ Since 2024, summaries are increasingly LLM-generated (CodeQL `ai-generated` prov
 - The 2024–2026 trend (IRIS, SemTaint, `ai-generated` MaD) validates the "LLM writes summaries, static engine checks and composes them" split that we plan.
 
 ### Gaps
+
 - I did not find primary documentation of how GitHub validates `ai-generated` CodeQL models, or their measured accuracy.
 - I did not find a study measuring how often library summaries go stale across library versions.
 - StubDroid's and Pysa's current maintenance and versioning practices were not verified this session.
@@ -138,9 +156,11 @@ Since 2024, summaries are increasingly LLM-generated (CodeQL `ai-generated` prov
 ## 3. Industrial tools: cross-file, cross-language and cross-service support, with precision/recall evidence
 
 ### Takeaway
+
 Cross-file, cross-procedure taint within one language and one repo is solved industrially for Java, JS/TS, Go, Python and C# (CodeQL, Semgrep Pro for most of these, Pysa for Python, Joern via CPG). Cross-language and cross-service flow (HTTP client to route, gRPC, queues) is not solved by any mainstream SAST tool I examined. It is handled by research architecture-recovery tools using keyword and config heuristics. On real vulnerabilities, recall is low: only 12.7% detected by seven open-source Java SAST tools in FSE 2023.
 
 ### Cited Findings
+
 - **CodeQL**
   - Whole-program interprocedural data flow per language database, with MaD library models (section 2).
   - Incremental and overlay PR analysis in all languages by 2026 (section 1).
@@ -170,11 +190,13 @@ Cross-file, cross-procedure taint within one language and one repo is solved ind
 - **Google**: analyses run in Tricorder inside code review, and checks are kept only if their effective false-positive rate stays low (<10% is the cited bar). (foundational, not re-fetched: [Lessons from Building Static Analysis Tools at Google, CACM 2018](https://cacm.acm.org/magazines/2018/4/226371-lessons-from-building-static-analysis-tools-at-google/fulltext))
 
 ### Inferences
+
 - For our multi-repo boundary linking (`fetch('/api/login')` to the route, gRPC protos, queue topics), no off-the-shelf SAST gives us edges. The practical approach is Code2DFD-style: extract endpoint and client-call facts per repo (CodeQL/Semgrep queries or tree-sitter), match them by URL template, proto service/method or topic name, and record each match as an `inferred` link with evidence. Every link should keep a traceability anchor, as Code2DFD does.
 - Low SAST recall on real CVEs comes mostly from missing models and frameworks. Our tool will show *flows*, not flag vulnerabilities, so precision on what *is* shown matters more than recall. But missing edges become silently missing branches, which argues for explicit "unknown callee" markers in scenario graphs.
 - The Evident result is a strong design rule: let the LLM propose context, summaries and harnesses, and let a precise analyzer or check decide. Never let the LLM's narration certify that a branch is impossible.
 
 ### Gaps
+
 - I found no public precision/recall numbers for Semgrep Pro interfile, Snyk Code (DeepCode) or SonarQube's cross-file taint on independent benchmarks; vendor claims only.
 - I found no primary source on cross-service or cross-language taint in Google's or Meta's internal tools (Meta's Zoncolan for Hack and Pysa for Python are per-language).
 - Joern's current frontend list and data-flow precision were not verified against the repo.
@@ -182,9 +204,11 @@ Cross-file, cross-procedure taint within one language and one repo is solved ind
 ## 4. Soundness vs. soundiness: blind spots and framework modeling (Spring, Express, Django)
 
 ### Takeaway
+
 Practical analyses are "soundy" by design: they handle most features conservatively but knowingly skip reflection, `eval`, dynamic property access, `unsafe`, and framework-driven control. The biggest blind spot for web systems is inversion of control: dependency injection, routing, decorators and middleware. Raw analyzers see only a small fraction of enterprise code without framework models (JackEE: about 14.5% to 58% in-app reachability for Doop). The state of the art is explicit, per-framework models as Datalog rules, MaD rows or `.pysa` files, plus dynamic hints for dynamic languages.
 
 ### Cited Findings
+
 - The Soundiness manifesto (CACM 2015, Livshits et al.) says analyses are typically "soundy": conservative for most features but deliberately omitting a known subset (reflection, eval, etc.). Skipping these affects most real programs. It calls for documenting unsoundness and comparing results empirically against observed behavior. — [CACM full text](https://cacm.acm.org/magazines/2015/2/182650-in-defense-of-soundiness/fulltext); [PDF](https://www.doc.ic.ac.uk/~livshits/papers/pdf/cacm15.pdf)
 - Enterprise Java (JackEE, PLDI 2020): Soot, WALA and Doop out of the box yield very low coverage on enterprise apps. JackEE adds framework rules (Spring, Struts2, JAX-RS, Servlets, EJB) in Datalog on Doop. Slides report about 58% average in-app reachability against about 14.5% for plain Doop. Caches and maps are a second major obstacle. — [acolyer summary](https://blog.acolyer.org/2020/09/25/jackee); [PLDI'20 listing](https://pldi20.sigplan.org/details/pldi-2020-papers/66/Static-Analysis-of-Enterprise-Applications-Haven-t-We-Solved-This-Problem-Yet-); [slides](https://www.scribd.com/presentation/491732108/Static-Analysis-of-Java-Enterprise-Applications); [Doop/JackEE repo](https://github.com/kanaksad/doop)
 - Jasmine (ASE 2022) found that Soot, Doop and WALA only partially support Spring dependency injection and AOP, and proposes Spring-specific modeling. — [Jasmine PDF](https://weihang-wang.github.io/papers/ASE2022-Jasmine.pdf)
@@ -198,18 +222,22 @@ Practical analyses are "soundy" by design: they handle most features conservativ
 - SemTaint uses an LLM to resolve call edges that static analysis cannot (JS npm packages). — [arXiv 2601.10865](https://arxiv.org/abs/2601.10865)
 
 ### Inferences
+
 - Framework packs must contain *slots for user code* (route-handler slot, middleware chain, DI-provided bean, ORM hooks). This matches JackEE's rules and CodeQL's `GuardedRouteHandler` and decorator tokens, and confirms the checkpoint's "frameworks invert control, so their graphs have slots for user code."
 - Async and event loops (Node promises, Python asyncio, Go goroutines and channels) are modeled in CodeQL only through tokens like `Awaited`, with no scheduling or interleaving semantics. For parallel lanes and races we must rely on platform packs and LLM hypotheses marked `assumed`.
 - Config-driven behavior (env vars, YAML, feature flags) is outside every tool's data-flow model. It matches our design to resolve it with constant propagation plus config reading, recording an `assumed` binding when unresolved.
 
 ### Gaps
+
 - I found no 2024–2026 empirical study quantifying how much framework IoC (Express, NestJS, FastAPI, Django) costs TS/Python call-graph recall.
 - I found no primary sources on static modeling of async scheduling (event-loop ordering, goroutine interleavings) in production tools.
 
 ## 5. Which techniques give "branches on input classes" (path conditions / input partitions) rather than just reachability?
 
 ### Takeaway
+
 Most production data-flow tools (IFDS taint, CodeQL, Semgrep, Pysa, Joern) answer reachability ("can tainted X reach sink Y?") and are path-insensitive or only lightly guard-aware. Path conditions over inputs come from:
+
 - Infer Pulse's disjunctive summaries with latent conditions,
 - SMT-checked sparse value-flow (Pinpoint),
 - symbolic execution,
@@ -218,6 +246,7 @@ Most production data-flow tools (IFDS taint, CodeQL, Semgrep, Pysa, Joern) answe
 The disjunct-plus-condition shape of Pulse summaries is the closest existing analogue to "a graph per public function keyed by input classes".
 
 ### Cited Findings
+
 - Pulse summaries are disjunctive. Errors are reported only when "all conditions on the erroneous path are true regardless of input". Conditions on parameters are kept as *latent* issues and discharged at call sites, and summary application in a caller's context prunes contradicting disjuncts. — [Pulse docs](https://fbinfer.com/docs/checker-pulse); [PulseInterproc](https://fbinfer.com/odoc/next/infer/Pulselib/PulseInterproc/index.html)
 - Pulse-X is based on incorrectness (under-approximate) separation logic, whose triples assert that every reported path is reachable. This is the foundation for "no false positives" path reports. — [Pulse-X OOPSLA'22](https://discovery.ucl.ac.uk/id/eprint/10146384/1/3527325.pdf); [Raad et al. 2020](https://link.springer.com/chapter/10.1007/978-3-030-53291-8_14)
 - Pinpoint: sparse value-flow plus on-demand path-feasibility queries solved by SMT, at multi-MLOC scale. — [Pinpoint PDF](https://www.cse.ust.hk/~charlesz/papers/pinpoint.pdf)
@@ -227,18 +256,22 @@ The disjunct-plus-condition shape of Pulse summaries is the closest existing ana
 - "Evident" (2026) uses Frama-C/Eva (abstract interpretation over value domains) in LLM-built harnesses to rule out error paths soundly, constraining how harnesses initialize inputs so that bug-triggering inputs are not excluded. — [arXiv 2606.15122](https://arxiv.org/abs/2606.15122)
 
 ### Inferences
+
 - Recommended scenario-graph node shape: a function or pack summary as a set of disjuncts `{guard over input classes, effects/outputs, callees, latent obligations}`. Binding input classes at a call site prunes disjuncts (as Pulse does), and unresolved guards become assumptions.
 - Input classes ("expired token", "user not found") are human-meaningful predicates over guards found in code. Static analysis can give the guard expressions (branch conditions on parameters, return-value checks), but naming and grouping them into classes is an LLM task. A solver (Z3) or abstract interpreter can then check disjointness or feasibility where the guards are simple (constants, enums, nullness, string-literal comparisons).
 - Keep summaries abstract to avoid path explosion: cap disjuncts per summary and merge disjuncts with identical observable effects. Pulse and its imitators cap disjuncts, but I found no authoritative number for Infer's own cap.
 
 ### Gaps
+
 - I found no production tool for TS/Python/Go that emits path-condition-partitioned function summaries. Pulse does not support those languages.
 - I did not research symbolic execution engines for JS/Python (e.g., ExpoSE, CrossHair) or concolic testing in 2024–2026. Those would need a separate search.
 
 ## 6. Concrete recommendations: grounding tools and the summary representation for "behavior packs"
 
 ### Takeaway
+
 Use a layered grounding stack:
+
 - **Navigation:** tree-sitter plus SCIP/LSP for symbols.
 - **Facts:** CodeQL, or Jelly/Jarvis-class call graphs where CodeQL is weak, for call graphs, data-flow paths and framework entry points. Semgrep for cheap cross-repo boundary-fact extraction.
 - **Composition:** the LLM composes and names input classes on top of those facts.
@@ -246,6 +279,7 @@ Use a layered grounding stack:
 Model behavior packs on CodeQL MaD (data-only rows, access paths, kinds, provenance, neutral rows, manual-over-generated precedence), extended with Pulse-style disjunctive cases (guards over input classes plus latent obligations) and explicit IoC slots.
 
 ### Cited Findings (supporting evidence for recommendations)
+
 - MaD shows that a declarative, data-only, multi-language summary format with provenance works at industrial scale and accepts LLM-generated entries (`ai-generated`, `ai-manual`). — [CodeQL Java/Kotlin guide](https://codeql.github.com/docs/codeql-language-guides/customizing-library-models-for-java-and-kotlin); [ExternalFlow](https://codeql.github.com/codeql-standard-libraries/java/semmle/code/java/dataflow/ExternalFlow.qll/module.ExternalFlow.html); [LLM-generated MaD PR](https://github.zuike.workers.dev/github/codeql/pull/21754/files)
 - LLM spec inference plus static engine beats either alone: IRIS 27 to 55 CVEs; SemTaint 106 of 162 previously missed. — [IRIS](https://arxiv.org/html/2405.17238v3); [SemTaint](https://arxiv.org/abs/2601.10865)
 - Static call graphs beat LLM call graphs for Python and JS. — [EMSE 2025 / arXiv 2410.00603](https://arxiv.org/pdf/2410.00603)
@@ -271,6 +305,7 @@ Model behavior packs on CodeQL MaD (data-only rows, access paths, kinds, provena
 | Library behavior | Behavior packs (below); fall back to analyzing fetched dependency source with same pipeline | Like CodeQL's precedence: curated pack > generated pack > on-the-fly analysis. |
 
 **Behavior pack representation (proposed, derived from MaD + Pulse):**
+
 - Key: `ecosystem/package@version` + callable path in MaD-like access-path syntax (`Member[sign].Argument[2].Member[algorithm]`).
 - Rows/cases per public callable:
   - `cases[]`, each with `guard` (predicate over named input classes or access-path constraints, e.g. `Argument[2].Member[algorithm] in {"HS256"}`), `effects` (event kinds from our fixed vocabulary), `flows` (MaD-style input → output with `value|taint`), `calls_down` (links to lower packs), and `latent` (obligations the caller must satisfy, which become assumptions if unbound).
@@ -282,11 +317,13 @@ Model behavior packs on CodeQL MaD (data-only rows, access paths, kinds, provena
 - Validation in CI per version: run the pack's claimed flows against the library's own source with the same static pipeline (CodeQL/Joern), and against its test suite traces where available. A mismatch demotes the pack's provenance.
 
 **Rules of engagement for the LLM:**
+
 1. The LLM proposes summaries, input-class names, unresolved call edges and boundary matches. Static analysis or a solver confirms what it can. Anything unconfirmed is `assumed`.
 2. Never let LLM narration prune a branch as infeasible (Evident result). Only a solver or analyzer prunes. Otherwise show the fork.
 3. Expose unsoundness explicitly: unknown callee, reflection/eval/dynamic import, unmodeled framework slot. Each becomes a visible marker on the scenario graph, never a silent gap.
 
 ### Gaps
+
 - I found no benchmark of how well LLM-generated summaries keyed by input classes match observed traces. The checkpoint's producer 2 (trace alignment) could itself serve as that evaluation.
 - I did not research behavior summaries for RFC state machines (TLS, TCP, HTTP/2) by protocol-state-machine extraction or model learning. That falls outside this topic and should be covered separately.
 - I did not research TypeScript-specific type-driven analysis (TS compiler API, stack graphs, SCIP-typescript) for precision on typed code; worth a follow-up.

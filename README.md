@@ -4,7 +4,7 @@ Mental compiles a repository into a **model of the system that you can run**. Yo
 
 **Status:** design only; nothing is built yet. **Current focus:** building the model from one repository.
 
-```
+```text
 source code, infrastructure files, docs ─► mentalc ─► MODEL ─► mentalvm ─► TRACES ─► mentaldbg ─► viewer / agent
 ```
 
@@ -66,6 +66,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before your first commit.
 | [`examples/report-jobs`](examples/report-jobs/) | The sample system used in every example, and the first target | you want to see the code being modeled |
 
 Research reports:
+
 - [Static analysis and LLM system models](docs/research/static-analysis-llm-system-models/report.md): who should do what: extractors, the LLM or checkers.
 - [Model interpreter semantics](docs/research/model-interpreter-semantics/report.md): how to run a model and find races.
 - [Abstraction levels](docs/research/abstraction-levels/report.md): how other fields relate levels of description and check them.

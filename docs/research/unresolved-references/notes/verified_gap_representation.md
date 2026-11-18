@@ -22,9 +22,11 @@ One line per product:
 ## CodeQL: ErrorType, database-quality metrics and thresholds (Java, C#, C/C++, Rust)
 
 ### Takeaway
+
 CodeQL counts two things per database, calls with a call target and expressions with a known type, and raises a warning-severity diagnostic on the tool status page when either percentage drops below a threshold. The earlier "5 %" figure is outdated: the threshold was 95 % OK when introduced and is 85 % OK now for Java and C#; Rust uses 50 % (calls) and 20 % (expression types). The scan still "completed successfully"; nothing fails.
 
 ### Cited Findings
+
 - CONFIRMED (a) `ErrorType` exists for types the extractor could not extract: "An `ErrorType` is generated when CodeQL is unable to correctly extract a type." — [Type.qll](https://github.com/github/codeql/blob/main/java/ql/lib/semmle/code/java/Type.qll) (line 680-686; `class ErrorType extends RefType, @errortype`)
 - CONFIRMED (a) Introduced in java lib 0.3.1: "Added an `ErrorType` class. An instance of this class will be used if an extractor is unable to extract a type, or if an up/downgrade script is unable to provide a type." — [java/ql/lib/CHANGELOG.md](https://github.com/github/codeql/blob/main/java/ql/lib/CHANGELOG.md)
 - CONFIRMED (a) Unresolved callee leads to `ErrorType` (java lib 0.8.10): "Java expressions with erroneous types (e.g. the result of a call whose callee couldn't be resolved during extraction) are now given a CodeQL `ErrorType` more often." — [java/ql/lib/CHANGELOG.md](https://github.com/github/codeql/blob/main/java/ql/lib/CHANGELOG.md)
@@ -49,12 +51,14 @@ CodeQL counts two things per database, calls with a call target and expressions 
 - CONFIRMED GitHub's stated cause of low quality in `none` mode: "Creating a CodeQL database without a build may produce less accurate results than using autobuild or manual build steps if: The build scripts cannot be queried for dependency information, and dependency guesses are inaccurate." — [docs.github.com](https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages)
 
 ### Inferences
+
 - The design precedent is exact for `mentalc`: two ratios per unit (resolved calls, typed expressions), counts and percentage always published, a threshold that only decides warning versus silence.
 - CodeQL had to exclude "unresolvable by nature" sites from the denominator (C# delegates, Rust dynamic calls) and drop a noisy metric (Rust macros). A per-reason classification avoids the same false alarms.
 - The threshold moved 95 → 85 within the product's life, and Rust uses 50/20: no universal threshold exists; it is language- and extractor-specific.
 - CodeQL never fails the scan on this signal; it is advisory.
 
 ### Gaps
+
 - How `ErrorType` propagates through data flow (whether flow stops at an error-typed expression) was not read; only the class doc and two changelog lines were verified.
 - Whether a C/C++ threshold diagnostic lives outside `cpp/ql/src/Telemetry` was not checked.
 - The version in which the Rust thresholds 50/20 were set was not identified.
@@ -62,9 +66,11 @@ CodeQL counts two things per database, calls with a call target and expressions 
 ## CodeQL extraction diagnostics in general (warnings vs errors, tool status page)
 
 ### Takeaway
+
 CodeQL diagnostics are query results of `@kind diagnostic` with a SARIF severity integer (1 warning, 2 error) and visibility attributes; the tool status page shows per-language file coverage and error messages. Detailed GitHub wording on "warning versus error" was only partly read.
 
 ### Cited Findings
+
 - CONFIRMED Severity encoding in the Java diagnostics library: "Gets the SARIF severity level that indicates an error." returns 2; "Gets the SARIF severity level that indicates a warning." returns 1. — [DiagnosticsReporting.qll](https://github.com/github/codeql/blob/main/java/ql/src/Diagnostics/DiagnosticsReporting.qll)
 - CONFIRMED Java maps extractor severities to user-facing errors: severity 6 → "Frontend errors in file: …", 7 → "Extraction incomplete in file: …", 8 → "Severe error: …", any other severity above 3 in a repo file → "Unknown errors in file: …"; a file is "successfully extracted" only if it has no reportable diagnostic. — [DiagnosticsReporting.qll](https://github.com/github/codeql/blob/main/java/ql/src/Diagnostics/DiagnosticsReporting.qll)
 - CONFIRMED Tool status page shows coverage per language: "you can see a percentage total of all the files most recently scanned in your repository, organized by programming language. You can also download detailed language reports in CSV format." — [docs.github.com](https://docs.github.com/en/code-security/code-scanning/managing-your-code-scanning-configuration/about-the-tool-status-page)
@@ -73,18 +79,22 @@ CodeQL diagnostics are query results of `@kind diagnostic` with a SARIF severity
 - CONFIRMED In `none` mode some content is silently outside the model, with a warning: "if build-mode is set to none and Kotlin code is found in the repository, the Kotlin code will not be analyzed and a warning will be produced." — [docs.github.com](https://docs.github.com/en/code-security/code-scanning/creating-an-advanced-setup-for-code-scanning/codeql-code-scanning-for-compiled-languages)
 
 ### Inferences
+
 - CodeQL separates three channels: per-file extraction status, counted metrics (`@kind metric`), and thresholded diagnostics (`@kind diagnostic`). The same split fits `mentalc` (fact, count, gate).
 
 ### Gaps
+
 - GitHub's prose definition of "warning" versus "error" on the tool status page, and the "Extraction errors" troubleshooting page, were not read in full.
 - The exit-code behaviour of `codeql database analyze` when extraction errors occur was not verified.
 
 ## CodeQL Python: no dependency extraction; API graphs and models-as-data
 
 ### Takeaway
+
 Since CLI 2.16.0 (January 2024) the Python extractor does not extract dependencies, and since 2.19.2 (October 2024) not even the standard library; GitHub says the effect on results is minimal because library behaviour is modelled. Library calls are referred to by import path through API graphs and extended by data-extension rows.
 
 ### Cited Findings
+
 - CONFIRMED CLI 2.16.0 (2024-01-16): "The Python extractor will no longer extract dependencies by default." and "In versions until 2.17.0, it will be possible to restore the old behavior by setting `CODEQL_EXTRACTOR_PYTHON_FORCE_ENABLE_LIBRARY_EXTRACTION_UNTIL_2_17_0=1`." — [codeql-cli-binaries CHANGELOG.md](https://github.com/github/codeql-cli-binaries/blob/main/CHANGELOG.md)
 - CONFIRMED CLI 2.19.2 (2024-10-21): "The Python extractor will no longer extract the standard library by default, relying instead on models of the standard library. This should result in significantly faster extraction and analysis times, while the effect on alerts should be minimal." Override: `CODEQL_EXTRACTOR_PYTHON_EXTRACT_STDLIB` set to `1`. — [codeql-cli-binaries CHANGELOG.md](https://github.com/github/codeql-cli-binaries/blob/main/CHANGELOG.md)
 - CONFIRMED Preparation in python lib 2.1.1: "Added several models of standard library functions and classes, in anticipation of no longer extracting the standard library in a future release." — [python/ql/lib/CHANGELOG.md](https://github.com/github/codeql/blob/main/python/ql/lib/CHANGELOG.md)
@@ -99,10 +109,12 @@ Since CLI 2.16.0 (January 2024) the Python extractor does not extract dependenci
 - CONFIRMED Row shape: "The second column is an access path that is evaluated from left to right, starting at the values that were identified by the first column." Status: "Library customization using data extensions is currently in beta and subject to change." — [Customizing Library Models for Python](https://codeql.github.com/docs/codeql-language-guides/customizing-library-models-for-python/)
 
 ### Inferences
+
 - An external library entity is identified by (import path, member access path) with no definition behind it. This is a usable identity for a `mentalc` "external, not extracted" target.
 - CodeQL treats "library not extracted" as the normal state for Python, not as an error; quality relies on models.
 
 ### Gaps
+
 - The type-tracking documentation page was not read; no quote recorded for type tracking.
 - The exact CLI version that removed the 2.17.0 escape hatch was not confirmed beyond the 2.16.0 note.
 - CodeQL Python has no database-quality diagnostic in the files searched (`python/ql/src/CHANGELOG.md` has no match for "database quality"); the Python telemetry directory itself was not listed.
@@ -110,9 +122,11 @@ Since CLI 2.16.0 (January 2024) the Python extractor does not extract dependenci
 ## Joern: placeholder strings, javasrc2cpg options, pysrc2cpg type recovery
 
 ### Takeaway
+
 Joern encodes "unresolved" inside the full name of the call or type using fixed placeholder strings, and a later type-recovery pass may fill in "dummy" types such as `<returnValue>` and `<member>`. For Python, an unresolvable import is turned into a guessed pseudo-path tagged `UnknownMethod` / `UnknownTypeDecl` / `UnknownImport`.
 
 ### Cited Findings
+
 - CONFIRMED `ANY`: "Represents an unresolved type, or indicates that one cannot guarantee a single type for the given node." `val Any = "ANY"` — [Defines.scala](https://github.com/joernio/joern/blob/master/joern-cli/frontends/x2cpg/src/main/scala/io/joern/x2cpg/Defines.scala)
 - CONFIRMED Placeholders: `val UnresolvedNamespace = "<unresolvedNamespace>"`, `val UnresolvedSignature = "<unresolvedSignature>"`. "The METHOD_FULL_NAME should be given as \"<unresolvedNamespace>.foo:<unresolvedSignature>(1)\"." — [Defines.scala](https://github.com/joernio/joern/blob/master/joern-cli/frontends/x2cpg/src/main/scala/io/joern/x2cpg/Defines.scala)
 - CONFIRMED Partial resolution keeps what is known and records arity: "If the namespace is known the METHOD_FULL_NAME should be given as \"some.namespace.foo:<unresolvedSignature>(1)\". Thereby the number in parentheses is the number of call arguments." — [Defines.scala](https://github.com/joernio/joern/blob/master/joern-cli/frontends/x2cpg/src/main/scala/io/joern/x2cpg/Defines.scala)
@@ -132,20 +146,24 @@ Joern encodes "unresolved" inside the full name of the call or type using fixed 
 - The docs.joern.io Java and Python frontend pages list the same options in a table and contain no text on unresolved calls or placeholders (read through a page-summarising fetch, not raw). — [docs.joern.io/frontends/java](https://docs.joern.io/frontends/java/), [docs.joern.io/frontends/python](https://docs.joern.io/frontends/python/)
 
 ### Inferences
+
 - Joern's precedent is "in-band" marking: the hole is a magic string inside the identifier, found again by regex. It keeps partial knowledge (namespace known, signature unknown, argument count) but has no separate fact or reason code.
 - Joern distinguishes resolved from guessed imports with separate case classes (`Resolved*` vs `Unknown*`), which is closer to a reason-carrying fact than the string placeholders.
 - By default the Python frontend ignores the virtual environment, so calls into external packages are normally guessed, not resolved.
 
 ### Gaps
+
 - No Joern counter or report of unresolved calls was found; the repository was not searched exhaustively for one.
 - The default value of `--fetch-dependencies` and what javasrc2cpg logs when a type cannot be solved were not read.
 
 ## SCIP and scip-python
 
 ### Takeaway
+
 SCIP has no schema element for "unresolved". A symbol is either global (scheme, package manager, package name, version, descriptors) or `local`; missing package fields use the placeholder `.`. scip-python falls back to a document-local symbol whose documentation says the module could not be resolved.
 
 ### Cited Findings
+
 - CONFIRMED Symbol grammar: "`<symbol> ::= <scheme> ' ' <package> ' ' (<descriptor>)+ | 'local ' <local-id>`" and "`<package> ::= <manager> ' ' <package-name> ' ' <version>`" — [scip.proto](https://github.com/sourcegraph/scip/blob/main/scip.proto)
 - CONFIRMED Empty-field placeholder: "`<manager> ::= any UTF-8, escape spaces with double space. Use the placeholder '.' to indicate an empty value`" (package-name and version: "same as above"). — [scip.proto](https://github.com/sourcegraph/scip/blob/main/scip.proto)
 - CONFIRMED Descriptor suffixes: namespace `/`, type `#`, term `.`, meta `:`, macro `!`, method `(disambiguator).`, type-parameter `[name]`, parameter `(name)`. — [scip.proto](https://github.com/sourcegraph/scip/blob/main/scip.proto)
@@ -157,25 +175,29 @@ SCIP has no schema element for "unresolved". A symbol is either global (scheme, 
 - CONFIRMED `SyntaxKind` exists as an enum for highlighting ("What syntax highlighting class should be used for this range?"), with members such as `IdentifierLocal = 12`, `IdentifierFunctionDefinition = 16`. — [scip.proto](https://github.com/sourcegraph/scip/blob/main/scip.proto)
 - CONFIRMED scip-python symbol prefix: `` `scip-python python ${name} ${version} ` `` with empty name or version normalised to `.`. — [ScipSymbol.ts](https://github.com/sourcegraph/scip-python/blob/scip/packages/pyright-scip/src/ScipSymbol.ts)
 - CONFIRMED Third-party package name and version come from the environment: "scip-python uses `pip` to attempt to determine the versions and names of the packages available in your environment." Alternative: the `--environment` JSON list of `{name, version, files}`. — [scip-python README](https://github.com/sourcegraph/scip-python/blob/scip/README.md)
-- CONFIRMED Standard library is a synthetic package: `new PythonPackage('python-stdlib', versionToString(this.execEnv.pythonVersion), [])`; a source comment shows the result "reference  python-stdlib 3.10 `importlib.resources`/__init__:". Membership is decided by a hard-coded list (`Hardcoded.stdlib_module_names.has(firstPart)`). — [treeVisitor.ts](https://github.com/sourcegraph/scip-python/blob/scip/packages/pyright-scip/src/treeVisitor.ts)
+- CONFIRMED Standard library is a synthetic package: `new PythonPackage('python-stdlib', versionToString(this.execEnv.pythonVersion), [])`; a source comment shows the result "reference python-stdlib 3.10 `importlib.resources`/__init__:". Membership is decided by a hard-coded list (`Hardcoded.stdlib_module_names.has(firstPart)`). — [treeVisitor.ts](https://github.com/sourcegraph/scip-python/blob/scip/packages/pyright-scip/src/treeVisitor.ts)
 - CONFIRMED Unresolved import: "For python packages & modules that we cannot resolve, we'll just make a local for the file and note that we could not resolve this module." The local symbol gets the documentation string `` `(module): ${moduleName} [unable to resolve module]` ``. — [treeVisitor.ts](https://github.com/sourcegraph/scip-python/blob/scip/packages/pyright-scip/src/treeVisitor.ts)
 - CONFIRMED The follow-on problem is acknowledged as open: "TODO: The only other question would be what we should do about references to items from this module"; and for names without a declaration: "Without a declaration, it doesn't seem useful to try and add member accesses with locals. You'll just get a new local for every reference because we can't construct what these are." — [treeVisitor.ts](https://github.com/sourcegraph/scip-python/blob/scip/packages/pyright-scip/src/treeVisitor.ts)
 
 ### Inferences
+
 - In scip-python the reason for a hole lives in free-text documentation on a local symbol; it is not machine-readable and not counted.
 - SCIP's `.` placeholder for an unknown manager, name or version is a precedent for a partially known external identity (package known, version unknown).
 - The SCIP `Diagnostic` message could carry an unresolved-reference fact, but the scip-python code path read does not use it for unresolved imports.
 
 ### Gaps
+
 - Whether scip-python attaches a SCIP `Diagnostic` anywhere was not checked beyond the unresolved-import path.
 - The scip-python README does not describe unresolved-import behaviour; it is documented only in source comments.
 
 ## Kythe
 
 ### Takeaway
+
 The earlier reading is partly refuted. The `complete` fact (`incomplete`, `complete`, `definition`) describes declarations versus definitions, and `name` nodes are linker identifiers; neither marks an unresolved reference. The schema's real precedents are the `lookup` node (a name whose resolution cannot be completed) and `tnominal` (a type known only by name).
 
 ### Cited Findings
+
 - REFUTED `complete` as an "unresolved" marker. The schema says: "incomplete if this is only a declaration; definition if it is a definition." (function, record); for sum: "complete if this is a declaration that is considered usable by value." — [kythe.io/docs/schema](https://kythe.io/docs/schema/)
 - CONFIRMED The three values exist (`incomplete`, `complete`, `definition`) and feed `completedby`: "Declaration A completedby definition B if B fully specifies A." — [kythe.io/docs/schema](https://kythe.io/docs/schema/)
 - REFUTED `name` nodes as targets for unavailable references. The schema says: "A name specifies an external identifier for a node, typically used for linking." and "A named B if B is an external identifier for A." — [kythe.io/docs/schema](https://kythe.io/docs/schema/)
@@ -188,18 +210,22 @@ The earlier reading is partly refuted. The `complete` fact (`incomplete`, `compl
 - NOT FOUND The words "unresolved", "undefined" (as a reference state) and "unavailable" do not appear in the schema page.
 
 ### Inferences
+
 - Kythe's `lookup` node is the closest schema-level precedent for a first-class "deferred name" target: the reference still has a node to point at, carrying the unresolved text.
 - Kythe models "known by name only" (`tnominal`) separately from "cannot be resolved" (`lookup`); two reasons, two node kinds.
 
 ### Gaps
+
 - How Kythe indexers treat a reference to a target in a compilation unit that was never indexed (a dangling VName with no facts) is not stated on the schema page.
 
 ## Language servers and type checkers ("mark the hole")
 
 ### Takeaway
+
 Every tool read keeps going after a failed resolution and marks the hole: go/packages with per-package error lists and an `IllTyped` flag, TypeScript with an error plus `any`, rust-analyzer with `{unknown}` and a named diagnostic per kind, clangd with a fallback command, JDT with bindings flagged as recovered.
 
 ### Cited Findings
+
 - CONFIRMED go/packages `Errors`: "Errors contains any errors encountered querying the metadata of the package, or while parsing or type-checking its files." — [packages.go](https://github.com/golang/tools/blob/master/go/packages/packages.go)
 - CONFIRMED go/packages `TypeErrors`: "TypeErrors contains the subset of errors produced during type checking." `IllTyped`: "IllTyped indicates whether the package or any dependency contains errors. It is set only when Types is set." — [packages.go](https://github.com/golang/tools/blob/master/go/packages/packages.go)
 - CONFIRMED go/packages does not fail on package errors: "Errors associated with a particular package are recorded in the corresponding Package's Errors list, and do not cause Load to return an error. Clients may need to handle such errors before proceeding with further analysis." — [packages.go](https://github.com/golang/tools/blob/master/go/packages/packages.go)
@@ -220,20 +246,24 @@ Every tool read keeps going after a failed resolution and marks the hole: go/pac
 - CONFIRMED (with correction) `isRecovered()` is declared on `IBinding`, so `ITypeBinding` inherits it: "Return whether this binding is created because the bindings recovery is enabled. This binding is considered to be incomplete. Its internal state might be incomplete." — [IBinding javadoc](https://help.eclipse.org/latest/topic/org.eclipse.jdt.doc.isv/reference/api/org/eclipse/jdt/core/dom/IBinding.html)
 
 ### Inferences
+
 - The common pattern has three parts: continue, mark the node (flag or sentinel type), and attach a reason from a closed list (`ErrorKind`, a diagnostic code).
 - go/packages is the clearest "per unit" precedent: errors and an ill-typed flag live on each package, the flag is transitive over dependencies, and the caller decides whether to stop.
 - rust-analyzer's own notes show that unresolved diagnostics from a tool that does not see the full build are often false positives; this argues for distinguishing "extractor could not see it" from "does not exist".
 
 ### Gaps
+
 - TypeScript's handbook text on the type given to an import from an unresolved module was not found on the pages read; the behaviour is evidenced by the TS7016 message only.
 - The rust-analyzer `{unknown}` line was matched by search and a line-level read, not a full read of the function that owns it.
 
 ## Sourcegraph and GitHub code navigation labels
 
 ### Takeaway
+
 Sourcegraph documents two tiers, precise and search-based, with search-based as the automatic fallback, and says reference lists contain both kinds. The "syntactic" tier and a UI badge were not found in the docs pages read. GitHub's current docs describe a single tree-sitter, name-search approach and do not mention a "precise" label.
 
 ### Cited Findings
+
 - CONFIRMED Sourcegraph fallback: "Sourcegraph automatically uses Precise Code Navigation whenever available, and Search-based Code Navigation is used as a fallback when precise navigation is not available." — [Precise Code Navigation](https://sourcegraph.com/docs/code-navigation/precise-code-navigation.md)
 - CONFIRMED Sourcegraph search-based definition: "It uses a mix of text search and syntax-level heuristics (no language-level semantic information) for fast, performant searches across large code bases." — [Code Navigation](https://sourcegraph.com/docs/code-navigation.md)
 - CONFIRMED Sourcegraph precise definition: "Uses compile-time information to provide users with accurate cross-repository navigation experience across the entire code base." — [Code Navigation](https://sourcegraph.com/docs/code-navigation.md)
@@ -244,18 +274,22 @@ Sourcegraph documents two tiers, precise and search-based, with search-based as 
 - NOT FOUND On the GitHub page as fetched on 2026-11-14 the words "precise", "search-based" and "stack graphs" do not occur; no result label is documented there.
 
 ### Inferences
+
 - Sourcegraph's model is a provenance tier per result (compiler-accurate versus heuristic), mixed in one list. For `mentalc` this maps to a confidence or provenance attribute on a resolved edge, separate from the unresolved fact.
 
 ### Gaps
+
 - Sourcegraph API field names for result provenance were not looked up.
 - GitHub's earlier "precise" versus "search-based" labelling (stack graphs) could not be confirmed from the current docs page; an archived version was not consulted.
 
 ## Call-graph research on unanalysed libraries
 
 ### Takeaway
+
 Ali and Lhoták show that one summary node (Cgc) or a generated placeholder library (Averroes) for all unanalysed library code gives application call graphs that are sound against dynamic graphs and close to whole-program precision, under the separate compilation assumption. Measured recall of practical analyses is well under 100 %: 0.884 median (Java, Sui et al.), 69.9 % (PyCG), 75.9 % rising to 88.1 % (Jelly).
 
 ### Cited Findings
+
 - CONFIRMED Cgc, separate compilation assumption: "all of the library classes are developed separately from the application classes. In particular, all of the library classes can be compiled in the absence of the application classes." — [Ali & Lhoták, ECOOP 2012](https://plg.uwaterloo.ca/~olhotak/pubs/ecoop12.pdf)
 - CONFIRMED Cgc, single summary node: "It assumes that all library methods are reachable, and uses a single summary “method” to represent them." and "no edges are created to represent calls within the library." — [ECOOP 2012](https://plg.uwaterloo.ca/~olhotak/pubs/ecoop12.pdf)
 - CONFIRMED Cgc, what is still needed from the library: "the algorithm uses structural information (i.e., method signatures and field names) of each library class that is referenced in an application class, as well as its superclasses and superinterfaces." — [ECOOP 2012](https://plg.uwaterloo.ca/~olhotak/pubs/ecoop12.pdf)
@@ -276,20 +310,24 @@ Ali and Lhoták show that one summary node (Cgc) or a generated placeholder libr
 - CONFIRMED Jelly recall: "For 36 JavaScript projects where dynamic call graphs are available, average analysis recall is improved from 75.9% to 88.1% with a negligible reduction in precision." and "In one case, recall increases from 40.1% to 98.0%". Precision "is reduced by only 1.5%." — [PLDI 2024](https://cs.au.dk/~amoeller/papers/approx/paper.pdf)
 
 ### Inferences
+
 - A single "library" summary target per unanalysed dependency is a published, measured design: sound for application edges, with imprecision concentrated in callbacks from the library into commonly overridden methods.
 - The Cgc approach still needs signatures of referenced library classes. A pure source-only extractor without dependency metadata has less than Cgc assumed.
 - Recall figures are not comparable across papers: Sui measures reachable methods, PyCG measures edges against a hand-made graph, Jelly measures edges against a dynamic graph.
 
 ### Gaps
+
 - Reif et al.: only the abstract and introduction were read closely; per-library numbers were not extracted.
 - The PyCG paper was read from arXiv, the Sui and Reif papers from author preprints; page numbers in the published versions may differ.
 
 ## Tools or papers that publish a "resolution rate" and whether any gates on it
 
 ### Takeaway
+
 CodeQL is the only tool found that computes a per-database resolution rate, publishes it, and applies a threshold; the threshold produces a warning, not a failure. Jelly defines "percentage of resolved call sites" as a research metric. No tool was found that fails a build on a resolution rate.
 
 ### Cited Findings
+
 - CONFIRMED CodeQL publishes "Percentage of calls with call target" and "Percentage of expressions with known type" per database (key built as "Percentage of " + ok text) and compares them with thresholds 85/85 (Java, C#) and 50/20 (Rust). — [ReportStats.qll](https://github.com/github/codeql/blob/main/shared/util/codeql/util/ReportStats.qll), [java DatabaseQualityDiagnostics.ql](https://github.com/github/codeql/blob/main/java/ql/src/Telemetry/DatabaseQualityDiagnostics.ql), [rust DatabaseQualityDiagnostics.ql](https://github.com/github/codeql/blob/main/rust/ql/src/queries/telemetry/DatabaseQualityDiagnostics.ql)
 - CONFIRMED CodeQL does not gate: the message opens "Scanning Java code completed successfully, but the scan encountered issues." and the result row is selected with severity 1 (warning). — [java DatabaseQualityDiagnostics.ql](https://github.com/github/codeql/blob/main/java/ql/src/Telemetry/DatabaseQualityDiagnostics.ql)
 - CONFIRMED CodeQL C/C++ publishes an include resolution rate: baseline "#include directives" is `count(Include i) + count(CannotOpenFileError e)`, success metric "successfully resolved #include directives", and a per-header count `"Failed to include '" + includeText + "'"`. — [cpp Metrics.qll](https://github.com/github/codeql/blob/main/cpp/ql/src/Telemetry/Metrics.qll)
@@ -299,10 +337,12 @@ CodeQL is the only tool found that computes a per-database resolution rate, publ
 - NOT FOUND A tool or paper that fails the build or exits non-zero when a resolution rate is below a threshold. go/packages leaves the decision to the client ("Clients may need to handle such errors before proceeding with further analysis."). — [packages.go](https://github.com/golang/tools/blob/master/go/packages/packages.go)
 
 ### Inferences
+
 - If `mentalc` fails the build on a resolution rate it goes further than every precedent read; the precedents warn and continue. CodeQL's history (threshold relaxed, metric removed, exclusions added) shows the false-alarm risk of a hard gate.
 - Jelly's observation that some call sites are legitimately unresolved (callbacks in unused library code) and CodeQL's exclusion lists both support counting by reason and gating only on reasons that indicate an extractor defect.
 - CodeQL counts per database (and per language), not per file or module; a per-unit count in `mentalc` would be finer-grained than the precedent.
 
 ### Gaps
+
 - Joern, SCIP indexers and Kythe were not found to publish any resolution rate; none of the three was searched exhaustively for one.
 - Other candidates (Semgrep, Infer, Soot/OPAL "unresolved" statistics, WALA) were out of the scope searched.

@@ -28,11 +28,13 @@ Line counts were measured locally with `wc -l` (they include comments and blank 
 ## 1. What is each tool's file layer, concretely (interface, methods, implementations, identity, size)?
 
 ### Takeaway
+
 Two shapes recur. The first is **a POSIX-like file system over paths**: LLVM, pyright, TypeScript `System`, ty `System`, tsgo `vfs.FS`. The second is **a content source keyed by an opaque identity**: rust-analyzer `Vfs`/`FileId`, typst `World`/`FileId`, gopls `file.Source`, deno_graph `Loader`. The tools whose core is a compiler or analyzer (rust-analyzer, typst, ty's `File`) all put an *interned identity* at the core boundary, and keep any file-system-shaped interface at the edge, for discovery and loading.
 
 ### Cited Findings
 
 **rust-analyzer** (`crates/vfs` 1,300 lines; `vfs-notify` 391; `load-cargo` 966; `base-db/change.rs` 99)
+
 - `FileId(u32)` is an "interned path". `Vfs { interner: PathInterner, data: Vec<FileState>, changes: IndexMap<FileId, ChangedFile> }`. `FileState` is `Exists(u64 hash) | Deleted | Excluded`: the Vfs stores only content *hashes* and pending changes, not the file contents — [RA crates/vfs/src/lib.rs L1-40, L66-110](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/vfs/src/lib.rs#L1)
 - The public `Vfs` API is about 6 methods: `file_id(path)`, `file_path(id)`, `iter()`, `set_file_contents(path, Option<Vec<u8>>) -> bool`, `take_changes()`, `exists(id)`, plus `insert_excluded_file` — [RA vfs/src/lib.rs L170-310](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/vfs/src/lib.rs#L216)
 - "VFS doesn't do IO or file watching itself. For that, see the `loader` module." `loader::Handle` has 4 methods: `spawn(sender)`, `set_config(Config)`, `invalidate(path)`, `load_sync(path) -> Option<Vec<u8>>`. Results are pushed asynchronously as `Message::{Progress, Loaded, Changed}` — [RA vfs/src/loader.rs L1-90](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/vfs/src/loader.rs#L78)
@@ -43,6 +45,7 @@ Two shapes recur. The first is **a POSIX-like file system over paths**: LLVM, py
 - Architecture invariant: "vfs doesn't assume a single unified file system ... the same `/tmp/foo.rs` path points to different files. For this reason, all path APIs generally take some existing path as a 'file system witness'" — [RA architecture.md L285-293](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/docs/book/src/contributing/architecture.md#L285)
 
 **ruff / ty** (`ruff_db`: `system*` about 4.85k lines, of which `memory_fs.rs` is 1,240 and `system/path.rs` 1,046; `files*` 1,384; `vendored*` 1,003; `source.rs` 348)
+
 - `trait System` has 26 methods: 17 required (`path_metadata`, `canonicalize_path`, `is_same_file`, `which`, `read_to_string`, `read_to_notebook`, `read_virtual_path_to_string`, `read_virtual_path_to_notebook`, `current_directory`, `user_config_directory`, `cache_dir`, `read_directory`, `walk_directory`, `as_writable`, `as_any`, `as_any_mut`, `dyn_clone`) and 9 defaulted (`is_file_open`, `source_type`, `virtual_path_source_type`, `run_command`, `command_executor`, `path_exists`, `is_directory`, `is_file`, `env_var`). A separate `WritableSystem` adds `create_new_file`, `write_file(_bytes)`, `remove_file`, `create_directory_all` and `get_or_cache` — [RUFF crates/ruff_db/src/system.rs L38-295](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/system.rs#L52) (counted with a script over the trait body)
 - The doc comment gives the reason for the trait: hosts differ (LSP has unsaved changes and structured notebooks; WASM has no cwd or watching), and "Abstracting the system also enables tests to use a more efficient in-memory file system" — [RUFF system.rs L38-51](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/system.rs#L38)
 - There are 7 `impl System` blocks: `OsSystem`, `TestSystem`, `InMemorySystem` (ruff_db), `LSPSystem` (ty_server), `MdtestSystem` (ty_test), `WasmSystem` (ty_wasm) — local grep of [RUFF system/os.rs L71](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/system/os.rs#L71), [system/test.rs L111, L395](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/system/test.rs#L111), [ty_server/src/system.rs L167](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ty_server/src/system.rs#L167); `ty_test`/`ty_wasm` via GitHub code search (snippet-only: `crates/ty_test/src/db.rs` L510 `impl System for MdtestSystem`, `crates/ty_wasm/src/lib.rs` L1624 `impl System for WasmSystem`)
@@ -52,11 +55,13 @@ Two shapes recur. The first is **a POSIX-like file system over paths**: LLVM, py
 - `FileRootKind { Project, SearchPath }` sets durability per root. `Files::freeze()` "Freezes all inputs on files created from now on" (`Durability::NEVER_CHANGE`). My reading is that this is meant for one-shot runs where nothing will change, but the purpose is not stated in the code — [RUFF files/file_root.rs L32-38](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/files/file_root.rs#L32), [RUFF files.rs L88-104](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/files.rs#L88)
 
 **pyright** (`fileSystem.ts` 150, `realFileSystem.ts` 661, `readonlyAugmentedFileSystem.ts` 133, `pyrightFileSystem.ts` 49, `partialStubService.ts` 180, `common/uri/*` 2,141; test harness `tests/harness/vfs/*` 2,423)
+
 - `ReadOnlyFileSystem` has 16 members: `existsSync`, `chdir`, `readdirEntriesSync`, `readdirSync`, `readFileSync` (overloaded), `readFileRangeSync`, `statSync`, `realpathSync`, `getModulePath`, `readFile`, `readFileText`, `realCasePath`, `isMappedUri`, `getOriginalUri`, `getMappedUri`, `isInZip`. `FileSystem` adds 9: `mkdirSync`, `writeFileSync`, `unlinkSync`, `rmdirSync`, `createFileSystemWatcher`, `createReadStream`, `createWriteStream`, `copyFileSync`, `mapDirectory`. All of them take `Uri` — [PYR common/fileSystem.ts L38-82](https://github.com/microsoft/pyright/blob/b2df5a4fc0c126236b90919d41c47f353dcc5dd1/packages/pyright-internal/src/common/fileSystem.ts#L38)
 - Implementations: `RealFileSystem`, `ReadOnlyAugmentedFileSystem` (a decorator holding a `realFS` plus mapping tables), `PyrightFileSystem extends ReadOnlyAugmentedFileSystem` (forwards writes to `getOriginalUri(uri)`), and the test `TestFileSystem` — [PYR readonlyAugmentedFileSystem.ts L18-133](https://github.com/microsoft/pyright/blob/b2df5a4fc0c126236b90919d41c47f353dcc5dd1/packages/pyright-internal/src/readonlyAugmentedFileSystem.ts#L18), [PYR pyrightFileSystem.ts](https://github.com/microsoft/pyright/blob/b2df5a4fc0c126236b90919d41c47f353dcc5dd1/packages/pyright-internal/src/pyrightFileSystem.ts), [PYR tests/harness/vfs/filesystem.ts L50](https://github.com/microsoft/pyright/blob/b2df5a4fc0c126236b90919d41c47f353dcc5dd1/packages/pyright-internal/src/tests/harness/vfs/filesystem.ts#L50)
 - Identity is a `Uri` class hierarchy (`FileUri`, `WebUri`, `ConstantUri`, `EmptyUri`) with a precomputed string `key` "for storing in maps", and equality by `key` — [PYR common/uri/baseUri.ts L19-23, L151](https://github.com/microsoft/pyright/blob/b2df5a4fc0c126236b90919d41c47f353dcc5dd1/packages/pyright-internal/src/common/uri/baseUri.ts#L19)
 
 **typst** (`typst-syntax/src/path.rs` 952, `package.rs` 658; `typst-kit/src/files.rs` 469, `packages.rs` 504, `downloader.rs` 490)
+
 - `trait World` has 7 methods: `library`, `book`, `main() -> FileId`, `source(FileId) -> FileResult<Source>`, `file(FileId) -> FileResult<Bytes>`, `font(usize)`, `today(offset)`. There is no directory listing, no exists and no metadata — [TYPST crates/typst-library/src/lib.rs L63-101](https://github.com/typst/typst/blob/c56dfa6043014b2c1cae2b104b6bab0dd1b195c7/crates/typst-library/src/lib.rs#L63)
 - `RootedPath { root: VirtualRoot, vpath: VirtualPath }` with `enum VirtualRoot { Project, Package(PackageSpec) }`. `FileId(NonZeroU16)` interns a `RootedPath` in a global, leaking interner ("We can't leak more than 2^16 pair"). `FileId::unique` makes a path-less id (for example for stdin) — [TYPST typst-syntax/src/path.rs L1-200](https://github.com/typst/typst/blob/c56dfa6043014b2c1cae2b104b6bab0dd1b195c7/crates/typst-syntax/src/path.rs#L21)
 - `PackageSpec { namespace, name, version }` (that is, `@preview/pkg:1.0.0`) — [TYPST typst-syntax/src/package.rs L226-233](https://github.com/typst/typst/blob/c56dfa6043014b2c1cae2b104b6bab0dd1b195c7/crates/typst-syntax/src/package.rs#L226)
@@ -64,11 +69,13 @@ Two shapes recur. The first is **a POSIX-like file system over paths**: LLVM, py
 - typst-cli's `World::source`/`file` are one-line delegations to `self.files` — [TYPST crates/typst-cli/src/world.rs L139-145](https://github.com/typst/typst/blob/c56dfa6043014b2c1cae2b104b6bab0dd1b195c7/crates/typst-cli/src/world.rs#L139)
 
 **LLVM `llvm::vfs`** (header 1,277; implementation 3,072; unit tests 4,022; clangd `FS.*` 204, `ThreadsafeFS.*` 145)
+
 - `class FileSystem : ThreadSafeRefCountedBase` has 5 pure virtuals: `status`, `openFileForRead`, `dir_begin`, `setCurrentWorkingDirectory`, `getCurrentWorkingDirectory`. Defaulted virtuals: `openFileForReadBinary`, `getRealPath`, `getDirectoryContentRealSources`, `exists`, `isLocal`, `makeAbsolute`, `visitChildFileSystems`, `printImpl`. There is a non-virtual helper `getBufferForFile`. `File` has `status`, `getName`, `getBuffer`, `close`, `setPath` — [LLVM llvm/include/llvm/Support/VirtualFileSystem.h L115-150, L267-375](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/llvm/include/llvm/Support/VirtualFileSystem.h#L267)
 - In-tree implementations: `RealFileSystem` (cpp L287), `OverlayFileSystem` (h L405), `ProxyFileSystem` (h L469, a base for decorators), `InMemoryFileSystem` (h L561), `RedirectingFileSystem` (h L802, YAML-driven), `TracingFileSystemImpl` (h L1187). Code search also finds decorators in clangd (`CollectFS`, `CacheVFS`, `VolatileFileSystem`), clang `DependencyScanningFilesystem`, dsymutil, lldb and polly — [LLVM VirtualFileSystem.h](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/llvm/include/llvm/Support/VirtualFileSystem.h#L405), [LLVM clangd/FS.cpp L60, L98](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/clang-tools-extra/clangd/FS.cpp#L60); the cross-repo list is snippet-only (GitHub code search)
 - Above the VFS, clang's `FileManager` holds an `IntrusiveRefCntPtr<vfs::FileSystem>` and does "file system caching ... uniquing files based on 'inode'" — [LLVM clang/include/clang/Basic/FileManager.h L50-58, L240](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/clang/include/clang/Basic/FileManager.h#L50)
 
-**TypeScript**
+#### TypeScript
+
 - JS (6.0): `ModuleResolutionHost` has 2 required methods (`fileExists`, `readFile`) and optional `trace`, `directoryExists`, `realpath`, `getCurrentDirectory`, `getDirectories`. `CompilerHost extends ModuleResolutionHost` adds `getSourceFile` (the host returns *parsed* `SourceFile`s), `getDefaultLibFileName`, `getCurrentDirectory`, `getCanonicalFileName`, `useCaseSensitiveFileNames`, `getNewLine`, `writeFile`, plus about 15 optional resolution hooks — [TS6 src/compiler/types.ts L7981, L8130](https://github.com/microsoft/TypeScript/blob/050880ce59e30b356b686bd3144efe24f875ebc8/src/compiler/types.ts#L7981)
 - JS `System` has about 29 members, mixing file IO (`readFile`, `writeFile`, `fileExists`, `directoryExists`, `getDirectories`, `readDirectory`, `realpath?`, `getModifiedTime?`), watching (`watchFile?`, `watchDirectory?`) and process concerns (`write`, `exit`, `args`, `setTimeout?`, `clearScreen?`, `getMemoryUsage?`) — [TS6 src/compiler/sys.ts L1395](https://github.com/microsoft/TypeScript/blob/050880ce59e30b356b686bd3144efe24f875ebc8/src/compiler/sys.ts#L1395)
 - The language service pulls content from the host: `LanguageServiceHost.getScriptFileNames()`, `getScriptVersion(fileName): string`, `getScriptSnapshot(fileName): IScriptSnapshot`. `IScriptSnapshot` has `getText(start, end)`, `getLength()`, `getChangeRange(oldSnapshot)` (for incremental reparse) and `dispose?` — [TS6 src/services/types.ts L198-216, L317](https://github.com/microsoft/TypeScript/blob/050880ce59e30b356b686bd3144efe24f875ebc8/src/services/types.ts#L198)
@@ -77,28 +84,34 @@ Two shapes recur. The first is **a POSIX-like file system over paths**: LLVM, py
 - The Go `CompilerHost` is `FS() vfs.FS`, `DefaultLibraryPath()`, `Trace`, `GetSourceFile(opts)`, plus content-mapper and project-reference hooks — [TS7 tsc/internal/compiler/host.go L15-29](https://github.com/microsoft/TypeScript/blob/ef0c06e25aa9265d3e1d69b1282b0c6528426161/tsc/internal/compiler/host.go#L15)
 
 **gopls** (`gopls/internal/file` 255 lines; `cache/fs_memoized.go` 174; `cache/fs_overlay.go` 84)
+
 - `type Source interface { ReadFile(ctx, uri) (Handle, error) }`, with the invariant "ReadFile must only return an error in the case of context cancellation". `Handle` has `URI`, `Identity`, `SameContentsOnDisk`, `Version`, `Content() ([]byte, error)`, `ModTime`, `String`. `Identity{URI, Hash}`, where the hash is a "digest of file contents" — [GOPLS gopls/internal/file/file.go L22-68](https://github.com/golang/tools/blob/5bc449089572d5bf79d544b5cabbd253591b27d4/gopls/internal/file/file.go#L38)
 - Two `Source`s: `memoizedFS` ("memoizes reads, to reduce IO") and `overlayFS` ("keeps track of overlays on top of a delegate FileSource") — [GOPLS cache/fs_memoized.go L20](https://github.com/golang/tools/blob/5bc449089572d5bf79d544b5cabbd253591b27d4/gopls/internal/cache/fs_memoized.go#L20), [GOPLS cache/fs_overlay.go L16-84](https://github.com/golang/tools/blob/5bc449089572d5bf79d544b5cabbd253591b27d4/gopls/internal/cache/fs_overlay.go#L16)
 
 **deno_graph** (`src/source/mod.rs` 960 lines)
+
 - `trait Loader` has one required method, `load(&ModuleSpecifier, LoadOptions) -> LoadFuture`, and defaulted `max_redirects`, `cache_info_enabled`, `get_cache_info`, `ensure_cached`. `ModuleSpecifier = url::Url`. `LoadOptions { in_dynamic_branch, was_dynamic_root, cache_setting, maybe_checksum }`: "It is the loader's responsibility to verify the provided checksum" — [DENO src/source/mod.rs L296-370](https://github.com/denoland/deno_graph/blob/c8786dc541753ffd12222890d3be24c4113a0102/src/source/mod.rs#L317), [DENO src/module_specifier.rs L3](https://github.com/denoland/deno_graph/blob/c8786dc541753ffd12222890d3be24c4113a0102/src/module_specifier.rs#L3)
 - `enum LoadResponse { External{specifier}, Redirect{specifier}, Module{content: Arc<[u8]>, mtime, specifier, maybe_headers} }` — [DENO src/source/mod.rs L76-104](https://github.com/denoland/deno_graph/blob/c8786dc541753ffd12222890d3be24c4113a0102/src/source/mod.rs#L76)
 - `MemoryLoader` (a `HashMap<ModuleSpecifier, LoadResponse>`) is the in-tree test implementation. The production loaders live in the Deno CLI (not read) — [DENO src/source/mod.rs L628, L796](https://github.com/denoland/deno_graph/blob/c8786dc541753ffd12222890d3be24c4113a0102/src/source/mod.rs#L628)
 
 ### Inferences
+
 - Among the compiler-shaped tools, the content interface every tool needs is tiny: **typst `FileLoader` 1 method, gopls `Source` 1, deno `Loader` 1 required, rust-analyzer `Handle` 4, TS `ModuleResolutionHost` 2 required**. The large interfaces (ty 26, pyright 25, TS `System` ~29, LLVM ~13 virtuals) are host abstractions for long-running servers. They carry cwd, env, process, watching, writing, notebooks or streams.
 - Sizes of the "file layer proper" (excluding watchers and test harnesses): typst-kit `files.rs` ~470, rust-analyzer `vfs` ~1.3k, gopls `file` plus two FS files ~510, tsgo `vfs` core plus decorators ~2.3k (excluding generated mock and glob), ruff_db ~7.3k, LLVM ~4.3k. A mentalc layer in the typst/gopls range (a few hundred lines) is realistic.
 
 ### Gaps
+
 - Deno CLI's concrete `Loader` (`FetchCacher` / file fetcher) and its `sys_traits` usage were not read. deno_graph depends on `sys_traits = "0.1.16"` ([DENO Cargo.toml L18](https://github.com/denoland/deno_graph/blob/c8786dc541753ffd12222890d3be24c4113a0102/Cargo.toml#L18)), but I did not study that crate's fine-grained "one trait per fs operation" design.
 - Roslyn (`SourceText`/`TextLoader`) and Sorbet were not studied.
 
 ## 2. Is the abstraction "a file system" (paths, dirs) or "a source of contents keyed by identity", and which works better for a compiler?
 
 ### Takeaway
+
 Every tool needs **both**: a *discovery* step that lists directories and resolves names, and a *content* step that fetches bytes by identity. The cleanest designs keep them as separate interfaces. Discovery happens once at the edge (rust-analyzer loader config plus `FileSet`; typst's import resolution builds `FileId`s from `RootedPath`s; gopls delegates discovery to `go list`). The analysis core sees only `FileId → bytes`. Tools that expose a whole file system to the core (pyright, LLVM) had to grow mapping, zip and cwd methods into that interface.
 
 ### Cited Findings
+
 - rust-analyzer's `base-db` "doesn't know about file system and file paths. Files are represented with opaque `FileId`" (from the prior note). Concretely, `FileChange { roots: Option<Vec<SourceRoot>>, files_changed: Vec<(FileId, Option<String>)>, crate_graph }` is the whole input delta pushed into the database — [RA base-db/src/change.rs L18-53](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/base-db/src/change.rs#L18)
 - In rust-analyzer, relative lookups (`mod foo;`) go through `FileSet::resolve_path(AnchoredPath { anchor: FileId, path: &str })`, not through any file system: "Traversal-like operations (including getting the neighbor file by the relative path) are handled by the `FileSet`" — [RA vfs/src/file_set.rs L26-35](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/vfs/src/file_set.rs#L30), [RA vfs/src/lib.rs L20-24](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/vfs/src/lib.rs#L20)
 - typst's `World` has no directory listing at all. Typst code can only name files, and each name becomes a `RootedPath`. A 2026 PR that adds a `path` type says it is "designed to allow for operations like file existence checks or path enumeration. However, those additional features are not part of this initial PR" — [typst PR #7555](https://github.com/typst/typst/pull/7555) (merged 2026-01-14)
@@ -108,18 +121,22 @@ Every tool needs **both**: a *discovery* step that lists directories and resolve
 - In ruff, the `FileSystem` trait was renamed to `System` in July 2024 because the trait "isn't about abstracting a way a file-system like API; it's solely for abstracting system-dependent logic". The vendored zip "doesn't implement `FileSystem` because the logic isn't system-dependent". `Vfs` was renamed to `Files` at the same time — [ruff PR #12214](https://github.com/astral-sh/ruff/pull/12214) (2024-07-06)
 
 ### Inferences
+
 - **For a batch compiler on a frozen snapshot, prefer content keyed by identity at the core.** Python import resolution needs `exists` and `list_dir` *within* a root. That works best as a pure function over an in-memory index of the snapshot (rust-analyzer's `FileSet`), not as a host file system call. Then no negative lookups need tracking: the snapshot is immutable, so a miss is a fact.
 - The ty rename is direct evidence for mentalc: "the host" and "a file tree" are different abstractions. mentalc has no LSP host, so it needs the second only.
 
 ### Gaps
+
 - None of these tools reads git objects directly. No tool studied has a `GitTree` file source, so mentalc's commit- and submodule-backed root is an extrapolation.
 
 ## 3. How do in-memory overlays and unsaved edits work, and how do change and invalidation flow?
 
 ### Takeaway
+
 There are three patterns: (a) **write overlay content into the same store** (rust-analyzer writes editor text into `Vfs` and ignores disk events for open files); (b) **a decorator FS that checks overlays first** (ty `LSPSystem`, clangd `OverlayFileSystem` over `InMemoryFileSystem`, gopls `overlayFS`, tsgo `overlayFS`); (c) **overlay stored on the file object** (pyright `SourceFile.clientDocumentContents`; ty `File.source_text_override`). Changes are pushed as explicit events (rust-analyzer `take_changes`, ty `ChangeEvent`). Change detection uses a content hash (rust-analyzer FxHash, gopls digest, tsgo xxh3) or a revision from mtime (ty).
 
 ### Cited Findings
+
 - rust-analyzer: `set_file_contents` hashes the new bytes and returns `false` without recording a change if the hash is unchanged. Changes to one file within a cycle are merged (Delete wins; Delete+Create becomes Modify) — [RA vfs/src/lib.rs L216-280](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/vfs/src/lib.rs#L216)
 - rust-analyzer `MemDocs` holds documents "maintained by the client ... might be different from what's on disk". `didChange` writes the new text with `vfs.set_file_contents`. When loader events arrive: "If the file is in mem docs, it's managed by the client ... Library files are exempt from that authority as they are considered immutable, for them disk is always the source of truth" — [RA rust-analyzer/src/mem_docs.rs](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/rust-analyzer/src/mem_docs.rs), [RA handlers/notification.rs L84-130](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/rust-analyzer/src/handlers/notification.rs#L84), [RA main_loop.rs L1000-1011](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/rust-analyzer/src/main_loop.rs#L1000)
 - rust-analyzer batch loading (`load-cargo`, used by CLI tools) runs the same loader synchronously: `load_sync` for files the crate graph needs, then `set_config` with the project folders, then it drains messages into the Vfs and partitions it into source roots — [RA load-cargo/src/lib.rs L97-206](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/load-cargo/src/lib.rs#L97)
@@ -133,18 +150,22 @@ There are three patterns: (a) **write overlay content into the same store** (rus
 - typst-kit `FileStore::dependencies()` returns the `FileId`s accessed during a compile (for watch mode), and `reset()` re-validates slots — [TYPST typst-kit/src/files.rs L91-117](https://github.com/typst/typst/blob/c56dfa6043014b2c1cae2b104b6bab0dd1b195c7/crates/typst-kit/src/files.rs#L91)
 
 ### Inferences
+
 - mentalc has no unsaved edits. Its "overlay" cases are (1) the working tree over a commit (`mentalc build` on a dirty checkout) and (2) tests. Pattern (a), building one immutable map from all sources once, is simplest. An overlay is then "insert the working-tree files after the commit files" at load time, not a runtime decorator.
 - Content hashing at load (rust-analyzer, gopls, tsgo) matches the content-addressed cache already chosen for mentalc. The `RepoSnapshot` can store `(path → (hash, bytes))`, and the hash feeds cache keys directly. Git blob ids are free content hashes for committed files.
 
 ### Gaps
+
 - I did not measure how often overlay/disk divergence bugs occur. "Client is authoritative except for libraries" in rust-analyzer is a sign that the rule needed refinement, but I did not find the issue behind it.
 
 ## 4. How are archives, bundled data and package dependencies served?
 
 ### Takeaway
+
 Only pyright reads archives in place (zip, egg, jar) as directories, and it took a third-party zip FS plus monkey patching. ty reads only *its own* bundled zip, through a separate small read-only type. typst downloads `.tar.gz` and unpacks it to a cache directory. tsgo embeds lib files with `go:embed` under a `bundled:///` scheme. rust-analyzer and ty treat dependencies as ordinary directories (`~/.cargo/registry`, site-packages) under a root flagged as library or search path. Deno maps `jsr:` to HTTPS URLs and sends `npm:` to a separate resolver.
 
 ### Cited Findings
+
 - ty `VendoredFileSystem` wraps `ZipArchive<Cursor<ArchiveData>>` with `exists`, `metadata`, `is_directory`, `is_file`, `read_to_string`, `read_directory`. Each operation clones the archive for an independent cursor ("The clone is cheap ... The ZIP bytes themselves are never copied"). The revision is the entry's CRC32 — [RUFF ruff_db/src/vendored.rs L37-200, L300-320](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/vendored.rs#L37)
 - ty's typeshed zip is built by `build.rs`, which walks `vendor/typeshed`, patches in `ty_extensions` stubs, and uses zstd (deflate for WASM). It is embedded with `include_bytes!(concat!(env!("OUT_DIR"), "/zipped_typeshed.zip"))` and opened once in a `LazyLock`. `SOURCE_COMMIT` records the typeshed commit (asserted 40 chars) — [RUFF crates/ty_vendored/build.rs](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ty_vendored/build.rs), [RUFF crates/ty_vendored/src/lib.rs](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ty_vendored/src/lib.rs)
 - To show a vendored file in the editor, ty copies it out: `WritableSystem::get_or_cache` writes the content to `cache_dir/path` (using `create_new_file` so only one writer wins), and `file_to_uri` maps `FilePath::Vendored` to that disk path — [RUFF system.rs L258-292](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/system.rs#L258), [RUFF ty_server/src/system.rs L23-35](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ty_server/src/system.rs#L23)
@@ -159,21 +180,25 @@ Only pyright reads archives in place (zip, egg, jar) as directories, and it took
 - deno_graph: npm modules become `Module::Npm(NpmModule { specifier, pkg_req_ref })` and are not analyzed through `Loader`. `NpmResolver` has `load_and_cache_npm_package_info` and `resolve_pkg_reqs`. `jsr:` goes through `JsrUrlProvider` to HTTPS and then `Loader`. `data:` URLs are decoded in place by `load_data_url` — [DENO src/graph.rs L1218, L1351-1355](https://github.com/denoland/deno_graph/blob/c8786dc541753ffd12222890d3be24c4113a0102/src/graph.rs#L1351), [DENO src/source/mod.rs L404, L596-627](https://github.com/denoland/deno_graph/blob/c8786dc541753ffd12222890d3be24c4113a0102/src/source/mod.rs#L596)
 
 ### Inferences
+
 - **Archives as a root kind, not as directories inside paths.** pyright's "a `.zip/` segment anywhere in a path is a directory" approach leaked into 4 interface methods and a private-method override. ty and typst's "the archive is a root with its own path type" keeps archive handling in one module. For mentalc: `Root::{Commit(oid), Submodule(path, oid), Archive(sha256), Package(name, version)}`, each served by one reader function into the snapshot.
 - **For wheels and sdists, mentalc has the choice typst made: unpack to a content-addressed cache, or read in place.** Wheels are zips (read in place with the `zip` crate, as ty does). sdists are `.tar.gz` (typst's choice, unpacking, suits these). Since mentalc loads the snapshot once into memory, reading entries straight from the archive into the map avoids the temp-dir-and-rename dance entirely.
 - **Dependencies should be "library" roots that never change and are excluded from diagnostics** (rust-analyzer `is_library`, ty `FileRootKind::SearchPath`). Durability tuning does not matter for a batch tool, but the "don't report on library files" flag does.
 - Pin versions in identity: typst's `PackageSpec` includes the version, and ty pins typeshed by `SOURCE_COMMIT`. mentalc's root identity should include the commit oid or archive hash so that cache keys stay stable.
 
 ### Gaps
+
 - I found no issue in `astral-sh/ty` about zip or egg imports (GitHub issue search for "zip import" returned nothing). Whether ty plans zipimport support is unknown.
 - pyright's zip-support history (the PR that added `EggZipOpenFS`) was not located. The code comment is the only evidence of regret.
 
 ## 5. How do they keep the layer from bloating? Evidence of regret, rewrites, criticism
 
 ### Takeaway
+
 Concrete regrets: LLVM's stateful cwd ("thread-hostile"), its 1.5k-line YAML `RedirectingFileSystem`, and a decade of code bypassing the VFS, which an accepted 2025 RFC now blocks with a runtime "IO sandbox". There is pyright's monkey-patched zip FS. ty renamed `FileSystem` to `System` once vendored data showed the trait was really "the host". rust-analyzer rewrote its VFS in 2020 into the current "store plus loader" split. typst replaced `PathBuf` with a portable virtual path and an enum root in 2026. The tools that stayed small (gopls, typst, deno_graph, tsgo) use one-method or very small content interfaces plus small decorators.
 
 ### Cited Findings
+
 - LLVM: `getRealFileSystem()`: "The working directory is linked to the process's working directory. (This is usually thread-hostile)". `createPhysicalFileSystem()` was added to give an independent cwd. Both say "This may only be called outside the IO sandbox" — [LLVM VirtualFileSystem.h L381-393](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/llvm/include/llvm/Support/VirtualFileSystem.h#L381). clangd uses `createPhysicalFileSystem()` wrapped in a `VolatileFileSystem` — [LLVM clangd/support/ThreadsafeFS.cpp L26, L87](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/clang-tools-extra/clangd/support/ThreadsafeFS.cpp#L87). The 2019 patch adding `createPhysicalFileSystem` cited clangd's multithreading (snippet-only, via [search summary of llvm-commits 2019](https://lists.llvm.org/pipermail/llvm-commits/Week-of-Mon-20190114/617403.html))
 - LLVM size split: in `VirtualFileSystem.cpp`, `RedirectingFileSystem` and its YAML parser span about L1275-L2830 (~1,550 of 3,072 lines), and `YAMLVFSWriter` another ~240. `OverlayFileSystem` starts at L490 and `InMemoryFileSystem` at L896 — [LLVM llvm/lib/Support/VirtualFileSystem.cpp L1275, L1684, L2831](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/llvm/lib/Support/VirtualFileSystem.cpp#L1275) (line positions measured locally)
 - LLVM IO sandbox: an accepted RFC (Jan Svoboda, Apple, 2025-11-05). It says Clang has had the VFS since 2014 (lifted into LLVM in 2018), but much code still calls `llvm::sys::fs` / `MemoryBuffer::getFile*()` directly, and "Not using `vfs::FileSystem` consistently in the compiler breaks CAS-based caching". The mechanism makes direct calls `reportFatalInternalError()` in assert builds, with an audited `scopedDisable()` bypass. Benchmarks reported: `RedirectingFileSystem` about 20% slower than `sys::fs` — [Discourse RFC](https://discourse.llvm.org/t/rfc-file-system-sandboxing-in-clang-llvm/88791) (read via fetch summary); implementation [LLVM llvm/include/llvm/Support/IOSandbox.h](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/llvm/include/llvm/Support/IOSandbox.h), and `RealFile` methods begin with `sys::sandbox::scopedDisable()` — [LLVM VirtualFileSystem.cpp L220-262](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/llvm/lib/Support/VirtualFileSystem.cpp#L220); the PR was reverted once and re-landed (snippet-only: [PR #165350 thread](https://lists.llvm.org/pipermail/llvm-commits/Week-of-Mon-20251103/1774605.html), [commit e3e4f161](https://llvm.googlesource.com/llvm-project/+/e3e4f161d0160f10dc7cbd746abd639dd740ecde))
@@ -186,21 +211,25 @@ Concrete regrets: LLVM's stateful cwd ("thread-hostile"), its 1.5k-line YAML `Re
 - typst: the move away from `PathBuf` and the `Option<PackageSpec>` → `VirtualRoot` enum (2026), quoted in section 4 — [typst PR #7555](https://github.com/typst/typst/pull/7555), [typst PR #7689](https://github.com/typst/typst/pull/7689)
 
 ### Inferences
+
 - **The biggest bloat drivers are host concerns, not file access**: cwd, watching, writing, notebooks, process and env, case sensitivity, symlinks/realpath, thread safety. mentalc reads an immutable snapshot, so it can drop all of them. That leaves "list entries of a root" and "read bytes by id".
 - **Enforce the boundary mechanically from day one.** LLVM shows what happens otherwise: an abstraction added in 2014 still had bypasses in 2025 serious enough to break caching, which is exactly mentalc's content-addressed cache risk. ruff's `clippy.toml` list is the static version and maps directly onto the existing guideline C1/G4 rule.
 - **Avoid a YAML or config-driven redirect layer.** LLVM's `RedirectingFileSystem` exists for build systems to remap headers, and it is half the implementation and the slowest path. mentalc's "which roots exist" belongs in typed code (a `Vec<Root>` built from `.gitmodules`, lockfiles and CLI flags), not a remapping file format.
 - **Prefer enum roots over stringly paths.** typst moved toward an enum (#7689) and ty uses `FilePath`. Both make "where does this file come from" a match arm instead of a path-prefix test.
 
 ### Gaps
+
 - I found no published post-mortem on rust-analyzer's pre-2020 VFS (`ra_vfs`). The reasons for the rewrite are inferred from the new design, not documented.
 - I did not survey LLVM's issue tracker for VFS bugs (for example `OverlayFileSystem` ordering, fixed in D121423 per search results); only snippet-level evidence was seen.
 
 ## 6. How do they test against the file layer?
 
 ### Takeaway
+
 All of them test with an in-memory implementation of the same interface, built from a multi-file fixture string or map. rust-analyzer goes furthest: tests never touch disk and use *virtual* paths. LLVM has a 4k-line unit test file for its VFS alone. tsgo builds its test FS on Go's standard `testing/fstest.MapFS`. pyright's test FS supports snapshots and shadows (copy-on-write layers).
 
 ### Cited Findings
+
 - rust-analyzer test fixtures map `//- /path` entries to `VfsPath::new_virtual_path(meta.path)` and add a fake sysroot at `/sysroot/core/lib.rs` — [RA test-fixture/src/lib.rs L374-385, L477](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/test-fixture/src/lib.rs#L374). The `FileSetConfig` doc example builds a Vfs from virtual paths with no IO — [RA vfs/src/file_set.rs L68-84](https://github.com/rust-lang/rust-analyzer/blob/15d97b98eacfad690e81757e867ca0800f1c9e07/crates/vfs/src/file_set.rs#L68)
 - ruff_db `TestSystem` "uses a memory-file system by default, but can be switched to the real file system for tests verifying more advanced file system features". `MemoryFileSystem` (1,240 lines) implements write, touch, virtual files and walking. A `DbWithWritableSystem`-style helper "writes the content of the given file and notifies the Db about the change" — [RUFF system/test.rs L17-25, L254-330](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/system/test.rs#L17), [RUFF system/memory_fs.rs L32-410](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/system/memory_fs.rs#L32). ty's mdtest has its own `MdtestSystem` (snippet-only, `crates/ty_test/src/db.rs` L510)
 - `VendoredFileSystemBuilder` builds small in-memory zips for tests, and the debug snapshot lists entries such as `stdlib/functools.pyi` — [RUFF vendored.rs L470-575](https://github.com/astral-sh/ruff/blob/0222c19dd8e0c9a927f2e47bf3774a108431da25/crates/ruff_db/src/vendored.rs#L470)
@@ -210,22 +239,28 @@ All of them test with an in-memory implementation of the same interface, built f
 - LLVM's `VirtualFileSystemTest.cpp` is 4,022 lines, larger than the implementation (3,072) — [LLVM llvm/unittests/Support/VirtualFileSystemTest.cpp](https://github.com/llvm/llvm-project/blob/20b943451383f3e8af4ae8c37b71700e9423602d/llvm/unittests/Support/VirtualFileSystemTest.cpp)
 
 ### Inferences
+
 - If the core consumes a `RepoSnapshot` value, tests do not need a fake file system at all: a fixture string *is* the snapshot (rust-analyzer's approach). The in-memory FS implementations above (1–2k lines in ruff and pyright) exist because their cores call a file system interface. A content-keyed core avoids that whole test-harness category.
 - Each *source reader* (git tree, submodule, zip, wheel, sdist) then needs only small integration tests against a tiny committed fixture: a 3-file git repo bundle and a 3-entry zip. Make them byte-for-byte assertions on the produced snapshot.
 
 ### Gaps
+
 - I did not inspect how ty tests `OsSystem` against real file system edge cases (symlinks, case-insensitive volumes). Those are irrelevant to git-tree sources but relevant if mentalc also reads working trees.
 
 ## 7. What follows for mentalc's file layer? (derived from sections 1–6)
 
 ### Takeaway
+
 Keep the guideline's design (an immutable `RepoSnapshot` loaded once by `repo.rs`) and extend identity to `(Root, RelPath)`, with `Root` an enum naming the origin. Add one reader *function* per origin rather than a trait with many methods. If a trait is wanted for tests or future origins, use the typst/gopls/deno shape: one `load` method. Directory listing and existence are pure queries over the snapshot's sorted index, not IO.
 
 ### Cited Findings
+
 - The supporting evidence is in sections 1–6: typst `FileLoader::load` (1 method) and `VirtualRoot` enum; gopls `Source::ReadFile` (1 method) with content-hash identity; deno `Loader::load` over URLs; rust-analyzer's store/loader split, library roots and virtual paths in tests; ty's `FilePath` enum and the vendored zip as a separate reader; ruff's `disallowed-methods`; and the LLVM sandbox RFC.
 
 ### Inferences
+
 Candidate design, sized against the evidence:
+
 1. **Identity:** `FileKey { root: RootId, path: RelPath }`, where `RootId` indexes `roots: Vec<Root>` and `enum Root { Commit { repo, oid }, Submodule { parent: RootId, path, oid }, WorkTree, Archive { kind: Zip|Wheel|Sdist, sha256 }, Package { ecosystem, name, version, source: RootId } }`. `RelPath` is a portable UTF-8 path that is validated not to escape its root (typst #7555). Intern to a `FileId(u32)` only if profiling asks for it. The snapshot is built once, so a `BTreeMap<FileKey, Blob>` is already deterministic and simple.
 2. **Content:** `Blob { hash, bytes: Arc<[u8]> }`. Use the git blob oid for git sources and sha256 or blake3 for archive entries. The hash feeds the content-addressed cache directly (as gopls `Identity.Hash`, rust-analyzer `FileState::Exists(hash)`).
 3. **Readers (edge files only, each about 100–200 lines):** `read_git_tree(repo, oid) -> Vec<(RelPath, Blob)>` (via `gix`, or `git ls-tree -r` / `cat-file --batch`); submodules resolved from `.gitmodules` plus the gitlink oid; `read_zip(bytes)` (wheels and zips, as ty `VendoredFileSystem`); `read_tar_gz(bytes)` (sdists, as typst `UniversePackages::package`). They are all assembled in `repo.rs`. No watcher, no cwd, no writes, no symlink resolution beyond what git stores.
@@ -235,5 +270,6 @@ Candidate design, sized against the evidence:
 7. **Do not build:** an overlay decorator stack (no unsaved edits; the work tree is just another root inserted at load), a YAML redirect layer, a mutable change log (no long-running process), or a `System`-style host trait.
 
 ### Gaps
+
 - No studied tool reads git object databases or submodules as a file source, so the git reader design is unsupported by this survey. A separate look at `gix` / `git2` tree iteration and gitlink handling is needed.
 - No studied tool other than pyright reads Python wheels or eggs in place. Whether mentalc must handle legacy `.egg` files or only wheels and sdists is a product question.

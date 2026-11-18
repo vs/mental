@@ -13,18 +13,21 @@ Evidence is the source code of each project at the commit given. All clones were
 ## Which parser and resolver give the most compact correct Python implementation in Rust today?
 
 ### Takeaway
+
 Parse with `ruff_python_parser` + `ruff_python_ast`, pinned to an exact version, and write Mental's own small resolver. Copy ruff's ideas (the `ReadResult` outcome enum, qualified-name resolution, typing a binding from its initializer) rather than depending on `ruff_python_semantic`. That crate is only half a resolver: the linter's 4,000-line visitor fills it. Do not use tree-sitter, stack-graphs, SCIP or ty for version one. The cost of this choice is an unstable API on a weekly release cadence, so ruff types must stay inside `extract`.
 
 ### Cited Findings
 
-**ruff crates: availability and versioning**
+#### ruff crates: availability and versioning
+
 - `ruff_python_parser`, `ruff_python_ast` and `ruff_python_semantic` are published on crates.io. The current version is 0.0.22, released 2026-11-12. The versions run weekly from 0.0.0 (2026-06-23) to 0.0.22, and the crate description reads "This is an internal component crate of Ruff" — [crates.io ruff_python_parser](https://crates.io/crates/ruff_python_parser) (versions listed via the crates.io API and `cargo info`).
 - Versioning policy: "The remaining crates published as part of Ruff releases provide **no stability guarantees**. Their Rust interfaces are considered internal and unstable. Consequently, they are versioned as `0.0.x`. The patch version is incremented on every Ruff release, regardless of changes to the crate." — [ruff docs/versioning.md](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/docs/versioning.md)
 - The crate README says: "The Rust API exposed here is unstable and will have frequent breaking changes. This version (0.0.22) is a component of Ruff 0.17.5" — [crates/ruff_python_parser/README.md](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_parser/README.md)
 - The workspace uses edition 2024 and `rust-version = "1.97"`. The published crates inherit that MSRV (`cargo info` shows `rust-version: 1.97`) — [ruff Cargo.toml](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/Cargo.toml)
 - **API churn, local measurement** (`git diff 0.16.0 0.17.5`, 2026-07-23 → 2026-11-12): 119 files changed in `ruff_python_ast` + `ruff_python_parser/src` (+4,781/−3,795 lines). Some of the changes break code that Mental would write against the AST. `ExprCompare` changed from `left` + `comparators` to a single `operands` field. `ExprCall` gained a custom range (`range_start`). Comprehension `generators` changed type. `Parsed::into_errors`, `Parsed::try_into_expression` and `Parsed::expr_mut` were removed — [crates/ruff_python_ast/ast.toml](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_ast/ast.toml), [crates/ruff_python_parser/src/lib.rs](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_parser/src/lib.rs)
 
-**ruff parser: API and error recovery**
+#### ruff parser: API and error recovery
+
 - Entry points are `parse_module(source) -> Result<Parsed<ModModule>, ParseError>` (line 112) and `parse_unchecked(source, options) -> Parsed<Mod>` (line 289). `Parsed<T>` (line 395) holds `syntax()`, `tokens()` and `errors()`. `parse_unchecked` always returns an AST and lists the syntax errors beside it, so the parser recovers from errors — [crates/ruff_python_parser/src/lib.rs#L112-L470](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_parser/src/lib.rs#L112)
 - It is a hand-written recursive descent parser with Pratt parsing for expressions — [crates/ruff_python_parser/README.md](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_parser/README.md)
 - The AST is typed and generated from `ast.toml` (81 node sections). For example, `StmtTry { node_index, range, body, handlers, orelse, finalbody, is_star }` has named fields that mirror CPython's `ast` module. Every node carries a `TextRange` and an `AtomicNodeIndex` — [crates/ruff_python_ast/src/generated.rs#L9465](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_ast/src/generated.rs#L9465), [crates/ruff_python_ast/src/node_index.rs](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_ast/src/node_index.rs)
@@ -32,7 +35,8 @@ Parse with `ruff_python_parser` + `ruff_python_ast`, pinned to an exact version,
 - Size: parser about 21k lines of Rust, AST about 29k lines, semantic crate about 6.4k lines — local measurement (`wc -l` on the clone).
 - **Dependency cost, local measurement** (`cargo tree -e normal,build`, distinct crates): parser + AST + text_size + source_file = **62 crates**, including two `syn` majors, phf codegen and proc-macro helpers. Adding `ruff_python_semantic` brings it to **76 crates** (adds `ruff_cache`, `ruff_macros`, `regex`, `globset`). `tree-sitter` 0.25 + `tree-sitter-python` 0.25 = **21 crates**, plus a C compiler through `cc`. Compile time was not measured, because building was out of scope.
 
-**ruff semantic model: what it does and does not do**
+#### ruff semantic model: what it does and does not do
+
 - `SemanticModel` (`model.rs` line 59) holds scopes, bindings, references, unresolved references, branches and definitions. It does not walk the AST itself. `push_scope` and `push_binding` are called by the linter's `Checker` in `ruff_linter/src/checkers/ast/mod.rs` (3,992 lines; `visit_stmt` at line 1048, scope pushes at 1390–1558, `add_binding` at 2813) — [crates/ruff_python_semantic/src/model.rs#L59](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_semantic/src/model.rs#L59), [crates/ruff_linter/src/checkers/ast/mod.rs#L1048](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_linter/src/checkers/ast/mod.rs#L1048)
 - `resolve_qualified_name` (line 1212) resolves only an expression whose head is bound by an import, a builtin, or a class/function definition. For `BindingKind::Assignment` and the other binding kinds it returns `None`. So `s.commit()` with `s = Session()` is not resolved — [crates/ruff_python_semantic/src/model.rs#L1212](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_semantic/src/model.rs#L1212)
 - Ruff fills that gap with "initializer typing": `trait TypeChecker { match_annotation; match_initializer }` and `check_type`, which inspect the binding's own statement (`x = init`, `x: T = …`, walrus, `with init as x`, an annotated parameter). The doc comment says it "doesn't perform more serious type inference" — [crates/ruff_python_semantic/src/analyze/typing.rs#L631-L700](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_semantic/src/analyze/typing.rs#L631)
@@ -40,22 +44,26 @@ Parse with `ruff_python_parser` + `ruff_python_ast`, pinned to an exact version,
 - Name reads return an explicit outcome enum, `ReadResult { Resolved(BindingId), ImplicitGlobal, WildcardImport, UnboundLocal(BindingId), NotFound }`, and unresolved references are kept with a `WILDCARD_IMPORT` flag — [model.rs#L3131](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_semantic/src/model.rs#L3131), [reference.rs#L155-L206](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_semantic/src/reference.rs#L155)
 - The semantic model works on one file at a time. It turns `from x import y` into the qualified name `x.y` (and handles relative imports through `from_relative_import`), but it does not jump to the definition in another file. Cross-module resolution lives in ty: `ty_python_semantic` is about 236k lines and depends on salsa and `ruff_db` — [crates/ty_python_semantic/Cargo.toml](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ty_python_semantic/Cargo.toml)
 
-**tree-sitter-python**
+#### tree-sitter-python
+
 - The crate is `tree-sitter-python` 0.25.0 and depends only on `tree-sitter-language = "0.1"`. That crate decouples the grammar from the core `tree-sitter` version (0.27.2 on crates.io). It builds a 3.4 MB generated `src/parser.c` plus a 437-line external `scanner.c` for indentation — [Cargo.toml](https://github.com/tree-sitter/tree-sitter-python/blob/26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64/Cargo.toml), [bindings/rust/lib.rs](https://github.com/tree-sitter/tree-sitter-python/blob/26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64/bindings/rust/lib.rs)
 - The tree is a CST with 218 node types (129 named), described as data in `node-types.json`. Access goes through untyped nodes by kind string and field name — [src/node-types.json](https://github.com/tree-sitter/tree-sitter-python/blob/26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64/src/node-types.json)
 - Error recovery inserts `ERROR` nodes and keeps parsing the following definitions, as the `test/corpus/errors.txt` cases show — [test/corpus/errors.txt](https://github.com/tree-sitter/tree-sitter-python/blob/26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64/test/corpus/errors.txt)
 - The grammar covers modern syntax: `type_alias_statement`, `type_parameter` and `match_statement` — [grammar.js#L312-L473](https://github.com/tree-sitter/tree-sitter-python/blob/26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64/grammar.js#L312)
 - The shipped `tags.scm` query marks definitions and references only by syntax: any `call` whose function is an `identifier` or `attribute` counts as `@reference.call`, with no binding — [queries/tags.scm](https://github.com/tree-sitter/tree-sitter-python/blob/26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64/queries/tags.scm)
 
-**stack-graphs**
+#### stack-graphs
+
 - README: "This repository is no longer supported or updated by GitHub" — [README.md](https://github.com/github/stack-graphs/blob/fcb7705d5b38ae13b3665a9b2c882e5a97243d44/README.md)
 - The Python rules are a 1,377-line `stack-graphs.tsg` file. They run on a Rust core of about 20k lines (local measurement), and the crate pins `tree-sitter-python = "=0.23.5"` and `tree-sitter = "0.24"`, two minors behind current — [languages/tree-sitter-stack-graphs-python/src/stack-graphs.tsg](https://github.com/github/stack-graphs/blob/fcb7705d5b38ae13b3665a9b2c882e5a97243d44/languages/tree-sitter-stack-graphs-python/src/stack-graphs.tsg), [languages/tree-sitter-stack-graphs-python/Cargo.toml#L34](https://github.com/github/stack-graphs/blob/fcb7705d5b38ae13b3665a9b2c882e5a97243d44/languages/tree-sitter-stack-graphs-python/Cargo.toml#L34)
 - Some Python resolution tests are still marked `.skip` (`chained_methods.py.skip`, `relative_import_resolves_to_itself.py.skip`, `require_explicit_submodule_import.py.skip`) — [languages/tree-sitter-stack-graphs-python/test/](https://github.com/github/stack-graphs/tree/fcb7705d5b38ae13b3665a9b2c882e5a97243d44/languages/tree-sitter-stack-graphs-python/test)
 
-**scip-python**
+#### scip-python
+
 - "Sourcegraph fork of pyright focused on generating SCIP for python projects". It needs Node v16+ and uses `pip` to find package versions, unless `--environment` is passed — [README.md](https://github.com/sourcegraph/scip-python/blob/51dd05f5c9d43d87471c2b3bf9f74a9256b627c7/README.md)
 
 ### Inferences
+
 - **Typed AST vs CST.** Mental's extract code is semantic: imports, assignments, calls, try/except, decorators. With ruff, `match stmt { Stmt::Try(StmtTry { handlers, .. }) => … }` is checked by the compiler, and a missing case is a compile error if wildcards are banned. With tree-sitter the same code becomes `node.kind() == "try_statement"` and `child_by_field_name("…")`, and a typo is a silent runtime miss. The algorithms in PyCG and in CodeQL's `flow.py` are written against CPython's `ast` and port almost line for line to ruff's AST. For "compact, understandable code", ruff wins.
 - **Error recovery.** Both recover. Ruff returns a full AST plus an error list. Tree-sitter returns `ERROR` subtrees that every walker must skip. Neither is a reason to choose.
 - **Compile cost and dependencies.** Tree-sitter is lighter in crates (21 vs 62) but needs a C toolchain and compiles a 3.4 MB C file. Ruff costs more crates but is pure Rust. Without a build measurement, treat this as a wash. Check it in the first spike with `cargo build --timings`.
@@ -65,6 +73,7 @@ Parse with `ruff_python_parser` + `ruff_python_ast`, pinned to an exact version,
 - **SCIP / language server.** These add a Node runtime and an installed environment. That clashes with the local-first, no-hosted-infra constraint and with "facts only, deterministic". SCIP output is symbol occurrences, so call graph, control flow and effects would still need Mental's own code (inference; the SCIP proto was not read). Spec §6.2.1 currently says "tree-sitter" and "a SCIP indexer or a language server". Those two rows should be updated if this recommendation is accepted.
 
 ### Gaps
+
 - Clean-build time and incremental compile time for ruff vs tree-sitter were not measured, because building was out of scope. This needs a spike.
 - How often ruff bumps cause compile breaks in practice (not just diff size) is unmeasured. Track it in the first months.
 - The SCIP protobuf schema and Pyright's binder (`binder.ts` code-flow graph) were not read. Claims about them are inferences from their READMEs and from general knowledge.
@@ -73,9 +82,11 @@ Parse with `ruff_python_parser` + `ruff_python_ast`, pinned to an exact version,
 ## How do these tools split the pipeline (parse → index → resolve → facts) so each stage is small and testable?
 
 ### Takeaway
+
 The robust shape is: per-file stages (parse, index, local control flow) that never look at other files, then one cross-file resolution stage, then fact emitters that query the resolved model. Each stage produces data that can be inspected and snapshotted. PyCG shows the anti-pattern: one shared, mutable "manager" state that every pass changes, iterated to a fixpoint.
 
 ### Cited Findings
+
 - **PyCG.** `analyze()` runs `PreProcessor` once, then repeats `PostProcessor` "while not has_converged()" (bounded by `max_iter`), then runs `CallGraphProcessor`. All passes share five mutable managers (`import_manager`, `scope_manager`, `def_manager`, `class_manager`, `module_manager`) — [pycg/pycg.py#L161-L215](https://github.com/vitsalis/PyCG/blob/8d5dc40837803beef1d8d379fbf2cdad6cd94641/pycg/pycg.py#L161)
 - PyCG finds modules by installing a custom loader into `sys.path_hooks`, i.e. by driving Python's own import machinery — [pycg/machinery/imports.py#L214-L230](https://github.com/vitsalis/PyCG/blob/8d5dc40837803beef1d8d379fbf2cdad6cd94641/pycg/machinery/imports.py#L214)
 - PyCG is archived: "Due to limited availability, no further development" — [README.md#L22](https://github.com/vitsalis/PyCG/blob/8d5dc40837803beef1d8d379fbf2cdad6cd94641/README.md)
@@ -85,6 +96,7 @@ The robust shape is: per-file stages (parse, index, local control flow) that nev
 - **CodeQL.** The extractor (in Python) writes the AST and control-flow graph into a database. Framework knowledge is a separate layer of QL classes over "API graphs", e.g. `API::moduleImport("fastapi").getMember("FastAPI").getReturn()`. Generic "concepts" (`Http::Server::RouteSetup`, `SqlExecution`, `FileSystemAccess`, `Http::Client::Request`) separate "what kind of effect" from "which library" — [python/extractor/semmle/python/passes/flow.py](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/extractor/semmle/python/passes/flow.py), [frameworks/FastApi.qll#L26-L35](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/frameworks/FastApi.qll#L26), [Concepts.qll#L85-L1065](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/Concepts.qll#L85)
 
 ### Inferences
+
 Proposed stage layout for `extract`. Each stage is one module with a pure function and its own `tests.rs`:
 
 | Stage | Input → output | Per-file? | Notes |
@@ -101,14 +113,17 @@ Proposed stage layout for `extract`. Each stage is one module with a pure functi
 - Avoid ruff's single traversal that fills the model and runs rules at the same time. It makes each stage hard to test on its own. Mental has no rules to run during the traversal, so it can build first and query after.
 
 ### Gaps
+
 - None of the studied tools publishes per-stage intermediate snapshots for Python call graphs. The idea of snapshotting each stage's output comes from ruff's parser and CFG tests, extrapolated.
 
 ## How are framework entry points and library effects kept as data rather than code?
 
 ### Takeaway
+
 CodeQL's models-as-data is the template for Mental's packs. It uses rows of `(type, access path, kind)`, an access-path mini-language (`Member[x].ReturnValue.Argument[0,path:]`), and "type rows" that say how instances arise (`sqlalchemy.orm.Session` comes from `sqlalchemy.orm; Member[sessionmaker].ReturnValue.ReturnValue`). But CodeQL still writes routes and request handlers in QL code, and it has **no models at all** for Celery, boto3, click or Redis. Mental gets the format from CodeQL, must write the content itself, and has to extend the grammar for slots (decorators).
 
 ### Cited Findings
+
 - The access-path grammar is spelled out in `ApiGraphModels.qll`. Columns are sources `type, path, kind`, sinks `type, path, kind`, summaries `type, path, input, output, kind`, barriers, and types `type1, type2, path`. Tokens include `Argument[n]` (ranges, `N-1`), `Parameter[n]`, `ReturnValue`, `WithArity[n]`, `Member[x]` (comma lists allowed), `Instance`, `Subclass`, `Awaited`, and more. "A type row of form `type1; type2; path` indicates that `type2; path` should be seen as an instance of the type `type1`". Synthetic types are prefixed with `~` — [python/ql/lib/semmle/python/frameworks/data/internal/ApiGraphModels.qll#L1-L70](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/frameworks/data/internal/ApiGraphModels.qll)
 - A concrete pack file in YAML: sink rows like `['asyncpg.~Connection', 'Member[copy_from_query,execute,fetch,fetchrow,fetchval].Argument[0,query:]', 'sql-injection']` and type rows like `['asyncpg.Connection', 'asyncpg', 'Member[connect].ReturnValue.Awaited']`. Each row has a one-line comment explaining it — [frameworks/Asyncpg.model.yml](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/frameworks/Asyncpg.model.yml)
 - At this commit there are 111 entries in `frameworks/` (QL files plus `*.model.yml`), and `python/ql/lib/ext` has one model file. No file in `frameworks/` models `celery`, `boto3`/`botocore`, `click` or `redis`. The only hits are package names in a generated subclass-capture list — [python/ql/lib/semmle/python/frameworks/](https://github.com/github/codeql/tree/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/frameworks)
@@ -118,6 +133,7 @@ CodeQL's models-as-data is the template for Mental's packs. It uses rows of `(ty
 - ruff writes framework knowledge as Rust predicates (e.g. `is_fastapi_route_call` lists the verbs inline) — [ruff_linter/src/rules/fastapi/rules/mod.rs#L33-L51](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_linter/src/rules/fastapi/rules/mod.rs#L33)
 
 ### Inferences
+
 - Mental's effect rules map cleanly onto MaD rows. For example:
   - `["sqlalchemy.orm.Session", "Member[commit]", "db.write tx.end"]`
   - `["sqlalchemy.orm.Session", "Member[get]", "db.read"]`
@@ -136,15 +152,18 @@ CodeQL's models-as-data is the template for Mental's packs. It uses rows of `(ty
 - `with Session() as s` needs a `__enter__` rule (`Session.__enter__ returns self`), expressible as a type row `["sqlalchemy.orm.Session", "sqlalchemy.orm.Session", "Member[__enter__].ReturnValue"]` plus a generic with-statement rule in `resolve`.
 
 ### Gaps
+
 - No studied tool models Celery, boto3, click or Redis declaratively. Mental's packs for them must be written from the libraries' documentation and source; no existing model can be borrowed.
 - CodeQL's Python implementation of the tokens (`ApiGraphModelsSpecific.qll`) was not read line by line.
 
 ## How do they enumerate branches and exception paths, and how do they handle dynamic Python they cannot resolve?
 
 ### Takeaway
+
 CodeQL's Python control-flow extractor is the best reference. Its edges are labeled NORMAL, TRUE, FALSE, EXCEPTION and EXHAUSTED. Expressions in general (including calls) get an exceptional edge, but cheap operations (attribute, name, subscript, for-iteration) get one only when lexically inside a `try`, which keeps graphs small. ruff's control-flow graph is an unfinished stub. On dynamic features: ruff reports explicit outcomes (`NotFound`, `WildcardImport`); PyCG silently drops calls it cannot resolve. Mental must do the former.
 
 ### Cited Findings
+
 - CodeQL edge kinds: `NORMAL`, `TRUE`, `FALSE`, `EXCEPTION`, `EXHAUSTED` (lines 41–46). Each scope has an `exceptional_exit` node and an `exception_stack` (lines 621–637) — [python/extractor/semmle/python/passes/flow.py#L41](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/extractor/semmle/python/passes/flow.py#L41)
 - `_walk_expr` (the generic walker, used for calls among others): "Many expressions can raise an exception" → always `_raise_exception` (line 1283). `_walk_attribute` raises only `if self.in_try` (line 1344). The same holds for names, subscripts, `yield` and for-loop iteration (line 1404) — [flow.py#L1283-L1350](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/extractor/semmle/python/passes/flow.py#L1283)
 - `try` handling: `_walk_try` splits into try/finally and try/except. Each handler gets a "handler test" node whose failure propagates the exception to the next handler. "The next handler only sees unhandled exceptions from this handler". Exception groups (PEP 654) are handled separately — [flow.py#L1457-L1520](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/extractor/semmle/python/passes/flow.py#L1457)
@@ -157,6 +176,7 @@ CodeQL's Python control-flow extractor is the best reference. Its edges are labe
 - CodeQL `RouteSetup.getUrlPattern()` holds only when the argument's local source is a string literal. A non-literal yields no value; it does not guess — [Concepts.qll#L966-L972](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/Concepts.qll#L966)
 
 ### Inferences
+
 - Mental needs obligations (branch points), not a full CFG. A fixed table of AST forms, each with labeled outcomes, is enough:
   - `if`/`elif`/`else` → true/false
   - conditional expression → true/false; report-jobs has one in `tasks.py`
@@ -176,13 +196,16 @@ CodeQL's Python control-flow extractor is the best reference. Its edges are labe
   - Spec P7 says extractors "never guess dynamic behavior". This is how that rule shows up in the data.
 
 ### Gaps
+
 - None of the studied tools enumerates "obligations" as Mental defines them (branch + coverage duty). The mapping from control-flow edges to obligations is Mental's own design.
 - Python's implicit exceptions from `with` (`__exit__`) and generators are modeled by CodeQL in ways not read in full here.
 
 ## What test strategies do they use, and how would Mental reuse them against examples/report-jobs?
 
 ### Takeaway
+
 Four proven patterns fit Mental:
+
 1. Inline expectations written as comments in the fixture, with `MISSING:`/`SPURIOUS:` markers for known gaps (CodeQL).
 2. Multi-file fixtures in one file with `# --- path: x.py ---` separators and caret assertions (stack-graphs).
 3. Categorized micro-benchmarks: `main.py` + expected JSON + a one-line README (PyCG).
@@ -191,6 +214,7 @@ Four proven patterns fit Mental:
 ty's Markdown mdtest is elegant but needs a 1.9k-line harness, which is bloat for Mental.
 
 ### Cited Findings
+
 - **CodeQL inline expectations.** The test's `.expected` file "should always be empty". Expectations are comments: `$ tag=value`, `$ SPURIOUS: tag=value`, `$ MISSING: tag=value`. When a known gap gets fixed, the framework reports "Fixed missing result" — [shared/util/codeql/util/test/InlineExpectationsTest.qll#L1-L90, L207, L235](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/shared/util/codeql/util/test/InlineExpectationsTest.qll)
 - An example fixture: `@app.get("/foo/{foo_id}") # $ routeSetup="/foo/{foo_id}"` / `async def get_foo(foo_id: int): # $ requestHandler routedParameter=foo_id`, with `ConceptsTest.expected` empty — [python/ql/test/library-tests/frameworks/fastapi/basic.py](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/test/library-tests/frameworks/fastapi/basic.py)
 - 41 fixture files under `library-tests/frameworks` carry `MISSING:` markers, e.g. `def later_set():  # $ MISSING: requestHandler` — [frameworks/flask/routing_test.py#L19](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/test/library-tests/frameworks/flask/routing_test.py#L19)
@@ -204,7 +228,9 @@ ty's Markdown mdtest is elegant but needs a 1.9k-line harness, which is bloat fo
 - **ruff lints.** The workspace sets `clippy::pedantic` (warn) with a short allow-list, plus `unreachable_pub`, `print_stdout`, `print_stderr`, `dbg_macro`, `exit`, `get_unwrap`, `iter_over_hash_type` and `redundant_clone` — [Cargo.toml#L270-L320](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/Cargo.toml#L270)
 
 ### Inferences
+
 How Mental would use these on report-jobs (5 files, about 150 lines):
+
 - **Whole-repo snapshot.** One `insta::assert_json_snapshot!` of the full extract output for `examples/report-jobs/src`, sorted, with paths redacted. Next to it, hard acceptance assertions for the F-S10 numbers: 5 files, 6 entry points (2 routes, 2 tasks, 1 beat schedule, 1 click command), 2 state variables. The "41 call-graph edges" figure needs a precise edge definition first: does it include external and pack calls, and are duplicates counted once?
 - **Annotated fixture copy.** Don't edit `examples/report-jobs` itself. Keep an annotated copy as a single fragment file (`tests/fixtures/report_jobs.py` with `# --- path: app/api.py ---` headers) carrying inline expectations, for example:
   - `s.commit()  # $ effect=db.write`
@@ -219,15 +245,19 @@ How Mental would use these on report-jobs (5 files, about 150 lines):
 - **Known gaps.** Keep `MISSING:`/`SPURIOUS:` markers so they stay visible and fixing one is detected. CodeQL has 41 files using them; this beats deleting a failing expectation.
 
 ### Gaps
+
 - None of the projects uses property-based testing or mutation testing for its analysis. Mental's proptest/cargo-mutants plan has no precedent in these codebases; the ideas in the guidelines below are original.
 
 ## What should `extract` copy from and avoid in each codebase?
 
 ### Takeaway
+
 Copy small, well-separated ideas: ruff's typed AST, outcome enums, arenas and snapshot discipline; CodeQL's access-path data model, edge kinds and inline expectations; stack-graphs' fragment and caret test syntax; PyCG's benchmark categories. Avoid every heavyweight framework: stack-graphs/TSG, ty/salsa, SCIP/Node, ruff's linter-coupled semantic model, PyCG's mutable fixpoint managers and import hooks.
 
 ### Cited Findings
+
 (Each item cites the evidence above.)
+
 - **ruff. Copy:** the typed AST + visitor ([visitor.rs](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_ast/src/visitor.rs)); `parse_unchecked` with errors kept beside the tree ([lib.rs#L289](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_parser/src/lib.rs#L289)); `ReadResult` ([model.rs#L3131](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_semantic/src/model.rs#L3131)); `check_type` initializer typing ([typing.rs#L643](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_semantic/src/analyze/typing.rs#L643)); `IndexVec` + typed IDs ([cfg/graph.rs](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_semantic/src/cfg/graph.rs)); directory-driven snapshots ([tests/fixtures.rs](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_python_parser/tests/fixtures.rs)); the lint set ([Cargo.toml#L270](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/Cargo.toml#L270)). **Avoid:** depending on `ruff_python_semantic` (the visitor that fills it lives in `ruff_linter`); the unfinished `cfg` module; framework knowledge as Rust predicates ([fastapi/rules/mod.rs](https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/crates/ruff_linter/src/rules/fastapi/rules/mod.rs)); the inline parser-test generator.
 - **tree-sitter-python. Copy:** nothing for version one, except the corpus idea that error-recovery cases are tested on purpose ([errors.txt](https://github.com/tree-sitter/tree-sitter-python/blob/26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64/test/corpus/errors.txt)). **Avoid:** an untyped CST for semantic extraction, and syntactic "call tags" that pass for resolution ([tags.scm](https://github.com/tree-sitter/tree-sitter-python/blob/26855eabccb19c6abf499fbc5b8dc7cc9ab8bc64/queries/tags.scm)).
 - **stack-graphs / tree-sitter-graph. Copy:** the test syntax (`# --- path: … ---`, `# ^ defined: N`) ([test.rs#L14-L96](https://github.com/github/stack-graphs/blob/fcb7705d5b38ae13b3665a9b2c882e5a97243d44/tree-sitter-stack-graphs/src/test.rs#L14)), and the principle that each file contributes facts on its own. **Avoid:** the DSL and graph machinery (archived; a 1,377-line Python rules file; about 20k lines of core; pinned old grammar) ([README.md](https://github.com/github/stack-graphs/blob/fcb7705d5b38ae13b3665a9b2c882e5a97243d44/README.md)).
@@ -235,17 +265,21 @@ Copy small, well-separated ideas: ruff's typed AST, outcome enums, arenas and sn
 - **CodeQL. Copy:** the MaD row format and access-path tokens ([ApiGraphModels.qll](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/frameworks/data/internal/ApiGraphModels.qll)); type rows for instance creation ([Asyncpg.model.yml](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/frameworks/Asyncpg.model.yml)); generic concepts ([Concepts.qll](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/ql/lib/semmle/python/Concepts.qll)); edge kinds and exception edges guarded by `in_try` ([flow.py](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/python/extractor/semmle/python/passes/flow.py)); inline expectations with `MISSING:`/`SPURIOUS:` ([InlineExpectationsTest.qll](https://github.com/github/codeql/blob/20ed6480fa1d8c44c99368be99dda541082dc968/shared/util/codeql/util/test/InlineExpectationsTest.qll)). **Avoid:** the parts of framework models that live in code (routes in QL); taint-oriented kinds (`sql-injection`) where Mental needs effect kinds; a general type-tracking engine.
 
 ### Inferences
+
 - The cheapest high-value import is CodeQL's data model. The cheapest high-value test idea is stack-graphs' and CodeQL's comment assertions. Neither brings a dependency.
 
 ### Gaps
+
 - None.
 
 ## Candidate guidelines for `extract` (enforceable rules)
 
 ### Takeaway
+
 Twenty rules, each tied to evidence and to a concrete enforcement mechanism. Together they keep `extract` small (pure stages, no library names in Rust), honest (explicit unresolved facts, exhaustive obligation kinds), and well-tested (inline-expectation fixtures, whole-output snapshots, oracle and property tests).
 
 ### Cited Findings
+
 Each rule gives **Rule / Why / Source / Enforce**.
 
 1. **Parser.** Use `ruff_python_parser` + `ruff_python_ast` (+ `ruff_text_size`, `ruff_source_file`) pinned with `=0.0.N`. No `ruff_python_semantic`, `ty_*`, tree-sitter, stack-graphs or SCIP in version one. *Why:* typed AST, pure Rust, CPython-shaped nodes. Semantic and ty are coupled to the linter or too large. *Source:* §1 above. *Enforce:* a CI check that greps `Cargo.toml` for `=` pins on `ruff_*`; `cargo deny` bans the other crates; reviewer.
@@ -270,9 +304,11 @@ Each rule gives **Rule / Why / Source / Enforce**.
 20. **Out of scope for version one.** No CST or trivia, no incremental reparsing, no LSP, no salsa or query engine, no generic multi-language abstraction layer, no taint tracking. Language-specific code lives under `extract::python`, and a second language later is a sibling module emitting the same `model` facts. *Why:* stack-graphs and ty show where this ends (archived; 236k lines). *Source:* §1 above. *Enforce:* `cargo deny` bans `salsa`, `tree-sitter*` and `lsp-*`; reviewer.
 
 ### Inferences
+
 - Rules 8 (conservation oracle), 11 (no library names in Rust) and 14 (no wildcard arms) are the most valuable per line of enforcement. Each is a short check that catches whole classes of silent incompleteness, which is exactly the failure mode spec P7 assigns extractors to prevent.
 - Spec §6.2.1 should be amended. Parse "with tree-sitter" should become ruff's parser, and "Resolve names with a SCIP indexer or a language server" should become Mental's own resolver driven by pack type rows. Record the decision with this note as evidence and keep the tree-sitter alternative listed as "Experiment" with a trigger: if ruff churn costs more than about one hour per month, or a second language is scheduled.
 
 ### Gaps
+
 - Rule 4's proptest and rule 8's oracle have no precedent in the studied tools. They are proposals.
 - The exact definition of a "call-graph edge" behind F-S10's "41 edges" is not in the spec. Rule 19's count assertion for edges depends on writing it down.

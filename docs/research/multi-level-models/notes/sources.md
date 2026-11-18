@@ -4,7 +4,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-16 (link gi
 
 ## One line per source
 
-**How people perceive levels and events**
+### How people perceive levels and events
 
 | Source | What it says in one line |
 |---|---|
@@ -21,7 +21,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-16 (link gi
 | Fisheye views | Show each item by its importance minus its distance from the focus. |
 | Physics of Notations | Diagrams need explicit complexity management (modules and hierarchy) and a dialect per audience. |
 
-**How practice builds levels**
+### How practice builds levels
 
 | Source | What it says in one line |
 |---|---|
@@ -34,7 +34,7 @@ Evidence tags: **[S]** seen in a search result this session, 2026-11-16 (link gi
 | C4 model | Four zoom levels (context, container, component, code), each for a different audience. |
 | Lipton's reduction | A run of statements shaped right-movers, at most one non-mover, left-movers can be treated as one atomic action without changing what is reachable. |
 
-**What LLMs do with levels**
+### What LLMs do with levels
 
 | Source | What it says in one line |
 |---|---|

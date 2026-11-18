@@ -86,7 +86,7 @@ A failure of `docker compose config` itself (a non-zero exit, or no answer withi
 
 ## 6. Layout and size
 
-```
+```text
 Cargo.toml            the workspace
 model/      src/  id.rs  diagnostic.rs  jsonl.rs  record.rs  record/build.rs  anchor.rs  testkit.rs
 extract/    src/  lib.rs
