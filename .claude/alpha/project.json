@@ -178,8 +178,9 @@
             "run": "grep -qi 'timeout' docs/guidelines/mentalc.md && grep -n 'docker compose config' docs/guidelines/mentalc.md docs/plans/milestone-1-build-model.md | grep -qi 'time'"
           }
         ],
-        "status": "pending",
-        "component": "mentalc"
+        "status": "done",
+        "component": "mentalc",
+        "branch": "alpha/p4-timeouts"
       },
       {
         "id": "p4-trim-later",
