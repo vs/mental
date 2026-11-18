@@ -22,6 +22,37 @@ The LLM is a setting of the compiler: by default your own coding agent answers t
 
 Products built on the tools are called Mental: Mental for Claude Code, Mental for Codex, Mental Desktop.
 
+## Setup, test and run
+
+### model (`model/`)
+
+```sh
+cd model
+cargo fetch
+cargo test
+# run: add the command once the entry point exists
+```
+
+### extract (`extract/`)
+
+```sh
+cd extract
+cargo fetch
+cargo test
+# run: add the command once the entry point exists
+```
+
+### mentalc (`mentalc/`)
+
+```sh
+cd mentalc
+cargo fetch
+cargo test
+# run: add the command once the entry point exists
+```
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) before your first commit.
+
 ## Documentation
 
 | Document | What it is | Read it when |
