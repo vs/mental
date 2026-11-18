@@ -157,11 +157,12 @@
             "run": "grep -q 'lib.rs' docs/plans/milestone-1-build-model.md && ! grep -q 'extract/packs' docs/plans/milestone-1-build-model.md && ! grep -nE 'build.rs .*write .mental' docs/plans/milestone-1-build-model.md"
           }
         ],
-        "status": "pending",
+        "status": "done",
         "component": "mentalc",
         "depends_on": [
           "p4-guidelines-refs"
-        ]
+        ],
+        "branch": "alpha/p4-plan-layout"
       },
       {
         "id": "p4-timeouts",
