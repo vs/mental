@@ -26,9 +26,12 @@ Products built on the tools are called Mental: Mental for Claude Code, Mental fo
 
 | Document | What it is | Read it when |
 |---|---|---|
-| [Specification](docs/specification.md) | The first design, built up from first principles: the model, the levels, each tool, version one and what comes later | you want the whole design |
+| [Specification](docs/specification.md) | The design: the six stages of a build, the model, the levels, each tool, the milestones and what comes later | you want the whole design |
 | [Glossary](docs/glossary.md) | Every term with one precise definition and examples, including what a *port* is and why it is called that | a word is unclear |
 | [Findings](docs/findings.md) | Facts from our two hand-made trials, the research and checks of outside facts | you want the evidence behind a decision |
+| [Resolution](docs/resolution.md) | Detail under the specification's section 6: packages and pins, gaps, the gate, acceptances, the trust rule | you want to know what happens when a reference cannot be resolved |
+| [Guidelines](docs/guidelines/README.md) | Implementation rules per crate, and the testing playbook | you are about to write code |
+| [Milestone 1 plan](docs/plans/milestone-1-build-model.md) | The first implementation step: the build model | you want to know what is built first |
 | [`examples/report-jobs`](examples/report-jobs/) | The sample system used in every example, and the first target | you want to see the code being modeled |
 
 Research reports:
@@ -46,15 +49,15 @@ Research reports:
 
 | Question | Section |
 |---|---|
-| What is the idea underneath? | [2. First principles](docs/specification.md#2-first-principles) |
-| What is a model made of? | [4. The model](docs/specification.md#4-the-model) |
-| How does one system look at different heights? | [5. Levels and refinement](docs/specification.md#5-levels-and-refinement) |
-| How does source code become a model? | [6. `mentalc`](docs/specification.md#6-mentalc-building-the-model) |
-| How does `mentalc` learn how a project is built and deployed? | [6.10 The build model first](docs/specification.md#610-the-build-model-first) |
-| How are libraries modeled? | [7. Packs](docs/specification.md#7-packs) |
-| How is the model run, and how are bugs found? | [8. `mentalvm`](docs/specification.md#8-mentalvm-running-the-model) |
-| Can Mental prove there are no bugs? | [8.11 Properties, verdicts and proof](docs/specification.md#811-properties-verdicts-and-proof) |
-| How do I change something and see what happens? | [8.8 What-if](docs/specification.md#88-what-if-edits-variants-and-experiments) |
-| What do people and agents see? | [9. `mentaldbg`](docs/specification.md#9-mentaldbg-debugging-and-showing) |
-| What is built first? | [11. Version one](docs/specification.md#11-version-one-scope-and-build-order) |
-| What is undecided? | [13. Open questions](docs/specification.md#13-open-questions) |
+| What is the idea underneath? | [2. Principles](docs/specification.md#2-principles) |
+| What does a build do, stage by stage? | [4. The build at a glance](docs/specification.md#4-the-build-at-a-glance) |
+| How does `mentalc` learn how a project is built? | [5. The build model](docs/specification.md#5-stage-1-the-build-model) |
+| How are references in the code resolved? | [6. From code to facts](docs/specification.md#6-stage-2-from-code-to-facts) |
+| What is a model made of? | [7. The model](docs/specification.md#7-the-model) |
+| What is known without an LLM? | [8. The mechanical model](docs/specification.md#8-stage-3-the-mechanical-model) |
+| What does the LLM do? | [9. What the LLM adds](docs/specification.md#9-stage-4-what-the-llm-adds) |
+| How does one system look at different heights? | [11. Levels](docs/specification.md#11-stage-6-levels) |
+| How is the model run, and how are bugs found? | [12. `mentalvm`](docs/specification.md#12-mentalvm-running-the-model) |
+| What do people and agents see? | [13. `mentaldbg` and the viewer](docs/specification.md#13-mentaldbg-and-the-viewer) |
+| What is built first? | [14. Version one](docs/specification.md#14-version-one-scope-and-milestones) and the [milestone 1 plan](docs/plans/milestone-1-build-model.md) |
+| What is undecided? | [15. Later, experiments and open questions](docs/specification.md#15-later-experiments-and-open-questions) |

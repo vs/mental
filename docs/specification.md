@@ -1,30 +1,34 @@
-# Mental: specification of the first design
+# Mental: specification
 
-**Status:** design, nothing is built yet. **Date:** 2026-11-13, updated 2026-11-14 with the implementation decisions listed in [the guidelines](guidelines/README.md#accepted-specification-changes).
+**Status:** design, nothing is built yet. **Date:** 2026-11-18.
 
-This document specifies the first version of Mental from first principles. Every term in **bold** on first use is defined in the [glossary](glossary.md). Facts from our own trials and from the research are collected in [findings](findings.md) and cited here as F-numbers.
+Every term in **bold** on first use is defined in the [glossary](glossary.md). Facts from trials and research are in [findings](findings.md) and cited as F-numbers.
 
 Each section carries a status:
-- **Decided:** confirmed and part of the design.
+- **Decided:** confirmed by the owner.
 - **Proposed:** the working answer, not yet confirmed.
-- **Later:** designed in outline, not part of version one.
-- **Open:** not worked out.
+- **Experiment:** under test; the experiment that settles it is named.
+- **Later:** not part of version one.
+
+Nothing here is final. A measured result overrules any sentence in this document.
 
 ## Contents
 
 1. [What Mental is](#1-what-mental-is)
-2. [First principles](#2-first-principles)
-3. [Architecture: three tools](#3-architecture-three-tools)
-4. [The model](#4-the-model)
-5. [Levels and refinement](#5-levels-and-refinement)
-6. [`mentalc`: building the model](#6-mentalc-building-the-model)
-7. [Packs](#7-packs)
-8. [`mentalvm`: running the model](#8-mentalvm-running-the-model)
-9. [`mentaldbg`: debugging and showing](#9-mentaldbg-debugging-and-showing)
-10. [Products](#10-products)
-11. [Version one: scope and build order](#11-version-one-scope-and-build-order)
-12. [Later versions](#12-later-versions)
-13. [Open questions](#13-open-questions)
+2. [Principles](#2-principles)
+3. [Three tools](#3-three-tools)
+4. [The build at a glance](#4-the-build-at-a-glance)
+5. [Stage 1: the build model](#5-stage-1-the-build-model)
+6. [Stage 2: from code to facts](#6-stage-2-from-code-to-facts)
+7. [The model](#7-the-model)
+8. [Stage 3: the mechanical model](#8-stage-3-the-mechanical-model)
+9. [Stage 4: what the LLM adds](#9-stage-4-what-the-llm-adds)
+10. [Stage 5: link, load, close](#10-stage-5-link-load-close)
+11. [Stage 6: levels](#11-stage-6-levels)
+12. [`mentalvm`: running the model](#12-mentalvm-running-the-model)
+13. [`mentaldbg` and the viewer](#13-mentaldbg-and-the-viewer)
+14. [Version one: scope and milestones](#14-version-one-scope-and-milestones)
+15. [Later, experiments and open questions](#15-later-experiments-and-open-questions)
 
 ---
 
@@ -37,1392 +41,627 @@ Each section carries a status:
 1. **Run a scenario** and get a **trace** of what happens, step by step.
 2. **Zoom** into any step to see what it is made of, or out to see what it belongs to.
 3. **Search** all orderings of concurrent steps within stated bounds and get a replayable **witness** for each race or dead end.
-4. **Change something** (put a load balancer in front of a service, swap one for another, flip an assumption) and see what changes in the traces.
+4. **Change something** (the number of workers, an assumption) and see what changes.
 5. **Share the view** with a coding agent: what you have selected is the agent's context.
 
-**What Mental is not.** It does not execute your code, so it works without a running environment. It does not prove that code has no bugs: results hold within the model and within stated bounds, and section 8.11 (Experiment) says when a result may be called a proof, of which property and under which assumptions. It is not a diagram generator: every item in the picture is a record the interpreter uses.
+**What the model describes.** The model is a simulation of the running system: artifacts started as processes on machines, exchanging messages and changing stored state. Source code is not the thing modelled. It is the main evidence: source, build files, lockfiles and artifacts are observations of the real system, and the model is **grounded** as far as its records are anchored to them. A place where evidence is missing is a gap ([6.4](#64-gaps-and-the-gate)), and the model says so there. The source describes what runs only because what runs was built from it; that link is the **build chain** ([5.4](#54-the-build-chain)). Below the code the model stops at stated assumptions about the interpreter, the libraries and the operating system ([11.6](#116-below-the-code)).
 
-**The running example.** [`examples/report-jobs`](../examples/report-jobs/) is the first target. An API (`POST /reports`) stores a `PENDING` row in Postgres and queues a Celery task through Redis. Two worker replicas take tasks, build a CSV from the `orders` table, upload it to S3 and mark the row `DONE`. It is about 150 lines and contains four real bugs, including a race in which both workers process the same report.
+**What Mental is not.** It does not execute your code. It does not prove that code has no bugs: a result holds within the model and within stated bounds, and says so. It is not a diagram generator: every item in the picture is a record the interpreter uses.
 
-## 2. First principles
+**The running example.** [`examples/report-jobs`](../examples/report-jobs/) is the first target. An API (`POST /reports`) stores a `PENDING` row in Postgres and queues a Celery task through Redis. Two worker replicas take tasks, build a CSV, upload it to S3 and mark the row `DONE`. It is about 190 lines and contains four real bugs (F-S11), including a race in which both workers process the same report.
 
-Each principle is stated, then justified. Later sections refer to them as P1 to P11.
+## 2. Principles
 
-### P1. A system is a transition system
+**Status: Decided**, except where a principle is marked.
 
-A **state** is a complete snapshot of the system: where each part is in its code, the value of every variable, the contents of every table, queue and channel. A **transition** is one thing happening: a statement runs, a message is delivered. A **run** is a path from state to state.
-
-Every question about behavior is a question about paths:
-- **Safety:** does some path reach a bad state? (Two workers both process report 7.)
-- **Liveness:** does every path reach a good state? (Does every requested report end `DONE` or `FAILED`?)
-
-This is the shared foundation of model checking and static analysis, and it is the foundation of Mental.
-
-![One worker's claim code has four steps. Two workers running it give a four-by-four grid of states. Moving right is a worker[0] step, moving down a worker[1] step. The highlighted path reads twice before either writes and ends in a double claim.](images/state-grid.png)
-
-### P2. The state graph is never built; it is generated on demand
-
-The graph of all states is usually infinite: numbers are unbounded, queues grow, rows are created. So the model does not store states. It stores an initial state and a **step function**, and an interpreter produces the next states when asked. Running a scenario walks one path. Searching for bugs walks many paths within bounds.
-
-### P3. The model is an abstraction: conditions and classes, not values
-
-Code is small; its state space is the code multiplied by every value of every variable and by every concurrent copy. Nobody can enumerate that. Static analysis solves this by reasoning about *abstract* states, each standing for many real ones ("`status` is `PENDING`").
-
-Mental's model is such an abstraction:
-- a **predicate** stands for a test in the code (`range-too-large`);
-- an **input class** stands for all inputs that behave the same ("a range of at most 366 days");
-- a **case** stands for all paths through a handler that end the same way.
-
-This keeps the model small enough to run, search and draw. The price is stated openly: parts derived mechanically may allow behavior that cannot happen, and parts written by an LLM may miss behavior that can. P8 exists to keep that visible.
-
-### P4. A system is many small machines that talk through ports
-
-One flat machine for the whole system is correct and unreadable. The useful form is many small machines:
-- one **behavior** per **provided port**: what happens when a message arrives there;
-- one **lifecycle machine** per **state variable**: which changes are legal;
-- **packs** for libraries and outside systems.
-
-They interact only through **ports** joined by **wires**. Concurrency is interleaving: one machine takes a step, then another, in some order. Steps that touch different things can be swapped without changing the result. The orders that matter are those in which two steps touch the same state and at least one writes. That is the definition of a **race**.
-
-### P5. Levels are refinements, and zoom moves between them
-
-The machines form a hierarchy. A coarse machine's single step ("deliver the report") stands for many steps of a finer machine. This is valid when the finer machine **refines** the coarser one: every fine run, viewed from above, is a run the coarse machine allows, and the extra fine steps are invisible above.
-
-Zooming in replaces a step by the steps that implement it. Zooming out does the reverse. Because the relation between levels is recorded and checked, a collapsed view may only hide what is proven safe to hide.
-
-### P6. The model is a program
-
-The whole product follows one analogy, and each tool has the job the analogy gives it:
-
-| Programming | Mental |
-|---|---|
-| program | the model |
-| compiler | `mentalc`: source code becomes the model |
-| virtual machine | `mentalvm`: runs the model |
-| execution trace | a trace |
-| debugger | `mentaldbg`, with the viewer as its screen |
-
-Consequences:
-- Every kind of record must have a meaning in the step function. A record the interpreter ignores is decoration and does not belong in the model.
-- Debugger features come for free: breakpoints on state, stepping in and out (zoom), stepping backwards (runs are deterministic), "set variable" (what-if).
-- Mistakes of the LLM are confined to compile time, where output is checked against the code.
-
-### P7. Each actor does only what it is good at
-
-Research on combining static analysis with LLMs points to one division of labor (F-R1 to F-R3):
-
-| Actor | Owns | Never does |
+| # | Principle | In short |
 |---|---|---|
-| **Extractors** | structure and completeness: symbols, routes, the call graph, every branch and effect, infrastructure | name an abstraction; guess dynamic behavior |
-| **LLM** | local judgment: names, input classes, case summaries, recognizing a mechanism, business wording | remove a branch; decide what is feasible; write a trace |
-| **Checkers** | what counts as fact: anchors resolve, every branch is covered, guards do not overlap | accept a claim without an anchor |
-| **Interpreter** | running: traces, searches, replays | read source code |
+| **P1** | A system is a transition system | A **state** is a snapshot, a **transition** is one thing happening, a **run** is a path. Safety asks whether some path reaches a bad state; liveness asks whether every path reaches a good one. |
+| **P2** | The state graph is generated on demand | The model stores an initial state and a step function, never the states. |
+| **P3** | The model abstracts values into conditions and classes | A **predicate** stands for a test in the code, an **input class** for all inputs that behave alike, a **case** for all paths that end alike. |
+| **P4** | Many small machines that talk through ports | One **behavior** per **provided port**, one **lifecycle machine** per **state variable**, **packs** for libraries. A **race** is two steps that touch the same state, at least one writing, whose order matters. |
+| **P5** | The model is a program | `mentalc` compiles it, `mentalvm` runs it, `mentaldbg` debugs it. A record the interpreter ignores does not belong in the model. |
+| **P6** | Mechanical facts first; the LLM adds readability, never facts | Extractors own structure and completeness. The LLM names things and summarizes. It never removes a branch, decides what is feasible, places a step boundary or writes a trace (F-R1 to F-R3, F-S12, F-A5). *Proposed in this sharper form.* |
+| **P7** | Every claim is anchored and says how it is known | Each record has an **anchor** (file, lines, quote), a provenance, a source and the checks it passed. |
+| **P8** | Identity comes from the code | IDs are built from code names, never from positions or from the LLM. Rebuilds keep IDs stable. |
+| **P9** | Fail rather than degrade | A missing input stops the build with the fix named. Nothing is guessed, and no weaker result is written in place of a full one. |
+| **P10** | `mentalc` runs nothing the repository controls | No build tool, package manager, interpreter or script from the repository, and no network. When a command is needed, `mentalc` names it and the user or their agent runs it (F-U12, F-U14, F-U17). |
+| **P11** | The model and the picture are separate | Model (facts), run (one execution), view state (what is shown), skin (how it looks). Information flows only downward. |
+| **P12** | What you look at is the agent's context | The viewer and the coding agent share one **session**. |
 
-### P8. Every claim is anchored and says how it is known
+![One worker's claim code has four steps. Two workers running it give a four-by-four grid of states. The highlighted path reads twice before either writes and ends in a double claim.](images/state-grid.png)
 
-Every record carries:
-- an **anchor**: the file, lines and quoted text that justify it;
-- a **provenance**: `inferred`, `attested`, `assumed`, `observed` or `hypothetical`;
-- a **source**: which extractor, pack, person or LLM call produced it;
-- the **checks** it passed.
-
-A record that fails its checks is not shown as fact. An assumption is never hidden. A hypothetical record is never shown as real.
-
-### P9. Identity comes from the code
-
-A record's ID is built from names in the code: `reports/worker/beh:generate-report`. IDs are never positions ("step 14") and never invented by the LLM, which supplies display names only. So a rebuild keeps IDs stable, and saved runs, breakpoints and user notes stay attached.
-
-### P10. The model and the picture are separate
-
-There are four layers, and information flows only downward:
-
-| Layer | Holds | Example |
-|---|---|---|
-| Model | facts | the route, the predicate, the wire |
-| Run | one execution | binding, schedule, edits, trace |
-| View state | what is shown | zoom, collapsed parts, pins, focus |
-| Skin | how it looks | shapes, colors, effects |
-
-**The placement test:** if removing something would change what the interpreter computes, it belongs to the model or the run. If it would only change what is seen, it belongs to the view state or the skin.
-
-### P11. What you look at is the agent's context
-
-The selected entity, the scenario being played and the pinned details are held in one **session** that the viewer and the coding agent share. "Zoom into the worker and consider a duplicate delivery" then has an exact meaning for both.
-
-## 3. Architecture: three tools
+## 3. Three tools
 
 **Status: Decided.**
-
-![Three tools and what connects them. mentalc compiles a repository and packs into a model, asking an LLM backend for judgment. mentalvm runs the model and produces traces and findings. mentaldbg holds the debug session and serves the viewer, the coding agent and the terminal. Products named Mental wrap all three tools and the viewer.](images/components.png)
 
 | Tool | One job | Reads | Writes | Never |
 |---|---|---|---|---|
-| **`mentalc`** | compile | a repository, packs, answers from an LLM backend | a complete model, diagnostics, the call ledger | runs the model |
-| **`mentalvm`** | interpret | a model, a binding, a schedule, edits | runs: traces, findings, witnesses | reads source code |
-| **`mentaldbg`** | debug and show | a model and runs | nothing permanent except saved runs and view state | changes the model |
+| **`mentalc`** | compile | a repository, packs, answers from an LLM backend | the model, diagnostics, the call ledger | runs the model |
+| **`mentalvm`** | interpret | a model, a binding, a schedule, edits | runs, findings, witnesses | reads source code |
+| **`mentaldbg`** | debug and show | a model and runs | saved runs and view state | changes the model |
 
-**Rules between the tools.**
-- They communicate through files with a specified format (section 4.9 and 8.6), so each can be built and tested alone.
-- `mentalc` output is complete. A build either produces a full model or fails; it never leaves gaps for another tool to fill.
-- `mentaldbg` drives `mentalvm` for running and may ask `mentalc` to compile a deeper part when the user zooms into something not yet compiled.
-- All three are written in Rust and share libraries for the record format. The interpreter also compiles to WebAssembly so the viewer can run models in the browser.
+- The tools talk through files in a specified format ([7.5](#75-storage)), so each can be built and tested alone.
+- All three are written in Rust in one workspace. `mentalc` and `mentalvm` never depend on each other.
+- **Checks that need a run belong to `mentalvm`.** `mentalc` runs only static checks. `mentalvm check` runs the ones that need the interpreter and adds its diagnostics to the same file.
+- The LLM is a setting of the compiler: by default the user's own coding agent answers `mentalc`'s tasks ([9.3](#93-llm-backends)).
 
-**The LLM is a setting of the compiler.** `mentalc` asks an **LLM backend** for judgment. The default backend is the user's own coding agent; others are an API, a local model or a headless agent (section 6.5).
+## 4. The build at a glance
 
-## 4. The model
+**Status: Proposed.** `mentalc build` runs six stages in order. Stages 1 to 3 and 5 use no LLM.
 
-**Status: Decided for the core kinds (4.1 to 4.7); Proposed where marked.**
-
-### 4.1 Shape
-
-The model is a flat set of **records**. Records refer to each other by ID. There is no nesting in storage: an entity's children are the records whose `parent` is that entity.
-
-![Record kinds and how they reference each other: entities have ports joined by wires; a provided port runs a behavior whose guards are predicates; input classes and assumptions are built from predicates; stores hold state variables whose machines constrain writes; runs pick input classes.](images/record-kinds.png)
-
-### 4.2 Fields every record has
-
-| Field | Meaning |
-|---|---|
-| `id` | the semantic ID (4.3) |
-| `level` | the level the record belongs to (section 5) |
-| `provenance` | `inferred`, `attested`, `assumed`, `observed` or `hypothetical` |
-| `source` | `extractor:<name>`, `pack:<id>@<version>`, `user`, or `llm` with a `call` field naming the ledger entry |
-| `checks` | the checks passed |
-
-The record kind is **not stored**: it is the last prefix of the ID and the file the record sits in (4.9). A stored copy could only drift.
-
-### 4.3 Semantic IDs
-
-**Grammar:** `<parent-id>/<kind-prefix>:<slug>`, where the slug is taken from a name in the code.
-
-| Example | Built from |
-|---|---|
-| `reports/api` | the compose service `api` in project `reports` |
-| `reports/api/port:post-reports` | the route `POST /reports` |
-| `reports/worker/beh:generate-report` | the Celery task `generate_report` |
-| `reports/db/store:report/var:status` | table `reports`, column `status` |
-| `reports/api/pred:range-too-large` | a predicate; the slug is derived from the expression's symbols, the display name comes from the LLM |
-
-Rules:
-- An ID never contains a position or a counter. The one exception is an instance's replica number (`reports/worker[0]`): it comes from configuration (`replicas: 2`), not from the order of the code, so it is stable across rebuilds. `[n]` is allowed on instance IDs only.
-- **Slugs** are ASCII `[a-z0-9]+(-[a-z0-9]+)*`, with no escaping. A code name becomes a slug through one function (lowercase, every run of other characters becomes `-`). A slug made only of digits is rejected.
-- **Collisions** are resolved by adding another code name to the colliding IDs only, never by a counter.
-- **One text form.** An accepted ID is canonical: parsing it and printing it gives back the same bytes. A non-canonical ID is rejected, never normalized.
-- **Only full IDs are stored.** Every reference in a stored record, including guards, steps, nodes and classes, is a complete ID. Short forms (`pred:range-too-large`, `n:load`) exist only in what people read: the viewer and the terminal.
-- A content hash is stored beside a record as a cache key. It is never part of the identity.
-- Renaming a symbol in code changes the ID. The compiler reports renames it can detect so saved runs can be migrated.
-
-**The ID of every kind:**
-
-| Kind | Pattern | Example |
-|---|---|---|
-| entity | `<parent>/<slug>`, or `<slug>` at the root | `reports/worker` |
-| store (an entity) | `<parent>/store:<slug>` | `reports/db/store:report` |
-| actor (an entity) | `<system>/actor:<slug>` | `reports/actor:operator` |
-| port | `<entity>/port:<slug>` | `reports/api/port:post-reports` |
-| wire | `<from-port>/wire:<to-entity-slug>-<to-port-slug>` | `reports/api/port:enqueue-generate/wire:broker-tasks` |
-| instance | `<entity>[<n>]` | `reports/worker[1]` |
-| state variable | `<store>/var:<slug>` | `reports/db/store:report/var:status` |
-| machine | `<state-variable>/machine:lifecycle` | `reports/db/store:report/var:status/machine:lifecycle` |
-| predicate | `<entity>/pred:<slug>` | `reports/api/pred:range-too-large` |
-| characteristic | `<port>/in:<slug>` | `reports/api/port:post-reports/in:range` |
-| input class | `<characteristic>/class:<slug>` | `reports/api/port:post-reports/in:range/class:too-large` |
-| behavior | `<entity>/beh:<slug>` | `reports/worker/beh:generate-report` |
-| case | `<behavior>/case:<slug>` | `reports/worker/beh:generate-report/case:skip` |
-| node | `<behavior>/n:<slug>` | `reports/worker/beh:generate-report/n:claim` |
-
-Cases, input classes and nodes are **embedded**: they live inside their record's line but have IDs of their own, because other records reference them (a machine's `by` names a node).
-
-**Every ID is unique.** Two records, cases or classes with the same ID are an error, even when the two are identical: the model has one writer, so a duplicate is a writer bug. A node may appear in several cases of its behavior, because cases are paths through the same nodes; every appearance of one node carries the same fields.
-
-### 4.4 Anchors
-
-Anchors are stored apart from the records, in `anchors.jsonl`, so moving code without changing it touches only that file (F-S9).
-
-```json
-{"id":"reports/api/beh:post-reports/n:find-existing","path":"app/api.py","lines":"25",
- "quote":"existing = s.query(Report).filter_by(idempotency_key=idempotency_key).one_or_none()","status":"exact"}
-```
-
-An anchor's `status` is `exact` (the quote matches the file), `moved` (found elsewhere in the file) or `broken`. A record with a broken anchor fails the anchor check.
-
-### 4.5 Structure records
-
-**`entity`** — anything with a boundary.
-
-| Field | Meaning |
-|---|---|
-| `type` | `Service`, `Process`, `Container`, `Host`, `Store`, `Actor`, `External`, `Function`, `Mechanism`, or a type from a pack |
-| `name` | display name |
-| `parent.logical`, `parent.physical` | the parent in each **facet** |
-| `replicas` | for a type with several instances |
-
-*In the step function:* an entity is a namespace for ports and state; its instances appear in the configuration.
-
-**`port`** — an interaction point on an entity's boundary.
-
-| Field | Meaning |
-|---|---|
-| `parent` | the owning entity |
-| `direction` | `provides` or `requires` |
-| `protocol` | `http-route`, `sql`, `celery-task`, `s3-api`, `call`, … |
-| `message` | the message schema: layers, payload type, headers |
-| `exposure` | `external` or `internal` (provided ports only) |
-| `trigger` | what starts it: `http`, `task`, `schedule`, `cli`, `call` |
-| `handler` | the symbol that handles it, for provided ports of user code |
-
-*In the step function:* a message arriving at a provided port starts an **activation** of that port's behavior. A send node puts a message on the wire attached to a required port.
-
-**`wire`** — a connection between two ports.
-
-| Field | Meaning |
-|---|---|
-| `wire` | `assembly` or `delegation` |
-| `from`, `to` | the two ports |
-| `channel` | `order: fifo \| bag`, `lossy`, `dup`, `bounded: n` |
-| `adapter` | a stateless change of form, if any |
-| `match` | how the wire was found: `exact` (a key matched), `heuristic`, `assumed-env` |
-
-*In the step function:* each wire instance is one channel in the configuration. Delivery takes a message from the channel to the receiving port. `lossy` and `dup` add drop and duplicate choices.
-
-**`instance`** — a concrete copy of an entity, created by the load phase.
-
-| Field | Meaning |
-|---|---|
-| `of` | the entity |
-| `on` | where it runs (physical facet) |
-| `config` | values bound for this instance: environment, isolation level, concurrency |
-
-### 4.6 State records
-
-**`state_var`** — the part of a **store** that behavior depends on.
-
-| Field | Meaning |
-|---|---|
-| `parent` | the store entity |
-| `domain` | the possible values, as an enum or as classes |
-| `scope` | `per-row`, `per-table`, `per-instance`, `global` |
-| `constraints` | `unique`, `not-null`, foreign keys |
-
-The nodes that write a state variable are not stored on it: they are derived from the write nodes of behaviors, so a stored list could only drift.
-
-**`machine`** — the lifecycle of one state variable.
-
-| Field | Meaning |
-|---|---|
-| `var` | the state variable |
-| `initial` | the value on creation |
-| `transitions` | each with `from`, `to`, `by` (the writing node) and `guard` |
-
-*In the step function:* every write is checked against the machine. A write that is no legal transition stops the run as an **illegal write**.
-
-```json
-{"id":"reports/db/store:report/var:status/machine:lifecycle","var":"reports/db/store:report/var:status",
- "initial":"PENDING",
- "transitions":[
-  {"from":"PENDING","to":"RUNNING","by":"reports/worker/beh:generate-report/n:claim"},
-  {"from":"RUNNING","to":"DONE","by":"reports/worker/beh:generate-report/n:mark-done"},
-  {"from":"RUNNING","to":"PENDING","by":"reports/worker/beh:generate-report/n:mark-retry"},
-  {"from":"RUNNING","to":"FAILED","by":"reports/worker/beh:generate-report/n:mark-failed"},
-  {"from":"RUNNING","to":"PENDING","by":"reports/worker/beh:requeue-stuck/n:reset"},
-  {"from":"FAILED","to":"PENDING","by":"reports/cli/beh:retry/n:reset"}]}
-```
-
-### 4.7 Behavior records
-
-**`predicate`** — a named yes-or-no fact.
-
-| Field | Meaning |
-|---|---|
-| `name` | display name |
-| `expr` | the code's own test |
-| `over` | what it is about: a message field, a state variable, a config key, a port's response |
-| `scope` | how long its value holds: `per-activation`, `per-run`, `state` (re-read from state each time) |
-| `decided_at` | the node kind that decides it: `receive`, `read`, `write`, `response`, `env` |
-| `equals` | for a predicate over a state variable with an enum domain: the value it tests for, such as `PENDING` |
-
-Predicates with `equals` on the same variable cannot vary independently: at most one of them is true. The guard-algebra check (6.7) therefore treats that variable as **one dimension** over its domain values, not as independent yes-or-no facts, and never reports a gap or an overlap that cannot happen.
-
-**`characteristic`** — one way a port's input varies, with its **input classes**.
-
-```json
-{"id":"reports/api/port:post-reports/in:range","parent":"reports/api/port:post-reports",
- "about":"fields start, end",
- "choices":[{"id":"reports/api/port:post-reports/in:range/class:within-limit","name":"at most 366 days",
-             "when":"!reports/api/pred:range-too-large","tags":["base"]},
-            {"id":"reports/api/port:post-reports/in:range/class:too-large","name":"longer than 366 days",
-             "when":"reports/api/pred:range-too-large"}]}
-```
-
-Classes of one characteristic must cover every input and must not overlap. One class is tagged `base`: the default when a scenario says nothing.
-
-**`behavior`** — what one provided port does. Two levels of detail (`lod`):
-
-*Summary:* a list of **cases**.
-
-```json
-{"id":"reports/worker/beh:generate-report","port":"reports/worker/port:task-generate-report","lod":"summary",
- "cases":[
-  {"id":"reports/worker/beh:generate-report/case:skip","when":"!reports/worker/pred:status-is-pending",
-   "steps":[{"node":"reports/worker/beh:generate-report/n:load","kind":"read","var":"reports/db/store:report/var:status",
-             "decides":["reports/worker/pred:status-is-pending"]}],
-   "outcome":"ack"},
-  {"id":"reports/worker/beh:generate-report/case:done",
-   "when":"reports/worker/pred:status-is-pending & reports/worker/pred:upload-ok",
-   "steps":[{"node":"reports/worker/beh:generate-report/n:load","kind":"read","var":"reports/db/store:report/var:status",
-             "decides":["reports/worker/pred:status-is-pending"]},
-            {"node":"reports/worker/beh:generate-report/n:claim","kind":"write","var":"reports/db/store:report/var:status",
-             "value":"RUNNING","evidence":["commit"]},
-            {"node":"reports/worker/beh:generate-report/n:build-csv","kind":"read","store":"reports/db/store:order"},
-            {"node":"reports/worker/beh:generate-report/n:upload","kind":"send","port":"reports/worker/port:storage",
-             "decides":["reports/worker/pred:upload-ok"]},
-            {"node":"reports/worker/beh:generate-report/n:mark-done","kind":"write","var":"reports/db/store:report/var:status",
-             "value":"DONE","evidence":["commit"]}],
-   "outcome":"ack"}]}
-```
-
-*Full:* a graph of `nodes` and guarded `edges`, close to the statements. It is compiled when someone zooms in, or ahead of time for ports open to the outside.
-
-Rules for behaviors:
-- **Cases partition.** The guards of one behavior cover every situation and do not overlap. A case with no guard is the `otherwise` case: it covers what the other cases leave, and reports `unknown`. A behavior with a single case has no guard.
-- **Guards are small.** A guard uses only `!`, `&`, `|`, parentheses and full predicate IDs. A guard that names a predicate that does not exist is an error, never read as false.
-- **The partition check enumerates.** The check tries every assignment of the dimensions a behavior's guards mention (a plain predicate is one yes-or-no dimension; a state variable tested with `equals` is one dimension over its values). Above 16 dimensions it reports `guard-check-too-large` instead of running or skipping; the largest behavior in our trial mentions 5 predicates.
-- **Ordered reads.** A node lists the predicates it `decides`. The interpreter may not use a predicate before the node that decides it. This is how "the upload has not happened yet" stays true during a run (F-S3).
-- **Evidence, not claims.** Nodes that touch shared state carry `evidence` of what the code does for atomicity (a transaction, a lock, a conditional update). The compiler records evidence; the interpreter computes atomicity from it.
-- **Frameworks own what they do.** Request validation (a 422 answer) and unhandled exceptions (a 500 answer) belong to the framework's pack, not to the handler's behavior (F-S1).
-
-Node kinds: `read`, `write`, `send`, `call`, `reply`, `branch`, `loop`, `lock`, `unlock`, `begin`, `commit`, `spawn`, `wait`, `raise`.
-
-### 4.8 Records above the core
-
-**Status: Proposed.** These kinds are needed for the upper levels and for what-if questions.
-
-| Kind | Purpose | Section |
-|---|---|---|
-| `term` | one word of the project's glossary, with anchors and levels | 6.3 |
-| `level` | one level: vocabulary, the level below, abstraction function, step map, invariants | 5 |
-| `mechanism` (an entity type) | a lock, retry policy, claim | 5.4 |
-| `assumption` | a predicate bound by default, with reason and alternatives | 8.4 |
-| `variation_point` | a place where the structure can differ, with options | 8.8 |
-| `property` | a safety or liveness property in one level's words, with fairness and who approved it | 8.11 |
-
-### 4.9 Storage
-
-**Status: Decided for the core files (2026-11-14). Alternatives are in section 12.**
-
-```
-.mental/                       not committed (in .gitignore)
-  model/                       one sorted JSONL file per record kind
-    format.json                {"format":1}: the format version of every file in this folder
-    entities.jsonl  ports.jsonl  wires.jsonl  instances.jsonl
-    state_vars.jsonl  machines.jsonl
-    predicates.jsonl  characteristics.jsonl  behaviors.jsonl
-                               terms.jsonl, levels.jsonl and the other kinds of 4.8 arrive with them
-  anchors.jsonl                record ID → file, lines, quote
-  diagnostics.jsonl            findings, gaps, assumptions, failed checks
-  packs.lock                   packs used, with versions and hashes
-  calls.jsonl                  the LLM call ledger (6.6); holds hashes of answers, not their text
-  answers/                     every raw LLM answer, stored by its content hash
-  cache/                       accepted answers, keyed by task content (6.8)
-  runs/                        saved runs (8.6)
-```
-
-- **Text is the stored form.** One record per line, sorted by ID in byte order, so two models can be compared with ordinary text tools and an LLM can read and write them.
-- **One kind per file.** A record whose ID kind does not belong in the file it sits in is an error. Stores are entities, so they sit in `entities.jsonl`.
-- **One canonical form per line.** Fields appear in a fixed order; an absent optional field or an empty set is omitted, never written as `null` or `[]`; set-valued fields (`checks`, `tags`, `decides`, `evidence`) are sorted and free of repeats; ordered lists (`steps`, `transitions`, `cases`) keep their order because it means something. Every file ends with a newline, and a file is rewritten only when its bytes change.
-- **Strict reading.** An unknown field, an unknown kind or a missing required field is an error. There is no catch-all field.
-- **One format version, no migrations.** `format.json` holds one number for the whole model. A model written in another format is an error that says "rebuild"; there is no migration code, because the model can always be rebuilt.
-- **The model is derived, never edited by hand and never merged.** It is a function of the code, the compiler version, the packs and the LLM answers. After a merge, the merged code is compiled again.
-- **A derived index** (for example SQLite) may be built beside the text for speed; it can always be rebuilt.
-
-![The record kinds of the compiled model and their reference fields. Structure: entity, port, wire, instance. Behavior: behavior, predicate, characteristic with input classes. State: state variable and lifecycle machine. A run file binds input classes and records a schedule. Beside the model sit anchors, diagnostics, the pack lock and the LLM call ledger. Record kinds built after the core are listed separately.](images/schema.png)
-
-## 5. Levels and refinement
-
-**Status: the ladder below is one ladder strategy, `fixed`, among several under test (Experiment, see [ladder strategies](ladder-strategies.md)); the `level` record and its checks are Proposed.** `mentalc` builds the ladder with a configured strategy. The strategies, their options and the experiments that compare them are in that document.
-
-### 5.1 The ladder of version one
-
-![The software ladder. Logical side, top to bottom: business, system, services, components, mechanisms, statements, each with the data it shows. Physical side: cluster, host, container, process, runtime, OS, machine. The sides meet where a service runs as a process.](images/level-ladder.png)
-
-| Level | Entities | One step is | Data seen | Comes from |
+| Stage | Question | Produces | LLM | Milestone |
 |---|---|---|---|---|
-| **Business** | customer, report | a business event: "report delivered" | report status in business words | glossary and LLM, checked against the level below |
-| **System** | the product, its users, outside services | an interaction between parties | what flows between parties | the close phase |
-| **Services** | services, queues, stores | a message | request and task payloads | extractors, infrastructure files, packs |
-| **Components** | handlers, modules | a call or a case | objects and arguments | extractors and the LLM, one port at a time |
-| **Mechanisms** | locks, claims, retry policies | acquire, test, retry | holder, attempts | packs, and LLM recognition |
-| **Statements** | functions, variables | a statement | variable values as classes | extractors |
+| 1. **Build model** | What parts does the project have, and how does each become something that runs? | build units, pins, artifacts, launches, configuration inputs | no | 1 |
+| 2. **Facts** | What does the code refer to, and what does it do? | reference sites with outcomes; the call graph; obligations; effects; state variables; entry points | no | 2, 3 |
+| — **The gate** | Is anything missing that could change the model? | a failed build with fixes, or a go | no | 2 |
+| 3. **Mechanical model** | What is the system, stated only from facts? | entities, ports, full behaviors, predicates, machines, moves with verdicts; the first findings | no | 4 |
+| 4. **LLM** | What should things be called, and how do the paths group? | names, input classes, summary cases, terms | yes | 5 |
+| 5. **Link, load, close** | What is connected to what, and what runs? | wires, instances, actors, drivers, stubs | no | 6 |
+| 6. **Levels** | What does a reader at each level see? | step classes, the step map, charters | names only | 7 |
 
-The **physical side** (process, container, host) says where things run. It meets the logical side where a service runs as a process (**allocation**). Version one models the physical side down to the container and process, from infrastructure files.
+Three properties of this order:
 
-### 5.2 What a level is made of
+- **Each stage ends with something checkable on report-jobs**, and the first findings arrive at stage 3, before any LLM call and before the interpreter exists. Three of the four report-jobs bugs follow from mechanical facts alone (F-S12).
+- **The gate sits before the first paid call.** A build that will fail does not spend LLM answers.
+- **An LLM answer can change how the model reads, never what it allows.** The interpreter runs the mechanical records; summaries are checked against them.
 
-A level is a record with these parts (from the survey of how other fields relate levels, F-R4):
-
-| Field | Meaning | Checked by |
-|---|---|---|
-| `vocabulary` | the entities, state variables, predicates and step kinds allowed at this level | the barrier check |
-| `below` | the level or levels it refines | — |
-| `pattern` | how it relates to the level below: `group`, `summarize`, `atomize`, `hide`, `assume` | that pattern's check |
-| `abstraction` | one expression per upper state variable, over lower state | accepted or rejected one by one |
-| `step_map` | which lower steps make up each upper step; which lower steps are invisible | the pair check |
-| `invariants` | properties in this level's words (`property` records, 8.11) | bounded search; proof is 8.11 |
-| `actors` | for people and outside systems: what they *may* do | used by the interpreter |
-
-Proposed with the ladder strategies (2026-11-17): every `level` record also carries `strategy` (the ID of the strategy that built it), `kind`, `charter` (readers, question, what a step is, what it hides, its why and how neighbours) and `admission` (computed admission results). Step classes are records of their own ([ladder strategies, 6.4](ladder-strategies.md#64-records)).
-
-**Two operations build every level:**
-1. **Group:** draw a box around things that exist (functions into a component, processes into a service). Cheap and mostly mechanical.
-2. **Abstract:** replace several lower steps by one named upper step and record how ("claim the report" = read `status`, test it, write `RUNNING`).
-
-### 5.3 Checks between levels
-
-- **Pair check.** Each pair of adjacent levels is checked by running the lower level and projecting it upward: exactly one group of lower steps changes the upper state, and it does so by the upper step the map names. Checks run per pair, never from top to bottom in one go (F-R4).
-- **Barrier check.** A behavior at a level mentions only that level's vocabulary. A violation is a finding ("the business step reads a database column directly").
-- **Coverage.** Every lower step is either mapped to an upper step or marked invisible (F-Z2).
-- **Invariants.** Each invariant is tested by bounded search at the level that states it.
-
-When a pair check fails because another activation got in between, that is a **race reported at the level where the user thinks**: "a report is delivered at most once" fails at the business level, and the cause is found by zooming down.
-
-### 5.4 Mechanisms
-
-A **mechanism** is the level the code never names. A lock is not a line of code; it is an entity with states (free, held) used by many lines.
-
-- **Known mechanisms** come from packs: Celery's retry policy (`max_retries=3`) becomes an entity with a counter and a limit.
-- **Improvised mechanisms** are recognized by the LLM from a state variable, its write sites and their guards. In report-jobs, "read `status`, test for `PENDING`, write `RUNNING`" is a **claim**: the column is used as a lock.
-
-A proposed mechanism must have (1) state that persists, (2) a lifecycle and (3) an invariant other code relies on. Two checks then apply: every write site is a legal move of the lifecycle, and the steps the mechanism needs to be atomic are atomic. In report-jobs the second check fails, and that failure *is* the race.
-
-### 5.5 What our own trial showed
-
-A hand-written version of one race at seven levels (F-Z1 to F-Z8) fixed these design points:
-- Zoom maps by **step identity**, never by position: refined steps of two upper steps interleave.
-- A level adds detail only where its vocabulary applies, so **"unchanged at this level" is a first-class notion**.
-- Entities split as well as steps, through a parent link per level.
-- **Each problem has a level where it can be named.** Upper levels show only symptoms, with a marker that the cause is further down.
-- Upper-level data is often an **aggregate** ("deliveries: 2"), not a copied field.
-- The refinement map belongs **in the model** (each node names the upper step it implements), so every run can be shown at every level without extra data.
-
----
-
-## 6. `mentalc`: building the model
-
-**Status: the pipeline and the division of labor are Decided; phases 4, 5, 7 and 11 are Proposed in their details.**
-
-This is the current focus of the project: **building the model from one repository.**
-
-### 6.1 Inputs, output, commands
-
-| | |
-|---|---|
-| **Inputs** | one repository at one commit (source code, infrastructure files, docs, lockfiles); packs for its libraries; answers from an LLM backend |
-| **Output** | `.mental/` as laid out in 4.9: a complete model, anchors, diagnostics, the pack lock, the call ledger |
-
-| Command | Does |
-|---|---|
-| `mentalc init` | writes a config file and adds `.mental/` to `.gitignore` |
-| `mentalc build` | runs the pipeline; `--full` also compiles every full-detail behavior |
-| `mentalc build --unit <id>` | compiles one deeper part on demand (used when zooming) |
-| `mentalc build --ladder <strategy>` | builds with that ladder strategy as the active one ([ladder strategies](ladder-strategies.md)) |
-| `mentalc ladder build`, `list`, `use`, `compare` | builds another ladder beside the active one, lists the stored ladders, makes one active, compares them ([ladder strategies, 6.1](ladder-strategies.md#61-configuration-and-commands)) |
-| `mentalc check` | re-runs the checks on an existing model without calling an LLM |
-| `mentalc diff <a> <b>` | compares two models at the level of behavior |
-| `mentalc rebuild --role <role> --with <llm>` | recompiles what one LLM role produced, with another LLM (6.6) |
-| `mentalc task next`, `mentalc task submit` | the task protocol for the `agent` backend (6.5); also offered as MCP tools by `mentalc mcp` |
-
-Every command has a `--json` form, which prints the model's own JSON (diagnostics as diagnostic records).
-
-`--offline` forbids every LLM call: answers come from the cache only, and a miss is an error. `mentalc check` is always offline.
-
-**Exit codes.** Every tool exits with:
-
-| Code | Means |
-|---|---|
-| 0 | success |
-| 1 | the command ran and found error-level problems: failed checks, repairs exhausted, a violation found by search |
-| 2 | the tool itself failed: I/O, configuration, the LLM backend, a cache miss when offline, bad usage |
-
-### 6.2 The pipeline
-
-![The phases of mentalc build. Source code, infrastructure files, docs and packs go in. Twelve phases run in order: detect, extract, resolve packs, vocabulary, group, compile behavior, mechanisms, link, load, close, levels and check. Five of them ask the LLM backend and every answer is checked. The output is the model, which mentalvm runs and mentaldbg shows.](images/pipeline.png)
-
-| # | Phase | Reads | Writes | LLM |
-|---|---|---|---|---|
-| 1 | **Build model** | manifests, file types, lockfiles, Dockerfiles, compose output | the domain (always software for now), languages, frameworks, the ladder strategy to use (from the config); build units, artifacts, launches, dependencies and configuration inputs (6.10) | no |
-| 2 | **Extract** | source and infrastructure files | the skeleton and the obligations (6.2.1) | no |
-| 3 | **Resolve packs** | lockfiles, container images | `packs.lock`; pack summaries for later phases | no |
-| 4 | **Vocabulary** | docs, identifiers, schema | `term` records (6.3) | yes |
-| 5 | **Group** | call graph, packages, infrastructure | services (mechanical) and components (boxes from packages and call-graph clusters; names from the LLM) | names only |
-| 6 | **Compile** | one compile unit at a time | predicates, input classes, behaviors, lifecycle machines (6.4) | yes |
-| 7 | **Mechanisms** | state variables, write sites, packs | mechanism entities and their step maps (5.4) | for improvised ones |
-| 8 | **Link** | call sites, config values | wires between ports; slots filled; pack predicates bound by config | no |
-| 9 | **Load** | infrastructure files | instances with their config | no |
-| 10 | **Close** | ports nothing connects to | actors, drivers and stubs, so the model runs on its own | no |
-| 11 | **Levels** | everything below | one ladder per configured strategy: levels with charters, step classes, the step map, invariants (section 5; [ladder strategies](ladder-strategies.md)) | for names, charters and stages; `fixed` for business |
-| 12 | **Check** | the whole model | diagnostics; a failed check sends a repair back to the phase that produced the record | no |
-
-After phase 12 the model is written. Phase 11 comes after Close because its checks need a model that can run.
-
-Phase 1 builds a small model of how the project is built before any code is read ([6.10](#610-the-build-model-first)). **Under test:** deployment as a space of configurations instead of a single setup ([6.10.4](#6104-deployment-as-a-space-to-explore)).
-
-#### 6.2.1 Extract, in detail
-
-Extract produces facts and nothing else. Its steps, from the bottom:
-
-| Step | Produces | With |
-|---|---|---|
-| Parse | a syntax tree per file | ruff's Python parser (`ruff_python_parser`, `ruff_python_ast`), pinned to an exact version; its types never leave the extractor |
-| Resolve names | symbol table, import graph, call graph | Mental's own resolver, driven by the type rows of packs (section 7). What it cannot resolve is recorded as `unresolved` with a reason, never guessed |
-| Control flow | per function: branches, loops, exception paths. Each branch point is an **obligation** | extractor |
-| Effects | per call that reaches outside: database read or write, send, HTTP call, file, clock | extractor plus packs (the pack says `session.commit()` writes) |
-| State variables | each persistent value with all its write sites | extractor plus the ORM pack |
-| Entry points | provided ports: routes, tasks, schedules, commands | framework packs, through **slots** |
-| Infrastructure | containers, replicas, environment, published ports, which process runs which code | `docker compose config` and similar renderers |
-
-On report-jobs this yields 5 files, a call graph, 6 entry points (2 routes, 2 Celery tasks, 1 schedule, 1 command) and 2 state variables (F-S10).
-
-**A call-graph edge** is one distinct pair (calling function, called function) where both functions are defined in the repository; several calls between the same pair count once. A call that reaches a library through a pack becomes an effect or a slot, not an edge. A call that cannot be resolved is listed as `unresolved` and counted apart. The trial's count of 41 edges was made before this definition and is measured again when the extractor first runs on report-jobs.
-
-**Why not tree-sitter or a language server.** A typed syntax tree makes semantic extraction direct, the parser is pure Rust, and a SCIP indexer or a language server would bring Node or a Python environment, against running locally with nothing else installed. tree-sitter stays an **Experiment**: it is revisited if keeping up with ruff's releases costs more than about an hour a month, or when a second language is scheduled.
-
-**Why static tools do this and not the LLM:** static call graphs are markedly more complete than LLM-made ones, and an LLM asked to decide which branches are possible drops real bugs (F-R1, F-R3). The LLM never sees a job where missing something is silent.
-
-#### 6.2.2 Link, Load, Close
-
-- **Link** joins each required port to the provided port it reaches. Most links are exact key matches: a task name, a URL path against a route, a `DATABASE_URL` host against a compose service. A link that is a guess is marked `heuristic`. Link also binds pack predicates from call sites: `max_retries=3` fixes when "retries exhausted" is true, and cases that can no longer match are removed. What cannot be resolved becomes an **assumption**.
-- **Load** creates **instances**: `replicas: 2` gives `worker[0]` and `worker[1]`. Config that makes a port unreachable (`WEBHOOK_URL` unset) is recorded as a binding; the branch stays in the model for other deployments (F-S6).
-- **Close** makes the model runnable alone. For every provided port open to the outside it adds a **driver** that can send any input class. For every required port leading outside it adds a **stub** that answers with any declared outcome. Users, operators and the clock become **actors**.
-
-### 6.3 Vocabulary: the project's glossary
-
-**Status: Proposed.**
-
-Names are where LLM output drifts most. To keep one word meaning one thing at every level, `mentalc` builds one glossary per model before it compiles anything, and every later LLM task receives the relevant slice.
-
-1. **Harvest.** Read the docs (README, design notes, API descriptions, CLI help, docstrings) and extract candidate terms with their definitions quoted from the source.
-2. **Anchor.** Match each term to code: identifiers, tables and columns, enum values, routes, queue names. A checker accepts an anchor only if the symbol exists.
-3. **Classify.** Tag each term: concept (*report*), state (*pending*), event (*report requested*), actor (*operator*), mechanism (*claim*), quantity (*retry limit*).
-4. **Assign levels** from where the anchors land. One word with two senses on two levels becomes two terms.
-5. **Use everywhere.** When the LLM names anything, it picks a glossary term first. A new name is allowed but flagged.
-
-```json
-{"id":"reports/term:report","name":"report","sense":"a CSV of orders for a date range, delivered to S3",
- "term_kind":"concept","levels":["business","services"],
- "code_anchors":["app/api.py:POST /reports","app/models.py:Report"]}
-```
-
-**The code wins over the docs.** A documented term with no code anchor, or a central code concept with no documented term, is reported as a finding. Without docs (report-jobs has none) the glossary is built from identifiers, the schema, routes and help text alone.
-
-### 6.4 Compile: one port at a time
-
-A **compile unit** is the smallest piece of work the LLM sees, usually one provided port. It contains:
-- the handler's code slice;
-- its obligations;
-- summaries of what it calls, from packs or from units compiled earlier, *instead of* that code;
-- the glossary slice;
-- the IDs already in scope.
-
-Units are compiled **bottom-up along the call graph**, so each summary builds on those beneath it.
-
-The answer must contain, in this order: a short analysis, **predicates**, **input classes**, **cases**. For each state variable a separate task proposes its **lifecycle machine**.
-
-**What the LLM may not do:** drop an obligation, declare a branch impossible, or invent an ID.
-
-**Ahead of time and on demand.** A normal build compiles the structure, every port's summary behavior, and the full-detail behavior of ports open to the outside. Deeper full-detail behaviors are compiled when someone zooms into them (`mentalc build --unit`).
-
-Cost on report-jobs, estimated by hand: 15 LLM calls for a first build, 3 for a rebuild after a one-line fix (F-S10).
-
-### 6.5 LLM backends
-
-**Status: the pluggable interface is Decided, synchronous since 2026-11-14; the list of backends is Proposed.**
-
-Every LLM step is a **task** that `mentalc` writes and a backend answers. Prompts, answer shapes, checks, repairs and the cache all stay in `mentalc`, so the result is judged the same way whichever backend answered.
-
-```rust
-struct Task {
-    id: TaskId,                 // the hash of the task's content
-    role: Role,                 // vocabulary, port-behavior, lifecycle, mechanism, business, repair, …
-    prompt: PromptRef,          // template name, version and content hash
-    inputs: Vec<Input>,         // code slices by anchor and content hash, summaries, glossary slice
-    answer_schema: JsonSchema,  // the exact shape of the answer
-}
-
-// The build is a state machine with two operations; every backend drives it.
-fn next_task(&mut self) -> Option<RenderedTask>;                  // the next task to answer, or none when done
-fn accept(&mut self, task: TaskId, raw: RawAnswer) -> Verdict;    // check the answer: accepted, a repair task, or failed
-
-// Backends that call an LLM themselves implement one synchronous method.
-trait Backend {
-    fn caps(&self) -> Caps;                                        // LLM model ID if known, context size, tool use
-    fn complete(&self, task: &RenderedTask) -> Result<RawAnswer, BackendError>;
-}
-```
-
-**Why synchronous.** A build of report-jobs makes about 15 calls, which needs no concurrency; version one has no async runtime, which would bring dozens of crates; and the `agent` backend inverts control, so it cannot be a function that is awaited.
-
-| Backend | How it works | Use |
-|---|---|---|
-| **`agent`** (default) | The user's coding agent pulls work: `task next` returns a task, the agent thinks (and may read more code with its own tools), `task submit` returns the answer. `mentalc` checks it and replies with a repair or the next task. It is not an implementation of `Backend` but the command and MCP surface over `next_task` and `accept`. No session file is kept: the build's state is the cache, the ledger and repair counts derived from the ledger, and `task next` recomputes the cheap phases. Works with any agent that can run a command or call an MCP tool. | everyday local builds, inside an interactive agent session; needs no API key |
-| **`api`** | `mentalc` calls an LLM API itself: Anthropic, OpenAI or any compatible endpoint | automated builds |
-| **`local`** | the same, against a local server such as Ollama or vLLM | offline work, private code |
-| **`agent-cli`** | `mentalc` starts a headless agent as a subprocess (`claude -p`, `codex exec`) | a terminal build with no agent session open |
-| **`replay`** | answers come only from stored answers, looked up by task; a missing answer is an error | tests and CI, which never call a live model; `--offline` builds |
-
-Rules:
-- **A backend per role.** The config maps each role to a backend and an LLM, so a small LLM can name components while a strong one recognizes mechanisms.
-- **Tasks are self-contained.** An agent may explore further; no task depends on it.
-- **No weaker model on failure.** If a task cannot be answered (no backend, a failing provider, repairs exhausted), the build fails with a clear error. It never writes a model with the LLM parts missing, because a degraded model would later be read as complete.
-- **MCP sampling is not used:** the protocol deprecated it and Claude Code never supported it (F-X1).
-- **The MCP tools are fixed.** `mentalc mcp` offers `mental_task_next` and `mental_task_submit(task_id, answer)`, and nothing that changes per task: the answer schema travels inside the task. A failed check, an unknown task or exhausted repairs is a normal result marked `isError: true` with the repair text; only protocol faults are protocol errors. The server is synchronous over standard input and output and answers both the 2025-11-25 and the 2026-07-28 revisions of the protocol.
-
-### 6.6 The call ledger
+### 4.1 Commands and exit codes
 
 **Status: Decided.**
 
-Every LLM call, failed calls and repairs included, appends one complete line to `.mental/calls.jsonl` before its records are used, and every record the call produced points to it. Two reasons: when a better or cheaper LLM appears, the affected parts can be rebuilt; and LLMs can be compared on the same job. The raw answer is stored in `.mental/answers/` by its content hash, and the ledger holds only the hash. A torn last line is detected when the ledger is opened. Repair counts are derived from `repair_of`, not kept anywhere else.
+| Command | Does |
+|---|---|
+| `mentalc init` | writes `mentalc.toml` and adds `.mental/` to `.gitignore` |
+| `mentalc build` | runs the stages; stops at the first stage that fails |
+| `mentalc check` | re-runs the static checks on an existing model without calling an LLM |
+| `mentalc task next`, `mentalc task submit` | the task protocol of the `agent` backend ([9.3](#93-llm-backends)); also offered as MCP tools by `mentalc mcp` |
+| `mentalvm run`, `explore`, `replay`, `check` | one run; a bounded search; a stored schedule replayed; the checks that need the interpreter |
 
-```json
-{"id":"call:port-behavior/generate-report#1","role":"port-behavior","unit":"reports/worker/port:task-generate-report",
- "backend":"agent","llm":{"id":"claude-opus-5-5","provider":"anthropic","known_by":"harness"},
- "prompt":{"template":"compile-unit/port-behavior","version":3,"hash":"h:9b2e"},
- "task":"h:51c0","answer":"h:e07d",
- "produced":["reports/worker/beh:generate-report","reports/worker/pred:upload-ok"],
- "checks":{"anchor":"pass","coverage":"pass","guard_algebra":"pass","agreement":"pass"},
- "cost":{"input_tokens":18400,"output_tokens":2900,"seconds":41}}
+Every command has a `--json` form. `--offline` forbids every LLM call: answers come from the cache only, and a miss is an error. Human-written input is TOML, tool output is JSON or JSONL.
+
+| Exit code | Means |
+|---|---|
+| 0 | success |
+| 1 | the command ran and found error-level problems: gaps, failed checks, a violation found by search |
+| 2 | the tool itself failed: I/O, configuration, the LLM backend, a cache miss when offline, bad usage |
+
+## 5. Stage 1: the build model
+
+**Status: Decided (2026-11-17)** for the stage and its plain readers. **Proposed:** the build chain ([5.4](#54-the-build-chain)). **Experiment:** the deployment space ([10.3](#103-the-deployment-space)).
+
+Before it reads a line of code, `mentalc` builds a small model of how the project is built: the **build model**, the way Maven's `pom.xml` describes a Maven project. Type checkers do not do this for Python: they guess the roots and use one environment per config, and take a real project model only where a build system exports one ([type checkers and builds](research/type-checkers-and-builds/report.md)). The build model is that export.
+
+### 5.1 Records
+
+| Record | Says |
+|---|---|
+| **build unit** | one part that is built on its own: a `pyproject.toml` project, a uv workspace member, a directory an image is built from. It has source roots, a Python version, the environment its references resolve against, and the other units it uses |
+| **pin** | one package of a build unit at an exact version, from its lockfile |
+| **artifact** | what a build unit becomes: an image, a wheel; or an image taken from outside (`postgres:16`) |
+| **launch** | one way an artifact is started: the command, the working directory, the environment, the replica count |
+| **configuration input** | a value a launch gets from outside (an environment variable, a settings file), and later whether the code reads it |
+
+"Component" stays the word for a box inside a service; a part built on its own is a **build unit**.
+
+*In report-jobs:* one build unit `app` (root `src/`, pins from `src/requirements.lock`); three artifacts: one image built from `src/` and two from outside (`redis:7.4`, `postgres:16`); five launches: `api`, `worker` (2 replicas) and `beat` from the built image, `redis` and `postgres` from the outside ones; twelve configuration inputs set in the compose file (three on each of `api`, `worker`, `beat` and `postgres`).
+
+### 5.2 Readers
+
+Small readers, one per file format, chosen by language and build tool. There is no model of the build tool itself.
+
+| Input | Yields |
+|---|---|
+| `pyproject.toml` | build units, `requires-python`, declared dependencies, uv workspace members, path dependencies |
+| lockfiles: `requirements*.lock` and `.txt` with exact pins, `uv.lock`, `pylock.toml` | pins; an unknown lock version or a version range is a gap (F-U10) |
+| `.python-version` | the Python version |
+| Dockerfiles: `FROM`, `WORKDIR`, `COPY`, `ENV`, `CMD`, `ENTRYPOINT` | the artifact, its base image (and from it the Python version), the default launch |
+| compose files, through `docker compose config --format json --no-interpolate` | launches, build contexts, outside images, configuration inputs that are set |
+| an environment on disk: `.venv` in the unit, or a path in `mentalc.toml` | the environment of the unit, read as files (`pyvenv.cfg`, site-packages) |
+
+`docker compose config` is the one process `mentalc` starts. It only parses and renders; interpolation is off so that the model does not depend on the developer's shell or absorb its secrets (F-U16). Variables are substituted only from the repository's `.env`; one that stays unset is recorded.
+
+**Source roots** are found in this order: roots listed in `mentalc.toml`; roots declared by the repository (the package location in `pyproject.toml`, the build context together with a launch command that names a module); convention (`.` and `src/`), labelled as such. In report-jobs the root `src/` is declared by the compose build context and `uvicorn app.api:app`.
+
+### 5.3 Rules
+
+- **Every record is anchored** to the file and line it comes from.
+- **What a reader cannot read is listed, never skipped.** `setup.py`, a Dockerfile's `RUN` lines and Makefile targets are code; the build model lists them as build steps it did not read.
+- **Gaps are reported here, before anything else runs.** A unit with no Python version, no pins or no environment, and an artifact with no Dockerfile, are diagnostics with their fix. The fix for a missing environment is a command (`uv venv && uv pip install -r requirements.lock`) that `mentalc` prints and does not run (P10).
+- **Which gaps fail the build** is decided by the gate ([6.4](#64-gaps-and-the-gate)). A missing environment always does, because nothing after it can be trusted.
+
+*In report-jobs today:* three gaps. `src/` has no Dockerfile although the compose file says `build: .`; no file states the Python version; there is no environment. A fourth, `WEBHOOK_URL` read by the code and set nowhere, is found when stage 2 reads the code.
+
+### 5.4 The build chain
+
+**Status: Proposed.**
+
+What `mentalvm` simulates is the artifact running as a process, not the source. A statement in the source says something about that process only through a chain of steps that happened in the real world, and the build model records that chain:
+
+| Link | Says | In report-jobs |
+|---|---|---|
+| source → build unit | these files, at this commit, are the unit's source | `src/` is the root of `app` |
+| build unit + pins → artifact | a build step turned the source and its pinned packages into the artifact | the image built from `src/` and `src/requirements.lock` |
+| artifact → launch | this command starts the artifact | `uvicorn app.api:app`, the Celery worker, Celery beat |
+| launch → instances | the launch runs as this many processes | two `worker` processes |
+
+- **The chain is the reason behind every record.** A step in a behavior is anchored to source lines; the chain says why those lines describe the process that takes the step. A finding can be followed back along it: this process, started by this launch, from this artifact, built from this source.
+- **The build step is recorded, not simulated.** It has inputs (source roots, pins, base image), an output (the artifact) and the tool that ran it. `mentalc` does not model what the tool does inside. That the tool keeps the meaning of the source is an assumption, stated once per tool.
+- **For Python the artifact is the image:** the interpreter at its version, the installed packages at their pins, and the source files. There is no separate binary.
+- **Each link says how it is known** (P7): `inferred` when read from the repository, `attested` when a digest or lockfile hash supports it, `assumed` otherwise. In version one the link from build unit to artifact is `assumed`: the model takes it that the deployed image was built from the commit it reads.
+- **A broken chain is a finding.** A deployed image built from another commit or with other pins means the model is grounded to the wrong source. Checking this against image digests is [later](#151-later).
+
+## 6. Stage 2: from code to facts
+
+**Status: Proposed.** **Experiment:** which checker, and how right it is (R1, R2 in [15.2](#152-experiments)).
+
+Stage 2 runs once per build unit, with the roots, Python version and environment that stage 1 gave it.
+
+### 6.1 Parse and list sites
+
+`mentalc` parses every file itself, with ruff's parser pinned to an exact version. A type checker answers only "what does this point to"; control flow, obligations and effects come from Mental's own walk of the syntax tree.
+
+The walk lists every **reference site**:
+
+| Site kind | Example | Unresolved, it can hide |
+|---|---|---|
+| import | `from app.db import Session` | everything reached through the name |
+| decorator | `@app.post("/reports")` | a provided port |
+| callee | `s.commit()` | an effect, a call edge, a raised exception |
+| base class | `class Report(Base)` | a store, inherited members, a framework slot |
+| write receiver | `report.status = …` | a state variable's write site |
+| escape | `register(handler)`: a repository function handed to outside code | an entry point called from outside |
+| handler type | `except ClientError:` | which exception paths a handler takes |
+
+Escapes are the complete list of ways outside code can call into the repository (F-U7).
+
+### 6.2 Resolve with a type checker
+
+Mental does not write its own resolver. Measured on five projects, two existing checkers resolve about nine in ten sites and agree on 99.7% of the sites both answer ([type checkers as libraries](research/type-checkers-as-libraries/report.md)):
+
+| | ty 0.0.105, as a Rust library | Pyrefly 1.4.1, through its Pysa export |
+|---|---|---|
+| calls resolved | 88.5% | 91.6% |
+| read receivers resolved | 85.8% | 90.9% |
+| write receivers resolved | 94.6% | 95.6% |
+| how it runs | in process, on ruff's own syntax tree | a separate program and an undocumented file format |
+| known danger | no return-type inference; an unstable 0.0.x API | types a receiver `Never` after a legacy SQLAlchemy `Column` test and drops the writes that follow (every `report.status = …` in report-jobs) |
+
+**Proposed for version one: ty, in process.** It needs nothing installed, works on the same syntax tree as the site walk so no positions have to be matched, reads the environment as files, and gets the write sites of report-jobs right. Its crates are pinned to one commit and confined to one crate, as ruff's are. Pyrefly's export is the second source under test (R2): its return-type inference is where the extra three points come from.
+
+The checker is set up from the build model, never from its own guesses: explicit roots, Python version and environment per build unit. A repository with several build units gets one checker run per unit.
+
+### 6.3 Outcomes
+
+Every site gets exactly one outcome, whichever tool produced it, and the record says which tool and version answered.
+
+| Outcome | Means |
+|---|---|
+| `Resolved(id)` | the target is a definition in the repository |
+| `External(symbol)` | the target is outside the repository and has an identity: a package and an access path from the import, such as `sqlalchemy.orm.Session.commit` (F-U4). Whether Mental knows what it *does* is a separate question, answered by packs |
+| `Unresolved(reason)` | the tool cannot say. `Unknown`, `Any` and `Never` from the checker are unresolved, never dropped |
+
+Reasons form a short closed list: `missing_module`, `no_type` (an unannotated parameter, an untyped container element), `not_found`, `ambiguous`, `dynamic` (`getattr`, `eval`, a wildcard import), `unreachable` (the checker answered `Never`). An unresolved site whose only problem is an earlier one names it as its cause, and reports count root causes, not sites.
+
+Candidates found by name are never edges: name matching links unrelated definitions (F-U6).
+
+### 6.4 Gaps and the gate
+
+A **gap** is something unknown that could change the model: an unresolved site, an external call into a package with no pack, a missing input from stage 1.
+
+A gap **counts** when it can reach the model: it lies in code reachable from an entry point along resolved calls, or it is a decorator, base class or escape anywhere (those create entry points and stores themselves). A gap in code that no entry point reaches, such as tests and scripts, is listed in the resolution report and raises nothing.
+
+**The gate** runs after stage 2 and before any LLM call:
+
+1. A missing input fails the build.
+2. A counting gap fails the build unless `mentalc.toml` accepts its root cause. An accepted gap enters the model as a visible **assumption**, and every result that rests on it says so.
+3. An acceptance that matches nothing fails the build.
+4. The resolution rate is reported and never gates: one unresolved decorator matters more than a hundred unresolved calls in a script (F-U5).
+
+A failed gate prints one diagnostic per root cause, largest effect first, each with the sites, the ports it can affect and the fix. Under the agent backend the agent sees the same text, can supply the input with its own tools, and builds again.
+
+The detail is in [resolution](resolution.md): package classes and pins, how gaps are grouped under root causes, the form of an acceptance, the resolution report and the trust rule. Whether this policy is too strict for real repositories is experiment R3. Neither checker resolves Celery's `.delay` or boto3 clients, so on the first stack those sites are closed by packs.
+
+### 6.5 Facts
+
+From the resolved sites and its own walk of each function, the extractor writes:
+
+| Fact | How |
+|---|---|
+| **call graph** | one edge per distinct pair of repository functions; calls into packs become effects or slots; unresolved calls are counted apart |
+| **obligations** | every branch, loop and exception path of a function. An LLM summary must later mention each one |
+| **effects** | each call that reaches outside: a database read or write, a send, an HTTP call, a file, a clock. The pack says that `session.commit()` writes |
+| **state variables** | each persistent value that code branches on, with every read and write site, and the other stored copies of the same fact |
+| **entry points** | routes, tasks, schedules, commands, through pack **slots**; and the launch that starts each |
+| **configuration reads** | each environment variable or setting the code reads, matched against what stage 1 found set |
+
+Extractors never guess. A fact carries an anchor, and output is deterministic.
+
+### 6.6 Packs
+
+**Status: Decided** for the format; hand-written for version one.
+
+A **pack** is a model of a library, framework, runtime or outside system. The repository says `session.commit()`; the pack says that this writes rows and ends a transaction.
+
+- What the extractor reads from a pack is **rows** in CodeQL's models-as-data style: a package, a type or function named by a closed access-path grammar, and what it is (a type, an effect, a slot, a raised exception, a config binding).
+- What the interpreter needs (behaviors, channel rules, known mechanisms) are records in the model's format.
+- Packs are declarative data and never execute. A pack is keyed by package and version.
+- Framework behavior stays in the pack: request validation (a 422) and unhandled exceptions (a 500) belong to FastAPI's pack, not to the handler (F-S1, F-S8).
+- The SQLAlchemy pack must model session configuration: with expiry on commit, a later attribute read is a read of the store (F-S14).
+
+Version one: FastAPI, Celery, SQLAlchemy, boto3 (S3), requests, click, Redis, Postgres.
+
+## 7. The model
+
+**Status: Decided** for IDs, anchors and storage (2026-11-14). The record kinds are grouped by the stage that writes them.
+
+### 7.1 Shape
+
+The model is a flat set of **records** that refer to each other by ID. Every record has an `id`, a `provenance` (`inferred`, `attested`, `assumed`, `observed`, `hypothetical`), a `source` (an extractor, a pack with its version, a checker with its version, the user, or an LLM call in the ledger) and the `checks` it passed. The record's kind is not stored: it is the last prefix of the ID and the file the record sits in.
+
+### 7.2 Semantic IDs
+
+`<parent-id>/<kind-prefix>:<slug>`, with the slug taken from a name in the code.
+
+| Kind | Example |
+|---|---|
+| entity | `reports/worker` |
+| store, actor | `reports/db/store:report`, `reports/actor:operator` |
+| port | `reports/api/port:post-reports` |
+| wire | `reports/api/port:enqueue-generate/wire:broker-tasks` |
+| instance | `reports/worker[1]` |
+| state variable, machine | `reports/db/store:report/var:status`, `…/var:status/machine:lifecycle` |
+| predicate | `reports/api/pred:range-too-large` |
+| characteristic, input class | `reports/api/port:post-reports/in:range`, `…/in:range/class:too-large` |
+| behavior, case, node | `reports/worker/beh:generate-report`, `…/case:skip`, `…/n:claim` |
+| build unit, pin | `reports/unit:app`, `reports/unit:app/pin:sqlalchemy` |
+| artifact, launch, configuration input | `reports/artifact:app`, `reports/launch:worker`, `reports/launch:worker/cfg:database-url` |
+
+Rules:
+- The root slug is the system's name: `name` in `mentalc.toml`, else the compose project name, else the directory name.
+- Slugs are ASCII `[a-z0-9]+(-[a-z0-9]+)*`, made from a code name by one function. No counters and no positions; a collision is resolved by adding another code name. `[n]` is allowed on instances only, because it comes from configuration.
+- An ID has one canonical text form; a non-canonical ID is rejected, never normalized. Stored references are always full IDs.
+- Every ID is unique across the model.
+- **A move is identified** by its function and the order of its closing site in that function, never by a line number (F-L9).
+
+### 7.3 Anchors
+
+Anchors live apart from the records, in `anchors.jsonl`, so moving code without changing it touches only that file (F-S9). An anchor has a path, lines, a quote and a status: `exact`, `moved` or `broken`. A record with a broken anchor fails the anchor check.
+
+### 7.4 Record kinds
+
+| Written by | Kinds |
+|---|---|
+| Stage 1 | `build_unit`, `pin`, `artifact`, `launch`, `config_input` ([5.1](#51-records)) |
+| Stage 2 | `site` (a reference site with its outcome) |
+| Stage 3 | `entity`, `port`, `state_var`, `machine`, `predicate`, `behavior` at full detail, `move` ([8](#8-stage-3-the-mechanical-model)) |
+| Stage 4 | names on the above; `characteristic` with its input classes; `behavior` summaries; `term` ([9](#9-stage-4-what-the-llm-adds)) |
+| Stage 5 | `wire`, `instance`, actor and stub entities, `assumption` ([10](#10-stage-5-link-load-close)) |
+| Stage 6 | `level`, `step_class` ([11](#11-stage-6-levels)) |
+
+The fields of each kind are fixed in the implementation plan of the milestone that first writes it, and written back here. A field is added to the specification before it is added to a struct.
+
+### 7.5 Storage
+
+```
+.mental/                       not committed
+  model/                       one sorted JSONL file per record kind, plus format.json
+  anchors.jsonl                record ID → file, lines, quote
+  diagnostics.jsonl            gaps, findings, assumptions, failed checks
+  resolution.json              the resolution report: outcomes per site kind, root causes
+  calls.jsonl                  the LLM call ledger
+  answers/                     every raw LLM answer, by content hash
+  cache/                       accepted answers, keyed by task content
+  runs/                        saved runs
 ```
 
-`known_by` is `configured`, `harness` or `self-reported`. `repair_of` is omitted when the call is not a repair.
+- **Text is the stored form.** One record per line, sorted by ID in byte order, fields in a fixed order, absent and empty fields omitted, sets sorted. Two models can be compared with ordinary text tools.
+- **Strict reading.** An unknown field, an unknown kind or a missing required field is an error.
+- **One format version, no migrations.** A model in another format says "rebuild".
+- **The model is derived.** It is never edited by hand and never merged; after a merge the merged code is compiled again.
+- **`mentalc` reads the working tree,** the files as they are on disk. Reading a commit's objects without a checkout is Later ([source access](research/source-access/report.md)).
 
-**Roles:** `vocabulary`, `component-grouping`, `port-behavior`, `lifecycle`, `mechanism`, `business`, `repair`, `scenario-binding`; for ladder strategies also `subjects`, `actors`, `name-step`, `why-link`, `stages`, `charter`, `intent-invariants`, `ladder-propose`, `process-from-docs` ([ladder strategies, 6.5](ladder-strategies.md#65-llm-roles)).
+## 8. Stage 3: the mechanical model
 
-**`known_by`** records how the LLM's identity is known: `configured` (set explicitly), `harness` (reported by the agent's software) or `self-reported` (stated by the LLM itself, the weakest).
+**Status: Proposed.**
 
-**Rebuilding.** The compile cache is keyed by the task's content (6.8), never by the LLM, so changing the LLM invalidates nothing by itself. A rebuild is an explicit request: `mentalc rebuild --role mechanism --with <llm>`. The difference between the two resulting models, together with the check results, is itself an evaluation of the new LLM.
+From the facts alone, with no LLM, `mentalc` writes a model that is complete and unreadable: correct structure, raw conditions, no summaries.
 
-### 6.7 Checks
+| Record | Built from |
+|---|---|
+| **entity**, **port** | launches become services and processes; entry points become provided ports; effects on outside systems become required ports; tables, queues and buckets become **stores** |
+| **predicate** | each test the code makes, with the code's own expression, what it is about and the node that decides it. Its slug comes from the expression's symbols; its display name comes later |
+| **behavior**, full detail | per provided port, a graph of **nodes** (read, write, send, call, reply, branch, lock, commit, raise, …) and guarded edges, one obligation per branch. A node lists the predicates it **decides**; a node that touches shared state carries the **evidence** the code gives for atomicity: a transaction, a lock, a conditional update |
+| **state variable** | the stored value code branches on, its domain (from the enum or the literals written), its scope and constraints |
+| **machine** | the lifecycle of a state variable, derived from its write sites: each write is a transition to the written value, from the value that a test before the write established, or from any value when no test did |
+| **move** | a group of nodes that makes one change to shared state, with a verdict ([8.1](#81-moves-and-verdicts)) |
 
-Checks decide what counts as fact. A failed check produces a **repair** task naming exactly what failed; after a set number of failed repairs the build fails.
+The derived machine states what the code *relies on*, not what it enforces. The worker tests for `PENDING` and then writes `RUNNING`: the transition is `PENDING → RUNNING`. When a second worker writes `RUNNING` over `RUNNING`, that write is illegal, and that is the race.
 
-| Check | Rule | Applies to |
+### 8.1 Moves and verdicts
+
+A **move** closes at a write to shared state. Consecutive writes to the same key with nothing read in between are one move (the `write-run` rule, measured on rq and report-jobs, F-L2, F-L8). Each move gets a verdict from its own reads and writes and the pack's rules, by Lipton's reduction:
+
+| Verdict | Condition |
+|---|---|
+| **atomic** | its reads and write can be reordered into one block that nothing else can enter |
+| **guarded** | the write is conditional on what was read, inside the store: `UPDATE … WHERE status = 'PENDING'`, a lock, a sufficient transaction |
+| **non-atomic** | it reads, decides in the program, then writes unconditionally |
+
+Moves are the first rung of the level ladder ([11](#11-stage-6-levels)), and they are also where concurrency bugs live. In report-jobs the claim in `generate_report` (read the row, test `PENDING`, write `RUNNING`) is one non-atomic move. Whether the verdict is a good enough pointer for search has not been measured (experiment M1).
+
+### 8.2 Static checks
+
+| Check | Rule | Finds in report-jobs |
 |---|---|---|
-| **Structural** | the record has the right shape; every referenced ID exists | every record |
-| **Anchor** | the anchor's quote is found in the file | every record |
-| **Coverage** | every obligation of the handler appears in some predicate or case | behaviors |
-| **Guard algebra** | the cases of a behavior, and the classes of a characteristic, cover everything and do not overlap | behaviors, input classes |
-| **Composition** | every outcome a callee can produce is handled by its caller; every required port is wired or stubbed | wires, behaviors |
-| **Summary agreement** | a summary behavior agrees with its full graph | behaviors with both levels of detail |
-| **Sample agreement** | several independent answers to the same task agree | LLM answers for chosen roles |
-| **Machine** | every write site is a legal move of the lifecycle; no state is **stranded**, meaning its only exits need a message that may never exist (F-S7) | state variables |
-| **Atomicity** | a check-then-act on shared state has evidence that makes it atomic | behaviors that write state |
-| **Refinement pair** | section 5.3 | adjacent levels |
-| **Barrier** | section 5.3 | levels |
+| **Atomicity** | a non-atomic move on a state variable that another activation can write, given the replica count and the channel's delivery rule from the pack | the duplicate claim (two workers, at-least-once delivery, F-S13); `requeue_stuck` overwriting `DONE` |
+| **Composition** | every outcome a callee or a store can produce is handled by its caller | the unique-constraint violation on a duplicate idempotency key, answered with a 500 |
+| **Machine** | no state is **stranded**: its only exits need a message that may never exist | the `PENDING` row left when queueing fails (F-S7) |
+| **Structural, anchor** | every reference names a record; every quote is found in its file | — |
 
-The first six need no interpreter. Atomicity is predicted statically and confirmed by `mentalvm` search.
+Each finding is a prediction, labelled as such until `mentalvm` confirms it with a witness. These four are the acceptance facts of the compiler (F-S11).
 
-### 6.8 Incremental builds
+## 9. Stage 4: what the LLM adds
 
-- **The cache key is content.** The compile cache stores each accepted answer under the hash of: the role, the template's name, the template's content hash, the answer schema's hash, and the hashes of the exact input slices placed in the prompt (code by the hash of its slice, callee summaries by their own content hash). The LLM's identity never enters the key. An edit outside every slice invalidates nothing; an unchanged callee summary stops recompilation above it.
-- **Templates cannot change silently.** A `prompts.lock` pins each template's version and content hash; a test fails when a template changes without a version bump, so the version recorded in the ledger always means something.
-- **Paid answers are kept safe.** Only accepted answers are cached, and checks re-run on every cache hit. Nothing is evicted by age. A corrupt entry is reported and treated as a miss. A miss in `mentalc check` or with `--offline` is an error.
-- **Every recompile is explained.** `build --json` lists each cache miss with the input hash that changed.
-- After a code change, only units whose inputs changed are recompiled. Glossary terms, predicates and level maps are kept and re-checked, not regenerated.
-- Sharing models between machines is **Later** (section 12).
+**Status: Decided** for the task protocol, ledger and cache; **Proposed** for the narrowed list of tasks.
 
-### 6.9 What a build of report-jobs should find
+### 9.1 Tasks
 
-These are the acceptance facts for the compiler (F-S11):
-
-| Finding | Kind | Found by |
-|---|---|---|
-| Two workers can both claim the same report | race | atomicity check; confirmed by search |
-| `requeue_stuck` can overwrite `DONE` with `PENDING` | race | atomicity check |
-| Two requests with the same idempotency key: one gets a 500 | unhandled outcome | composition check |
-| A `PENDING` row with no task in flight is never picked up | stranded state | machine check |
-
-### 6.10 The build model first
-
-**Status: Decided (2026-11-17):** the build model is the first phase, and in version one it is built by plain readers of build files. **Experiment:** the deployment space (6.10.4).
-
-`mentalc` builds a small model of how the project is built before it reads a line of code: the **build model**, the way Maven's `pom.xml` describes a Maven project. What a project consists of depends on its language, its build tools and its domain, so this is settled first, and every later phase stands on it.
-
-| Stage | Question | Produces | Phases |
+| Task | The LLM is given | It answers | Checked by |
 |---|---|---|---|
-| 1. **Build model** | What parts does the project have, and how does each one become something that runs? | build units, artifacts, launches, dependencies, configuration inputs | 1 |
-| 2. **Unit models** | What does each part do? | extract, resolve, compile, run for each build unit | 2 to 8 |
-| 3. **Deployment** | Which instances run, how many, with which configuration, wired to what? | instances; under test, a **deployment space** (6.10.4) | 9 |
-| 4. **The whole solution** | Who uses it, and through which ports? | actors, drivers and stubs | 10 |
+| **vocabulary** | docs, identifiers, the schema, routes | **terms** with a sense, each anchored to code | the anchored symbol exists |
+| **name** | a predicate, a state, an entity or a move, with its code and the glossary slice | a display name | the glossary term is used; the name's nouns match what the thing reads, writes or decides (**name truth**, F-L4) |
+| **summarize** | one provided port: its full behavior, its obligations, pack summaries of what it calls | **input classes** and **summary cases**, each case a guarded path over existing predicates and nodes | coverage (every obligation appears), guard algebra (cases cover everything and do not overlap), **summary agreement** with the full graph |
+| **group** | packages and call-graph clusters | names for components | every function stays in exactly one box |
 
-#### 6.10.1 What the build model holds
+What the LLM may not do: drop an obligation, declare a branch impossible, invent an ID or a predicate, write a lifecycle. A name is generated once and stored with its record, never regenerated on rebuild (F-L3).
 
-| Record (names provisional) | Says |
-|---|---|
-| **build unit** | one part that is built on its own: a `pyproject.toml` project, a uv workspace member, a directory a Dockerfile builds. It has source roots, a Python version, declared dependencies with their pins, and the environment its references resolve against |
-| **artifact** | what a build unit becomes: an image, a wheel |
-| **launch** | one way an artifact is started: the command, the working directory, the environment. One image can have several launches |
-| **unit dependency** | one build unit uses another: a path dependency, a workspace dependency, a shared directory copied into two images |
-| **configuration input** | a value the code reads from outside: an environment variable, a settings file |
+A **compile unit** is one provided port. Units are compiled bottom-up along the call graph, so each summary builds on those beneath it.
 
-The spec already uses "component" for a box inside a service (Group, phase 5). So the build model says **build unit** for a part that is built on its own.
+### 9.2 Checks and repair
 
-*In report-jobs:*
+A failed check produces a **repair** task naming exactly what failed. After a fixed number of failed repairs the build fails. It never writes a model with the LLM parts missing.
 
-| | Build model of report-jobs |
-|---|---|
-| build unit `app` | source root `src/`, from the compose build context `.` together with the command `uvicorn app.api:app`; pins from `src/requirements.lock`; **Python version unknown:** no `requires-python`, no `.python-version`, and the image's base is not stated (the type-checker experiment picked 3.12 by hand) |
-| artifact | one image built from `src/` (`build: .`); **gap:** `src/` has no Dockerfile, so how the image is built is unknown |
-| launches of that image | `api`: `uvicorn app.api:app` on port 8000; `worker`: `celery -A app.tasks worker --concurrency 1`; `beat`: `celery -A app.tasks beat` |
-| images from outside | `redis:7.4`, `postgres:16` |
-| configuration inputs | `DATABASE_URL`, `CELERY_BROKER_URL`, `REPORTS_BUCKET` (set in the compose file); `WEBHOOK_URL` (read by the code, set nowhere) |
+### 9.3 LLM backends
 
-**What the later phases take from it:**
-- **Reference resolution:** each build unit's import roots, Python version and environment, which is exactly the setup a type checker needs. A build unit with no environment stops the build in phase 1, naming the command that makes one.
-- **Extract:** which files belong to which build unit, and the entry points the launches name (`app.api:app`, `app.tasks`).
-- **Group:** services are launches. In report-jobs, one image gives three services.
-- **Load:** the instances of each launch, with their configuration.
+Every LLM step is a **task** that `mentalc` writes and a backend answers. Prompts, answer shapes, checks, repairs and the cache stay in `mentalc`, so an answer is judged the same way whichever backend gave it. The build is a state machine with two operations, `next_task()` and `accept(task, answer)`; backends are synchronous.
 
-#### 6.10.2 How it is built: plain readers
-
-In version one the build model comes from small readers, one per file format, chosen by language and build tool, plus the output of the one tool `mentalc` already runs. There is no model of the build tool itself, and nothing runs in `mentalvm`.
-
-| Input | Read by | Yields |
+| Backend | How it works | Use |
 |---|---|---|
-| `pyproject.toml` | a TOML reader | build units, `requires-python`, declared dependencies, uv workspace members, path dependencies |
-| lockfiles: `requirements*.lock` and `.txt`, `uv.lock`, `pylock.toml` | the lockfile readers of [resolution](resolution.md#62-rung-1-declared-pins) | pins |
-| `.python-version` | a one-line reader | the Python version |
-| Dockerfiles | a reader for `FROM`, `WORKDIR`, `COPY`, `ENV`, `CMD` and `ENTRYPOINT` | the artifact, its base image (and from it the Python version), the working directory, the default launch |
-| compose files | `docker compose config`, as currently written | launches (command, environment, replicas), build contexts, images from outside, configuration inputs that are set |
+| **`agent`** (default) | the user's coding agent pulls work: `mentalc task next` returns a task, `mentalc task submit` returns the answer and gets a repair or the next task. Also offered as two fixed MCP tools. No session file: the state is the cache and the ledger | everyday local builds; needs no API key |
+| **`api`** | `mentalc` calls an LLM API itself | automated builds |
+| **`replay`** | answers come only from stored answers; a miss is an error | tests, CI, `--offline` |
 
-Rules:
-- **Every record is anchored** to the file and line it comes from, so "why is this a build unit?" always has an answer.
-- **What a reader cannot read is reported, never skipped.** `setup.py`, a Dockerfile's `RUN` lines and Makefile targets are code. The build model lists them as build steps it did not read.
-- **Gaps surface in phase 1,** before any LLM call: an artifact with no Dockerfile, a build unit with no Python version or no environment. Whether a gap fails the build follows the gate of [resolution](resolution.md#9-the-gate-when-a-build-fails).
-- **Configuration inputs are completed by Extract.** Variables the code reads are matched against the ones the build files set. One that is read but set nowhere, such as `WEBHOOK_URL`, is a diagnostic.
-- **Readers belong to an ecosystem.** A new language or build tool adds readers. The first set covers the version-one stack (11.2).
+`local` and `agent-cli` backends are Later. A missing or failing backend fails the build (P9).
 
-A model of each build tool, written by an LLM from the tool's documentation and run by `mentalvm` on the build files, was considered and is deferred to later versions (section 12). Plain readers come first, so that work moves on to the code.
+### 9.4 Ledger and cache
 
-#### 6.10.3 What changes in the pipeline
+- **The call ledger.** Every LLM call, repairs and failures included, appends one line to `calls.jsonl`: role, backend, the LLM and how its identity is known, the prompt template with version and hash, task and answer hashes, the records produced, checks, cost. Each LLM-written record points to its call.
+- **The cache key is content:** the role, the template's hash, the answer schema's hash and the hashes of the exact input slices. The LLM's identity is never in the key. Only accepted answers are cached, checks re-run on every hit, and every miss is explained.
+- After a code change only units whose inputs changed are recompiled.
 
-- Phase 1 is **Build model** (6.2). The import roots and pins of [resolution](resolution.md#6-where-resolution-evidence-comes-from) are found in it.
-- Group takes services from launches, and Load takes instances and their configuration from launches.
-- The realization chain (section 12) starts in version one in a small form: build unit → artifact → launch → instance.
-- `mentaldbg` can show the build model as the first view of a project.
+## 10. Stage 5: link, load, close
 
-#### 6.10.4 Deployment as a space to explore
+**Status: Decided**, except the deployment space.
 
-**Status: Experiment.**
+### 10.1 Link
 
-The same build can be deployed in many ways. Under test: Load produces a **deployment space** instead of one deployment. Its dimensions come from the build model and the infrastructure files:
-- **which services run:** compose profiles, services that can be left out;
-- **how many instances of each:** `replicas`, a worker's concurrency;
-- **configuration that changes behavior:** `WEBHOOK_URL` set or unset, `task_acks_late`;
-- **which version runs where:** a rollout, the realization chain of section 12.
+Link joins each required port to the provided port it reaches. Most links are exact key matches: a task name, a URL path against a route, a `DATABASE_URL` host against a compose service. A link that is a guess is marked `heuristic`. Link also binds pack predicates from call sites and configuration: `max_retries=3` fixes when "retries exhausted" is true; `task_acks_late = True` on Redis makes delivery at-least-once (F-S13).
 
-A **deployment configuration** picks one value per dimension, and `mentalvm` runs any configuration. Each dimension is a variation point (8.8). After that comes stage 4: actors, drivers and stubs attach to the ports the chosen configuration exposes.
+### 10.2 Load and close
 
-*In report-jobs:*
-- With one worker at concurrency 1, two workers can no longer claim the same report at once. That needs two activations at the same time.
-- With `beat` left out, `requeue_stuck` runs only when an operator runs the `requeue` command. Its overwrite race becomes rarer, and stranded rows wait for the operator.
-- With `WEBHOOK_URL` set, the webhook call and its failure outcomes appear.
+- **Load** creates **instances** from launches: 2 replicas give `worker[0]` and `worker[1]`. Configuration that makes a port unreachable (`WEBHOOK_URL` unset) is a binding; the branch stays in the model (F-S6).
+- **Close** makes the model runnable alone. Every provided port open to the outside gets a **driver** that can send any input class. Every required port leading outside gets a **stub** that answers with any declared outcome. Users, operators and the clock become **actors**.
 
-#### 6.10.5 Checks and experiments
+### 10.3 The deployment space
 
-**Acceptance.** On report-jobs, the build model lists:
-- one build unit;
-- one image with three launches;
-- two images from outside;
-- three gaps: the missing Dockerfile, the unknown Python version, and `WEBHOOK_URL` set nowhere.
+**Status: Experiment (D1).** The same build can be deployed in many ways. Under test: Load produces a **deployment space** instead of one deployment, with dimensions from the build model: which launches run, how many instances of each, which configuration inputs are set. A **deployment configuration** picks one value per dimension and `mentalvm` runs any of them.
 
-On full-stack-fastapi-template, Mealie, Redash and rq, its launches and pins agree with `docker compose config --format json` and `uv export --frozen`.
+*In report-jobs:* with one worker at concurrency 1 the claim race cannot happen; with `beat` left out, `requeue_stuck` runs only when an operator runs the command; with `WEBHOOK_URL` set, the webhook call and its failures appear.
 
-| # | Question | Done when | Needs |
+## 11. Stage 6: levels
+
+**Status: Proposed.** The rules below were measured against three other ways of building the ladder on rq and report-jobs ([ladder strategies](research/multi-level-models/ladder-strategies.md), F-L1 to F-L11).
+
+### 11.1 Two axes
+
+- **Purpose:** why ↔ how. One step stands for several. This is what a **level** is.
+- **Part:** whole ↔ part. One entity contains several. This is space zoom: system, service, component, function. It is not a level.
+
+*System*, *services* and *components* describe the same kind of step with different boxes opened, so they are positions of space zoom. In a trial that used them as levels, only one of six adjacent pairs changed the grain by more than a factor of two.
+
+### 11.2 Kinds of level and their closing rules
+
+A **closing rule** says when one step of a level ends. It is stated over things the model already has, so steps are cut with no author.
+
+| Kind | One step is | It closes when | Reader |
 |---|---|---|---|
-| **B1** | Does the build model set up reference resolution correctly? | on the five projects of the [type-checker experiment](research/type-checkers-as-libraries/report.md#experiment-pyrefly-against-ty-on-five-projects), type checkers set up from the build model (roots, Python version and environment for each build unit) give the same results as that experiment's hand setup | milestone 2 |
-| **B2** | Is the deployment space useful? | on report-jobs, each finding of 6.9 appears in exactly the configurations where it should (the claim race only with two activations at once), and a search over configurations finds them without being told which ones | milestone 4 |
+| **Outcome** | a subject's whole life | the subject reaches a terminal state | manager |
+| **Goal** | one actor gets one thing done | the actor's request is answered and the subject is at rest | product, support |
+| **Activation** | one entity handles one message | it must wait | developer |
+| **Move** | one change to shared state | [8.1](#81-moves-and-verdicts) | developer on a concurrency problem |
+| **Effect** | one read, write or send | the node fires | developer, coding agent |
 
-**Decide:** after B2, whether the deployment space replaces the single deployment.
+Two more kinds, **stage** (a subject moves to its next stage) and **exchange** (one request between two parties with its answer), are candidates. They merged away on both measured subjects and are admitted only where the merge test keeps them.
 
-## 7. Packs
+- **Effect and move** are written in stage 3. **Activation** follows from behaviors. **Goal and outcome** need subjects, which are stores with a lifecycle machine, and the external ports that drivers call.
+- **Merge test.** Two adjacent levels merge when about four in five upper steps have exactly one lower step (F-L6, F-L11).
+- **Outcomes are object-centric:** a goal that changes two subjects is listed under both (F-L5).
+- **Each level has a charter:** its readers, its question, what one step is, what it hides, and its why and how neighbours. The LLM writes the readers and the question; the rest is computed.
 
-**Status: the format is Decided; where packs come from in version one is Proposed.**
+### 11.3 Step classes and the step map
 
-A **pack** is a model of a library, framework, runtime or outside system, written in the same record format as the model of user code.
+Each cut is generalized to a **step class**, identified by code names: a move by its function and closing site, an activation by its port and case, a goal by its actor, external port and the change it makes, an outcome by its subject and terminal state. Each lower step class names the upper one it belongs to, or is marked **support** (nothing on the way to the outcome reads what it wrote). That is the **step map**, stored in the model, so any run can be shown at any level with no extra data (F-Z8).
 
-**Why packs are needed.** The repository's code says `session.commit()`. Nothing in the repository says that this writes rows, that it is a transaction boundary, or which isolation level applies. A pack says so, once, for everyone.
+Step classes are derived statically from behaviors and machines; `mentalc` does not run the model. Whether the static derivation matches cutting explored runs is experiment L7.
 
-| A pack contains | Example |
-|---|---|
-| entity types and their ports | Celery's worker and consumer; Postgres's `sql` port |
-| behaviors at summary detail, keyed by input classes | `Task.retry`: re-queue if retries remain, else fail |
-| **slots**: where the framework calls user code | FastAPI's route handler; Celery's task function |
-| effect rules for the extractor | `Session.commit()` is a database write and ends a transaction |
-| channel rules | with `task_acks_late = True` on Redis, delivery is at-least-once |
-| known mechanisms | retry policy, connection pool |
+### 11.4 The LLM's part and the checks
 
-**The extractor's part is rows.** What the extractor reads from a pack (types, effects, slots, the exceptions a call raises, config bindings) is written as rows in CodeQL's models-as-data style: each row names a package, a type or function through a closed access-path grammar, with `Decorates` and `WithArg` added for slots. Behaviors, channels and mechanisms stay records in the model's format. The rows are Mental's own content; only the format is borrowed.
+The LLM names step classes ("claim the report") and writes one sentence beginning "so that". It never places a boundary.
 
-Rules:
-- Packs are **declarative data**. They never execute.
-- A pack is keyed by package, version and source hash.
-- A library model describes **types**. Instances appear when user code creates them, with config bound from code and infrastructure files.
-- Framework behavior stays in the pack. A handler's behavior covers only the handler (F-S1, F-S8).
+| Check | Rule | Run by |
+|---|---|---|
+| **Coverage** | every lower step class is mapped or marked support | `mentalc` |
+| **Barrier** | a name uses only its level's words: a goal never says "Redis" | `mentalc` |
+| **Name truth** | a name's nouns match the step's footprint | `mentalc` |
+| **Pair** | running the lower level and projecting upward gives exactly the upper steps the map names | `mentalvm check` |
 
-**The five ways a repository touches the outside**, each linked differently:
+A failed pair check where another activation got in between is a race reported at the level where the reader thinks: "a report is delivered at most once" fails at the goal level, and the cause is found by zooming down.
 
-![The five kinds of edges at a repository's boundary: infrastructure injects config, a framework calls your handler through a slot, your call site binds a library's predicates, the library reaches a peer system, and a library repository's exports become a pack.](images/repo-edges.png)
+### 11.5 Upper state
 
-1. **Injected:** environment and config from infrastructure files bind predicates at load.
-2. **Inverted:** a framework calls user code through a slot.
-3. **Downward:** a call site binds a library's predicates.
-4. **Outward:** a library's lowest ports reach another system (Postgres, Redis, S3).
-5. **Upward:** compiling a library repository produces a pack.
+**Status: Experiment (A1).** Version one takes a subject's upper state from its lifecycle state variable. That is known to be blind to races between redundant copies of one fact (F-A1, F-A2). The remedy measured on rq, **select-and-guard** (choose a few named observables, guard the rest with a mined representation invariant), needs runs of the lower level, so it belongs to `mentalvm` and is tried after milestone 6 ([abstraction function](research/abstraction-function/report.md)).
 
-**Version one.** Packs for the first stack are written by hand and live with the compiler: FastAPI, Celery, SQLAlchemy, boto3 (S3), requests, click, Redis, Postgres, docker compose. A registry, signing and automatic pack generation are **Later**.
+### 11.6 Below the code
 
-## 8. `mentalvm`: running the model
+**Status: Proposed.**
 
-**Status: Decided, except the trace file format (Proposed).**
+The levels of [11.2](#112-kinds-of-level-and-their-closing-rules) start at the effect and go up. Beneath an effect there are more levels, which the repository does not contain: `open(path).read()` is one effect in the model and, in the real system, a library call, system calls, page-cache lookups and disk reads that differ by operating system.
 
-### 8.1 The configuration
+- **The bottom of the model is a choice.** The model stops where the evidence stops: at the API of a library, a runtime or an outside system. What lies beneath is an **assumed level**, described by a pack ([6.6](#66-packs)) and marked `assumed`. It is not discovered. The API already draws that line.
+- **Discovery applies inside the project's own code,** where nobody drew the lines. That is what closing rules do.
+- **One test says whether a level holds, at any height.** A step may stand for the steps beneath it when nothing those steps do can change what is seen at the step's own level. A page-cache miss changes how long a read takes, not the bytes it returns, so "read a file" holds. This is the same test that gives a move its verdict ([8.1](#81-moves-and-verdicts)).
+- **Where the test fails, the level leaks, and the leak is a finding.** A crash between a write and its flush, a transaction under READ COMMITTED, a read of an attribute that expired on commit: each is a detail from beneath that changes what is seen above. A pack must state the leaks of the level it stands for, and the model must show them as steps.
 
-The state of a run at one moment:
+## 12. `mentalvm`: running the model
+
+**Status: Decided**, except the trace format.
+
+### 12.1 Configuration and steps
 
 ```
 C = ⟨ E, S, L, Ch, A, T, φ, now ⟩
-
-E    live entity instances
-S    the value of every state variable (⊥ = not yet known)
-L    locks and transactions held, and by which activation
-Ch   one channel per wire instance, with its messages
-A    activations: each one execution of one behavior, with its position and what it waits for
-T    timers
-φ    the path condition: the predicate values assumed so far
-now  a logical time tag, used only to order timers
+E instances · S state variables · L locks and transactions · Ch one channel per wire instance
+A activations · T timers · φ predicate values assumed so far · now a logical time tag
 ```
 
-The trace is output, never part of the configuration. Two configurations are equal however they were reached, which is what makes snapshots, stepping backwards and search well defined.
+Two functions define everything: `enabled(C)` lists every **choice**; `fire(C, choice)` returns the next configuration and one **step**. The semantics follows the P language (F-R5):
 
-### 8.2 Steps
+- sends are asynchronous; a delivered message starts an **activation**; an activation runs until it must wait;
+- a message nothing handles is an error;
+- every write is checked against the state variable's machine.
 
-![The step loop: from a configuration, enabled lists the possible choices, a strategy picks one, fire produces the next configuration and one trace step; the picked choices form the schedule.](images/step-loop.png)
+The interpreter runs the **full behaviors** of stage 3. Summaries are for reading.
 
-Two functions define everything:
-- `enabled(C)` lists every **choice** possible in configuration `C`;
-- `fire(C, choice)` returns the next configuration and one **step** for the trace.
+### 12.2 The scheduler
 
-The semantics follows the P language:
-- **Sends are asynchronous.** A send puts a message into the channel of a wire and continues.
-- **A delivered message starts an activation** of the receiving port's behavior.
-- **An activation runs until it must wait** (for a reply, a lock, a timer), then another may run.
-- **A message nothing handles is an error**, not something silently dropped.
-- **Every write is checked** against the state variable's lifecycle machine.
+All nondeterminism is resolved outside the step function and recorded as a **schedule**:
 
-Step kinds: deliver, receive, branch, case, read, write, send, reply, resume, timeout, lock, unlock, spawn, kill, drop and duplicate (channel faults).
-
-IDs of things created during a run (messages, activations, rows) are derived from the step that created them, so replay and comparison stay stable.
-
-### 8.3 The scheduler and the schedule
-
-All nondeterminism is resolved outside the step function, by a **scheduler**, and every choice is recorded:
-
-| Choice type | Decides |
+| Choice | Decides |
 |---|---|
 | `sched` | which activation moves next |
-| `env` | what the outside does: a stub's answer, a duplicated or lost message, a timer firing |
+| `env` | what the outside does: a stub's answer, a duplicated or lost message, a timer |
 | `data` | the value of an unbound predicate or input class |
 | `pick` | one of several equal targets, such as which replica receives a message |
 
-The **schedule** is the list of choices made, each named by semantic ID. A run is fully identified by **(model version, binding, schedule, edits)**.
+A run is identified by **(model, binding, schedule, edits)**. Time conditions ("stuck for 15 minutes") are `env` choices; there is no clock (F-S5).
 
-### 8.4 Strategies
+### 12.3 Strategies
 
-One step function; the strategies differ only in who makes the choices.
-
-| Strategy | What is fixed | Result |
-|---|---|---|
-| **Concrete** | all inputs and the schedule | one trace |
-| **Symbolic** | some inputs | at an unknown predicate the run forks; each side records an **assumption** |
-| **Bounded-exhaustive** | nothing, within stated **bounds** | every reachable outcome within the bounds; a witness per violation; an honest "none within these bounds" |
-| **Sampled** | nothing | bugs found by random schedules; no claim that none remain |
-| **Conformance** (Later) | a recorded real execution makes the choices | the matching trace, or the first divergence |
-
-**How bounded-exhaustive search works in version one.** A depth-first search with an exact visited set, in which the remaining budgets are part of each visited state's key, and a preemption bound. There is **no partial-order reduction** in version one: no studied tool tests it against unreduced search, the bounds are small, and an error in it would hide exactly what search exists to find. If it is added later, it is sleep sets over the static footprints used for atomicity, shipped with a test that compares its results with unreduced search.
-
-**Example.** On report-jobs, with bounds *1 request, 2 worker replicas, 1 duplicated delivery, 1 preemption*, the search must find this witness without being told where to look (F-S11):
-
-![Left: before the fix, both workers read PENDING, then both write RUNNING; the second write is illegal. Right: after the fix the claim is a compare-and-set; the second one fails and that worker skips.](images/race-fix.png)
-
-### 8.5 How a run ends
-
-A run ends normally when nothing is enabled and nothing waits. Otherwise it is **stuck**, and the interpreter says why:
-
-| Outcome | Meaning |
+| Strategy | Result |
 |---|---|
-| **Model gap** | a message arrived that no case handles, or a call could not be resolved |
-| **Deadlock** | activations wait for each other |
-| **Illegal write** | a write the lifecycle machine forbids: a race witness, or the model and the code disagree |
-| **Zero-time cycle** | steps repeat without time passing |
-| **Invariant violated** | a level's invariant is false in a reachable state |
+| **Concrete** | one trace |
+| **Bounded-exhaustive** | every outcome within stated **bounds**, a witness per violation, or an honest "none within these bounds" |
+| **Replay** | a stored schedule on a changed model, with a verdict per choice: `matched`, `infeasible`, `diverged` |
 
-**Bound exceeded** is a separate result, not a stuck outcome and not a verdict on the model. Every loop of the tool (search depth, minimizer rounds, fixpoints) has a hard cap, and hitting one is reported as `bound-exceeded`, never as "none within these bounds".
+Search is a depth-first search with an exact visited set and a preemption bound. There is no partial-order reduction in version one: an error in it would hide exactly what search exists to find. Witnesses are minimized. Symbolic and sampled runs are Later.
 
-### 8.6 Files
+*On report-jobs,* with bounds of 1 request, 2 worker replicas, 1 duplicated delivery and 1 preemption, search must find the duplicate claim without being told where to look. After the fix, the stored schedule no longer reproduces it and a fresh search in the same bounds is clean. A replay alone does not verify a fix (F-S11).
 
-**A run file** is small, because the trace can be recomputed from it. Run files are JSON, and every reference in them is a full ID:
+### 12.4 How a run ends
 
-```json
-{"model":{"commit":"9c1e4b7","hash":"h:77aa"},
- "strategy":"bounded-exhaustive",
- "binding":{"reports/api/port:post-reports/in:range":"reports/api/port:post-reports/in:range/class:within-limit",
-            "reports/worker/pred:upload-ok":true},
- "bounds":{"depth":40,"dup":1,"preemptions":1,"replicas":2,"requests":1},
- "schedule":[
-  {"type":"env","at":"reports/broker/port:tasks/wire:worker-task-generate-report","choice":"duplicate"},
-  {"type":"pick","at":"reports/broker/port:tasks/wire:worker-task-generate-report","choice":"reports/worker[0]"},
-  {"type":"pick","at":"reports/broker/port:tasks/wire:worker-task-generate-report","choice":"reports/worker[1]"},
-  {"type":"sched","instance":"reports/worker[0]","node":"reports/worker/beh:generate-report/n:load"},
-  {"type":"sched","instance":"reports/worker[1]","node":"reports/worker/beh:generate-report/n:load"},
-  {"type":"sched","instance":"reports/worker[0]","node":"reports/worker/beh:generate-report/n:claim"},
-  {"type":"sched","instance":"reports/worker[1]","node":"reports/worker/beh:generate-report/n:claim"}],
- "result":{"verdict":"violation","kind":"illegal-write",
-           "instance":"reports/worker[1]","node":"reports/worker/beh:generate-report/n:claim"}}
-```
+A run ends normally when nothing is enabled and nothing waits. Otherwise it is stuck: a **model gap** (a message no case handles), a **deadlock**, an **illegal write**, a **zero-time cycle** or a **violated invariant**. Hitting any hard cap is reported as **bound exceeded**, never as "none within these bounds".
 
-The fifth entry is the read before the other worker's write: flipping it removes the race. `edits` is omitted because it is empty.
+### 12.5 What a result may claim
 
-**A trace** (Proposed format) is a list of steps, one per line:
+Every result states its extent: the bounds it held within, and the assumptions it rests on (accepted gaps, pack rules). Mental never shows "holds" without its bounds. Proof for any size, proof mode and export to TLA+ are an experiment kept out of version one ([verification and proof](research/verification-and-proof/report.md)).
 
-| Field | Meaning |
-|---|---|
-| `id` | derived from the cause, stable across replays |
-| `kind` | the step kind |
-| `lane` | the activation |
-| `instance` | the entity instance acting |
-| `node` | the behavior node being executed |
-| `reads`, `writes` | the footprint, with values as classes |
-| `message` | the message sent or received |
-| `causes` | the steps that had to happen first; this makes the trace a partial order, not a single line |
-| `choice` | the schedule entry that produced this step, if any |
-| `up` | per upper level, the step this one belongs to (from the step maps) |
+### 12.6 Files
 
-Because of `up`, any trace can be shown at any level without storing a trace per level (F-Z8).
+A **run file** is small JSON: the model's hash, the binding, the bounds, the schedule and the result, all by full ID. The trace is recomputed from it. A **trace** is one step per line: its kind, activation, instance, node, the state it reads and writes as classes, the steps that caused it, and per upper level the step class it belongs to. Causes make the trace a partial order (F-Z7).
 
-### 8.7 Atomicity and collapsing
+## 13. `mentaldbg` and the viewer
 
-Whether a group of steps may be shown as one is computed, never declared:
+**Status: Decided** for the session and the terminal debugger; the viewer's form is open.
 
-| Atomicity | Condition | May collapse by itself |
-|---|---|---|
-| **stutter** | only forwards; no state, no branch, no assumption | yes |
-| **isolated** | touches nothing another activation can touch at the same time | yes |
-| **guarded** | protected by a lock, a sufficient transaction or one conditional update | yes |
-| **non-atomic** | none of the above | never |
+- **The session** is one loaded model with its runs, breakpoints and focus. The terminal, the coding agent (through MCP tools) and the viewer attach to the same session.
+- **The terminal debugger** navigates the model by ID like a file system (`cd reports/worker`, `ls`, `show`), runs a scenario, breaks on a state condition, steps forwards and backwards, flips a choice, and shows the same run at another level. Every command also works one at a time with `--json`; every listing has a limit and a cursor.
+- **A view shows a cut, not a level:** high everywhere, opened where something is wrong, with support steps folded behind a count. Nothing ever hides an error, an assumption or a non-atomic move.
+- **The viewer** is designed after the terminal debugger works, in its own study ([trace visualization](research/trace-visualization/report.md), [script rendering](research/script-rendering/report.md)). Its fixed requirements: zoom in space, time, message layers and data; values shown as classes; an example value always labelled as an example; a hypothetical record never shown as fact.
 
-There are three kinds of **macro step**, each with a rule: an activation against its small steps; a summary behavior against its full graph; a collapsed group against its expansion.
+Products (Mental for Claude Code, Mental for Codex, Mental Desktop) are thin shells over the three tools and never contain their own compiler, interpreter or format.
 
-### 8.8 What-if: edits, variants and experiments
+## 14. Version one: scope and milestones
 
-**Status: edits are Decided; variation points and experiment files are Proposed.**
+### 14.1 Scope
 
-Changing something and watching what changes is a core use. Three mechanisms, from light to heavy:
-
-**1. An edit** changes one run: flip an assumption, set a state variable, change a schedule entry. Re-running from the snapshot before the change shows the difference.
-
-**2. A variation point** is a place where the structure itself can differ, with named options that all honor the same contract:
-
-```json
-{"id":"reports/api/port:http/vp:transport",
- "outcomes":["response","transport-failure"],
- "options":[{"id":"reports/api/port:http/vp:transport/opt:plain","realization":"pack:platform/tcp#Stream","provenance":"inferred"},
-            {"id":"reports/api/port:http/vp:transport/opt:tls","realization":"pack:protocol/tls@1.3#ServerSession",
-             "provenance":"inferred","brings":["reports/api/port:http/in:certificate"]}]}
-```
-
-`outcomes` is the contract every option keeps; `brings` lists the questions that exist only with that option. The `vp:` and `opt:` prefixes are settled when variation points are built (milestone 6).
-
-The selected option is part of the binding. Switching it re-runs the scenario; steps above the contract match, and the option's own steps appear or disappear.
-
-![A transport variation point between the client and the API handler, with three options: plain HTTP and TLS inferred from deployment files, and mutual TLS as a hypothetical option. Each option brings its own input classes. Below, an expired certificate is mapped step by step onto the abstraction's transport-failure outcome.](images/variation-point.png)
-
-**3. An experiment** is an authored file that adds **hypothetical** records: something that is in no code yet. Unlike the model, an experiment is written by a person or an agent and is committed to the repository.
-
-*Example: "put a load balancer in front of the API."* The experiment adds:
-- a boundary entity `lb` on the edge of the API service, from a load-balancer pack;
-- a second instance of `api`;
-- wires: the outside port now delegates to `lb`, and `lb` to `api[0]` and `api[1]`.
-
-Running the same scenario now shows a new `pick` choice (which replica) and new outcomes from the pack (no healthy backend). Searching shows what two API instances make possible: for instance, the duplicate-key request now races across processes. *Swapping one load balancer for another* is a variation point on `lb` with one option per policy (round-robin, sticky), and switching it re-runs with the other.
-
-![Left: a load balancer fronting only Auth sits on Auth's edge. Right: a load balancer fronting Auth and Storage sits on the edge of their common parent, Backend.](images/load-balancer.png)
-
-Anything derived from a hypothetical record (a trace, a finding) carries the `hypothetical` label.
-
-### 8.9 Replay on a changed model
-
-A stored schedule can be replayed after the code and the model change. Each choice gets a **verdict**: `matched`, `infeasible` (the choice no longer exists) or `diverged`. This is how a fix is checked. After the claim is made a conditional update, the race schedule still replays, but the second worker's claim fails and its path diverges, so the violation is not reproduced. A replay shows only that this one schedule no longer fails, so a fresh search within the same bounds must confirm that the race is gone and not moved (F-S11).
-
-### 8.10 Commands
-
-| Command | Does |
-|---|---|
-| `mentalvm run <binding or run file>` | one concrete or symbolic run |
-| `mentalvm explore --bounds …` | bounded-exhaustive or sampled search |
-| `mentalvm replay <run file>` | replays a stored schedule, with verdicts |
-| `mentalvm check` | runs the checks that need the interpreter: atomicity confirmation, refinement pairs, invariants |
-
-Turning a plain-language **scenario** into a binding is an LLM task (`scenario-binding`); the interpreter itself takes only bindings.
-
-### 8.11 Properties, verdicts and proof
-
-**Status: Experiment.** Version one still promises only bounded search (8.4). This section says what a result may claim, how a proof could be reached later, and the experiments that decide whether to build it. The evidence is in the [verification and proof survey](research/verification-and-proof/report.md) (F-R9 to F-R11).
-
-**What can and cannot be proved.** No tool proves that code has no bugs. TLA+, Ivy, Kani and Astrée each prove a *stated property* of *a model* under *stated conditions* (F-R9). Mental can do the same, and its own question is sharper than TLA+'s, because its model is derived from the code: does a result about the model carry over to the code?
-
-- A **"holds"** result carries over only if the model allows at least everything the code can do: every record it rests on **over-approximates** the code, or is exact.
-- A **violation** carries over only if its steps are possible in the code: the witness is **reproduced** in the code, or rests on records that are exact.
-
-Mechanically extracted records over-approximate by construction, as in SLAM, where a predicate the tool cannot relate to others is a free choice. LLM-written records can err in both directions: LLM-written TLA+ of real systems both adds states the code never reaches and fuses code steps so that real states become unreachable (F-R10). So a proof may rest only on records whose direction is known.
-
-#### 8.11.1 The direction of a record
-
-Every record gains a field `approx`, beside `provenance`:
-
-| Value | Means | Typical records |
-|---|---|---|
-| `exact` | allows exactly the code's behavior, at the record's level of detail | structure from infrastructure files; IDs, ports, wires matched `exact` |
-| `over` | may allow more than the code, never less | full-detail behaviors from the extractor; a predicate left unbound (a `data` choice); a channel that may lose or duplicate |
-| `under` | may allow less than the code | a behavior with a call left `unresolved`, so the callee's effects are missing; a wire matched `heuristic`, whose real target may differ |
-| `unknown` | not established | an LLM-written summary case whose summary-agreement check (6.7) has not passed against a mechanical full graph |
-
-A **pack rule** gets no direction: it is an **assumption** of every result that uses it, named by pack, version and rule, as Kani lists its library models (F-R9).
-
-The interpreter records which records each run fired, so the records a result rests on are **computed, never declared**.
-
-#### 8.11.2 Verdicts
-
-Every result of `mentalvm explore` and `mentalvm check` on a property is one of:
-
-| Verdict | Fields | Example wording |
-|---|---|---|
-| `violation` | the witness; `reproduced`: `model-only` or `reproduced` (replayed in the code) | "violated, model-only: 23-step witness" |
-| `holds` | `extent`: `bounded` (with bounds) or `unbounded` (with the prover and the inductive invariant); `basis`: `sound` or `unsound` (with the records that make it so); `assumptions`: the pack rules used | "holds within 1 request, 2 replicas, 1 duplicate; unsound because of 2 summary cases" |
-| `bound-exceeded` | the cap hit (8.5) | |
-
-A result may be called a **proof** only when it is `holds`, `unbounded` and `sound`, and it is always shown with its assumptions. `sound` also requires that the build reported no unresolved reference where it would change the model ([resolution](resolution.md)) and no coverage failure among the records used.
-
-```json
-"result":{"verdict":"holds","property":"reports/prop:one-holder",
-          "extent":"bounded","bounds":{"depth":40,"dup":1,"preemptions":1,"replicas":2,"requests":1},
-          "basis":"unsound","because":["reports/worker/beh:generate-report/case:done"],
-          "assumptions":["pack:celery@5.4#acks-late-redelivery","pack:postgres@16#read-committed-update"]}
-```
-
-The engine's presentation rules (9.4) gain one: **never show a `holds` without its extent and basis, and never call it proven unless it is unbounded and sound.**
-
-#### 8.11.3 Properties
-
-Some properties need nobody to write them: no model gap, no deadlock, no illegal write, no zero-time cycle, no stranded state. They follow from the model's form (8.5, 6.7), and two of the four report-jobs bugs are violations of them. Everything else is a **`property`** record, written in one level's vocabulary from a small set of patterns:
-
-| Pattern | Says | Kind |
-|---|---|---|
-| `invariant` | a guard formula over state predicates holds in every reachable state | safety |
-| `never` | a named step never fires in a stated situation | safety |
-| `exclusive` | at most one activation at a time is inside a region of nodes, per key | safety |
-| `leads-to` | whenever one state formula holds, another eventually holds | liveness |
-
-Formulas use the guard grammar (4.7) over predicates on state variables (`over` a state variable, `scope: state`, with `equals`).
-
-```json
-{"id":"reports/prop:one-holder","level":"components","pattern":"exclusive",
- "region":{"from":"reports/worker/beh:generate-report/n:claim",
-           "to":["reports/worker/beh:generate-report/n:mark-done","reports/worker/beh:generate-report/n:mark-failed",
-                 "reports/worker/beh:generate-report/n:mark-retry"]},
- "per":"reports/db/store:report","provenance":"attested","source":"user","approval":"accepted"}
-{"id":"reports/prop:request-ends","level":"services","pattern":"leads-to",
- "from":"reports/db/store:report/pred:status-is-pending",
- "to":"reports/db/store:report/pred:status-is-done | reports/db/store:report/pred:status-is-failed",
- "per":"reports/db/store:report",
- "fairness":[{"kind":"weak","on":"reports/worker"},
-             {"kind":"strong","on":"reports/broker/port:tasks/wire:worker-task-generate-report"}],
- "provenance":"attested","source":"user","approval":"accepted"}
-```
-
-Rules:
-- **Liveness needs fairness.** Without it, a scheduler that starves a worker forever violates every `leads-to`. Fairness is stated per property, as in TLA+: `weak` (a step continuously enabled eventually happens) or `strong` (a step enabled infinitely often eventually happens; needed where a channel may lose messages). The environment gets no fairness unless it is stated: a stub may fail forever. In report-jobs, `request-ends` is violated by the stranded row (the queue is down, so no task exists), which the machine check also predicts (F-S7).
-- **The LLM proposes, a person accepts.** A property states intent, not a fact about the code, so it carries a field `approval`: `proposed` or `accepted`. The LLM role `intent-invariants` (ladder strategies) proposes properties with anchors to where the intent is stated (docs, tests, comments, commits), as Specula does (F-R11); such a property is `inferred`, `source: llm`, `approval: proposed`. A property a person writes or accepts is `approval: accepted`; one a person writes from scratch has no code anchor and is `attested` with `source: user`. A proof of a property nobody accepted is not shown as a proof. LLMs make what they write permissive (F-R7), and a permissive property is easy to prove.
-- **Bounded liveness** is checked by the existing depth-first search: a cycle in the visited states on which the `to` formula never holds and every fairness condition is met is a **lasso** witness.
-
-#### 8.11.4 Proof mode
-
-To get a `sound` basis, `mentalvm explore --mode proof` runs only on records whose direction is `exact` or `over`: the full-detail behaviors from the extractor, with every predicate the extractor cannot relate to others left as a free `data` choice. This is predicate abstraction as in SLAM, and it has SLAM's cost: **spurious witnesses**. Each spurious witness becomes a repair task that adds the relation the code establishes (for example, that two predicates read the same column), anchored like every other record, after which the search runs again. F-S12 suggests the mode is workable on report-jobs: three of its four bugs follow from mechanical facts alone.
-
-#### 8.11.5 Unbounded results
-
-Search cannot reach "any number of workers". Every tool that reaches it needs an **inductive invariant**: a property that holds initially and that every step preserves (F-R9). Mental gets unbounded results from existing provers before it builds one:
-
-| Model | TLA+ |
-|---|---|
-| the configuration (8.1) | the variables |
-| `enabled` and `fire` per step kind | the disjuncts of `Next` |
-| scheduler choices | nondeterminism in `Next` |
-| fairness on a property | `WF` and `SF` |
-| a `property` | an invariant or a temporal formula |
-| a level's abstraction and step map | a refinement mapping |
-
-`mentalvm export --tla` writes the model as TLA+ for TLC, Apalache (inductive checks for fixed sizes) and TLAPS (any size). An Ivy export is the alternative under test. The LLM proposes pieces of an inductive invariant from each counterexample to induction, one blocking clause at a time, and the prover decides, as in IC3Syn. An export counts only after it agrees with `mentalvm` on the same bounds: two semantics that disagree silently would make every proof doubtful. Running TLC or Apalache needs Java, so export is an optional extra, against running locally with nothing else installed.
-
-A **cutoff** ("checking 2 workers settles every number") holds only for the class of systems its theorem covers, and none is known for systems shaped like report-jobs. Mental never assumes one.
-
-#### 8.11.6 Experiments
-
-None can be measured before the components it needs exist.
-
-| # | Question | Done when | Needs |
-|---|---|---|---|
-| **V1** | Does a TLA+ export agree with `mentalvm`? | the hand-written reference model, translated to TLA+, gives the four findings of 6.9 in TLC with the bounds of F-S11; later, the generated export and `mentalvm` give the same verdicts on every report-jobs run | milestone 1, then milestone 4 |
-| **V2** | Can a fix be proved for any size? | after the compare-and-set fix, `one-holder` is proved for any number of workers and duplicate deliveries (Apalache for fixed sizes, then TLAPS or Ivy); measured: hours of human work, LLM calls for invariant pieces | V1 |
-| **V3** | Is proof mode workable? | on report-jobs, proof mode finds the four bugs; counted: spurious witnesses and repairs until it does, and until the fixed code is clean | milestones 2 and 4 |
-| **V4** | How much of a normal build is usable for proof? | per property, the share of records it rests on that are `unknown`, before and after summary agreement | milestone 3 |
-| **V5** | Are witnesses real? | each witness of 6.9 replayed against the running code (a generated test under docker compose); counted: `reproduced` against `model-only` | milestone 4 |
-
-**Decide:** after V1 to V3, whether proof becomes a version-one feature, waits for later versions (section 12), or is dropped in favor of honest verdicts alone.
-
----
-
-## 9. `mentaldbg`: debugging and showing
-
-**Status: the session design and the presentation rules are Decided; what the viewer looks like is Open.**
-
-### 9.1 The session
-
-A **session** is one loaded model with its runs, breakpoints, view state and **focus**. It lives in `mentaldbg serve`, and every front end is a client of it:
-
-| Client | Protocol |
-|---|---|
-| the viewer (a web application) | HTTP and WebSocket |
-| coding agents | MCP tools |
-| IDEs and the terminal debugger | the Debug Adapter Protocol |
-| scripts and agents that prefer commands | `mentaldbg <command> --session <id> --json` |
-
-Because the session is shared, a click in the viewer changes what the agent's `focus` tool returns, and a breakpoint the agent sets appears in the viewer (P11).
-
-### 9.2 The terminal debugger
-
-Semantic IDs make the model navigable like a file system:
-
-```text
-$ mentaldbg
-(mental) cd reports/worker
-(mental) ls                              # child entities, ports, wires
-(mental) show port:task-generate-report  # a text drawing of the port and its behavior
-(mental) scenario "the broker delivers the task twice"
-(mental) break when reports/db/store:report/var:status == RUNNING
-(mental) run
-  stopped: worker[1]/n:claim writes RUNNING while status is already RUNNING
-(mental) where                           # lanes, positions, pending messages
-(mental) why status                      # the steps and predicates that led here
-(mental) back 3                          # step backwards
-(mental) flip sched:worker[1]/n:load     # take the other side of a choice
-(mental) level business                  # show the same run at another level
-(mental) diff run:1 run:2
-```
-
-Rules: the same commands work interactively and one at a time with `--json`; every listing has a limit and a cursor, so an agent never receives a huge dump.
-
-### 9.3 Debugger features and where they come from
-
-| Feature | Rests on |
-|---|---|
-| breakpoint on a state condition; watchpoint on a state variable | the configuration (8.1) |
-| step into, over, out | macro steps and levels (5, 8.7) |
-| step backwards | runs are deterministic given their four parts (8.3) |
-| set a value, flip a choice, then continue | edits (8.8) |
-| check a fix | replay verdicts (8.9) |
-| show the same moment at another level | the `up` links in traces (8.6) |
-
-### 9.4 What the viewer must do
-
-The viewer's visual form is not designed. A hand-built prototype used for the level trial is explicitly not a proposal (F-Z9). What is fixed are the requirements.
-
-**Four zoom axes**, independent of each other:
-
-| Axis | Zooming in | Example |
-|---|---|---|
-| **Space** | opens an entity | service → handler → function |
-| **Time** | expands a macro step | "claim" → read, test, write |
-| **Layers** | opens a message's nesting | HTTP → TLS → TCP |
-| **Data** | goes deeper into a message's content | label → fields that decide → full payload |
-
-**Spatial rules.**
-- Zooming flies into an entity; the entity keeps its place and its interior is drawn inside it. Nothing around it moves.
-- Detail is per entity: one service can be open to its functions while its neighbors stay closed.
-- A step inside a closed entity is shown on that entity, at the port where it enters or leaves.
-- Runs dim or hide entities they do not involve; they never move them.
-- The same instances can be viewed by the logical facet or the physical one.
-
-![Logical tree on the left and physical tree on the right, with dashed runs-on lines linking each logical instance to its container.](images/logical-physical.png)
-
-![A request enters the host at eth0, crosses the kernel floor through DNAT, enters the container and process, is parsed and routed, and reaches the handler; below each hop, the form the message has there.](images/request-boundaries.png)
-
-**Data rules.**
-- The model holds the full schema of every message; the view chooses how much to show.
-- Values are shown as **classes** by default ("range: at most 366 days"). A generated example value is always labeled as an example.
-- A **lens** ranks fields from facts the model records: fields that decide a branch first, then stored, then forwarded, then ignored.
-- A field can be followed through every change of form.
-
-![A request on its way to create_report opened at the HTTP body layer and at the relevant-fields depth: start and end decide the range check, the idempotency key decides key-seen and is stored, and an ignored header is faded. Values are shown as classes.](images/data-depth.png)
-
-![Three fields followed through the report-jobs system. The date range goes from the JSON body into an object, a database row, an orders query, CSV rows and an S3 object.](images/field-flow.png)
-
-**Presentation rules the engine enforces, whatever the skin:**
-1. Never hide an error, an assumption or a non-atomic group.
-2. Never show an example value unmarked.
-3. Never show a hypothetical record as fact.
-
-**Forks.** At each choice the side not taken is visible and can be taken.
-
-![The full graph of POST /reports. The accepted path is highlighted; each branch leads to an alternative outcome; the enqueue branch is shown as an assumption fork when its predicate is unbound.](images/scenario-graph.png)
-
-**Performance targets (Proposed):** 60 frames per second at any zoom; under 100 ms to open a level from stored data; a visible "computing" state when a zoom needs a compile. This implies GPU rendering (WebGPU with a WebGL2 fallback), layout computed per container, interiors loaded only when approached, and the shared Rust core compiled to WebAssembly.
-
-## 10. Products
-
-**Status: the layering is Decided; the names are Proposed.**
-
-The three tools are the core. Products are thin shells that bundle them for one environment. Every product gives the same abilities: run a scenario, watch its trace, zoom in and out, change something and compare.
-
-| Product | What it is | Adds to the tools |
-|---|---|---|
-| **Mental for Claude Code** | a plugin for Claude Code | commands such as `/mental build` and `/mental debug`; the `agent` LLM backend; the viewer opened beside the conversation; MCP tools for the session |
-| **Mental for Codex**, and other agents | the same for other coding agents | the same MCP tools; instructions in each agent's own format |
-| **Mental Desktop** | a standalone application | the viewer as the main window, with a coding agent attached to the same session |
-
-Rules:
-- A product never contains its own compiler, interpreter or model format.
-- The viewer is one web application, embedded everywhere and never forked.
-- The command-line tools remain usable alone, by people, agents and automated builds.
-
-## 11. Version one: scope and build order
-
-**Status: the focus is Decided; the order of milestones is Proposed.**
-
-### 11.1 Focus
-
-**Build the model from one repository.** Everything that does not serve that is deferred.
-
-### 11.2 In scope
+**Status: Decided.** Build the model from one repository.
 
 | Area | Version one |
 |---|---|
-| Input | one repository, one commit |
-| Stack | Python: FastAPI, Celery, SQLAlchemy, boto3, click; Redis, Postgres; docker compose |
+| Input | one repository, its working tree |
+| Stack | Python: FastAPI, Celery, SQLAlchemy, boto3, click; Redis, Postgres; docker compose; pip and uv |
 | First target | `examples/report-jobs` |
-| Model | the core records (4.5 to 4.7), terms, levels up to business |
 | Packs | hand-written for the stack above |
-| LLM backends | `agent` and `api` |
+| LLM backends | `agent`, `api`, `replay` |
 | Interpreter | concrete runs, bounded-exhaustive search, replay |
-| Debugger | the terminal debugger and MCP tools; the viewer follows |
-| Storage | local `.mental/` as text |
+| Debugger | the terminal debugger and MCP tools |
 
-### 11.3 Out of scope for version one
+### 14.2 Milestones
 
-Sharing models between machines and in automated builds; a pack registry; several repositories; a second language; observed traces and conformance; levels below the process; a per-project domain ladder; the desktop application. Each is outlined in section 12.
+**Status: Proposed.** Each milestone ends with something checkable on report-jobs, and each gets its own implementation plan in [`docs/plans/`](plans/) before it starts.
 
-### 11.4 Milestones
+| # | Milestone | Done when | LLM |
+|---|---|---|---|
+| 1 | **Build model.** The workspace, IDs, diagnostics, canonical JSONL, the stage 1 readers | `mentalc build` on report-jobs writes one build unit with its pins, three artifacts, five launches and twelve configuration inputs, and reports its three gaps with fixes ([plan](plans/milestone-1-build-model.md)) | no |
+| 2 | **Sites and resolution.** Parse, list sites, resolve with ty, the resolution report, the gate | every site of report-jobs has an outcome; its write receivers resolve to `Report`; the gate fails on a seeded missing module and names the fix | no |
+| 3 | **Facts.** Packs for the first stack; obligations, effects, state variables, entry points | 6 entry points (2 routes, 2 tasks, 1 schedule, 1 command), 2 state variables, every branch listed, `WEBHOOK_URL` reported as read and unset | no |
+| 4 | **Mechanical model.** Stage 3 records, moves with verdicts, the static checks | the four findings of report-jobs are predicted, with no LLM and no interpreter | no |
+| 5 | **LLM.** The task protocol, `agent`, `api` and `replay` backends, ledger, cache, the four tasks and their checks | every port has a named summary that passes coverage, guard algebra and summary agreement | yes |
+| 6 | **Run.** Link, load, close; `mentalvm` with concrete runs, search, replay, the minimizer | search confirms the duplicate claim with a witness; after the fix a fresh search is clean | no |
+| 7 | **Levels.** Step classes, the step map, names, charters, the pair check | the race is shown at the goal level as "delivered twice" and its cause at the move level | names |
+| 8 | **Debugger.** Sessions, the terminal debugger, MCP tools | a person and an agent step the witness together | no |
 
-Each milestone ends with something that can be checked on report-jobs.
+The viewer follows milestone 8.
 
-| # | Milestone | Done when |
-|---|---|---|
-| 1 | **The record format.** Schemas for the core records, a validator, and the report-jobs model written by hand as the reference | the validator accepts the reference model and rejects seeded errors |
-| 2 | **Extract.** Phases 1 to 3 for the first stack, with hand-written packs | the build model passes its acceptance (6.10.5); the skeleton and obligations match the reference: 6 entry points, 2 state variables, every branch listed |
-| 3 | **Compile.** Phases 6 and 12 with the task protocol, the `agent` and `api` backends, the first six checks, repairs and the call ledger | every port has a summary behavior that passes coverage and guard algebra |
-| 4 | **Make it run.** Phases 8 to 10, and a minimal `mentalvm`: step function, concrete runs, bounded search, the machine and atomicity checks | the search finds the duplicate-claim race unprompted, minimizes it, and the four findings of 6.9 are reported |
-| 5 | **Fix loop.** Incremental rebuild and replay with verdicts | after the fix, the race schedule replays without the violation and a fresh search within the same bounds is clean |
-| 6 | **Upper levels.** Phases 4, 5, 7 and 11: vocabulary, components, mechanisms, system and business | the race is reported at the mechanism level as a broken claim and at the business level as "delivered twice" |
-| 7 | **Debugger.** `mentaldbg` sessions, the terminal debugger, MCP tools, level switching | a person and an agent can step the witness together |
-| 8 | **Viewer.** The first graphical viewer, after a separate design study | the witness can be played and zoomed on all four axes |
+### 14.3 What to measure along the way
 
-### 11.5 What to measure along the way
+Resolution outcomes per site kind and root causes per repository; LLM calls and tokens per port; how much LLM-written text changes when the same commit is built again; check pass rates per task; states per second in search.
 
-- **Cost:** LLM calls and tokens per port, for first builds and rebuilds (the hand estimate is 15 and 3 calls for report-jobs).
-- **Stability:** how much the LLM-written parts change when the same commit is built again.
-- **Check pass rates** per role and per LLM, from the call ledger.
-- **Search size:** states and schedules per second for realistic bounds.
+## 15. Later, experiments and open questions
 
-## 12. Later versions
+### 15.1 Later
 
-Designs that exist in outline. None is part of version one.
+| Topic | Outline |
+|---|---|
+| **Select-and-guard upper state** | observables chosen by a computed criterion and a mined representation invariant ([11.5](#115-upper-state)) |
+| **Properties and proof** | property records, sound and unbounded verdicts, export to TLA+ |
+| **What-if beyond edits** | variation points and experiment files that add hypothetical records ("put a load balancer in front of the API") |
+| **Other ladder strategies** | `fixed`, `llm-ladder`, `documented`; project-specific levels; a pack's own levels below effect ([11.6](#116-below-the-code)) |
+| **Build-tool models** | a model of each build tool written from its documentation and checked against the tool's own output |
+| **Reading commits without a checkout; several repositories; sharing models; a pack registry** | — |
+| **Checking the build chain** | comparing a deployed artifact's digest and installed packages with the build model ([5.4](#54-the-build-chain)); version skew during a rollout |
+| **Observed traces** | aligning logs and tracing data with model steps |
+| **The viewer; the desktop product; more languages** | — |
 
-| Topic | Outline | Depends on |
-|---|---|---|
-| **Sharing models** | attach each commit's model to the commit (for example as a Git note) so others start from it instead of rebuilding; compare the models of two commits on a pull request | a stable format; deferred until model and pack distribution is taken up |
-| **Stored model or derived on demand** | an alternative in which the source is the only truth: mechanical facts are recomputed on demand, LLM judgments are cached, and only judgments a person promotes are stored in the repository. Three of the four report-jobs findings need only mechanical facts (F-S12) | a working compiler to compare both on |
-| **Binary model format** | a memory-mapped file in which any record is reachable without parsing; text remains as a dump | measurements on real model sizes |
-| **Pack registry** | packs published per library version, signed, fetched by `mentalc` | packs proven on the first stack |
-| **Several repositories** | each repository compiles alone; a workspace links their open ports by exact keys (a route, a task name) into one model | the single-repository build |
-| **A domain ladder per project** | besides the fixed ladder, levels discovered from the project's own concepts. For a Git implementation: porcelain (commit, branch) over plumbing (blob, tree, ref) over storage (loose objects, packfiles, lock files). Packs carry their own ladders too: SQL over MVCC over pages for Postgres. Domain levels form a branch structure, not one line (F-Z5) | levels working on the fixed ladder |
-| **Observed traces** | align logs and tracing data with model steps; each step becomes confirmed, contradicted or a surprise; drive the interpreter from a real execution | a working interpreter |
-| **Build-tool models** | a model of each build tool at each version (compose, uv, pip), with its concepts and the rules that turn build files into a build model. An LLM writes it from the tool's documentation, `mentalvm` runs it on the build files, and it is accepted after it agrees with the real tool's output on a corpus. For tools written in a language Mental reads (pip, setuptools), the model could instead be compiled from the tool's source | the build model from plain readers (6.10); a record format for exact values |
-| **The realization chain** | model how a commit becomes what runs (build, artifact, deployment, process, runtime, OS, CPU); each link is `attested` by evidence such as an image digest, or `assumed`. Version skew during a rollout becomes a variation point | several repositories; evidence readers |
+### 15.2 Experiments
 
-![Left: the realization chain from source commit through build, artifact, deployment, process, runtime and OS to the CPU, each link marked inferred, attested, assumed or modeled by a pack. Right: a rollout where the API and one worker run the new commit and the other worker the old one, which drops a field the new API sends.](images/realization-chain.png)
+| # | Question | Done when | Needs |
+|---|---|---|---|
+| **R1** | Are the checkers' answers right? | on the five projects of the type-checker experiment, resolved call sites are compared with call edges recorded while the projects' tests run; counted: wrong targets and missed edges per tool | a recording harness; no Mental code |
+| **R2** | Is a second checker worth it? | Pyrefly's export added to ty's answers on the same projects: sites gained, disagreements, and what `Never` costs | milestone 2 |
+| **R3** | Is the gate too strict? | on the five projects: root causes per repository, and how many acceptances a first successful build needs | milestone 3 |
+| **B1** | Does the build model set the checker up correctly? | checkers set up from the build model give the same results as the hand setup of the type-checker experiment | milestone 2 |
+| **M1** | Does a move's verdict point search to the races? | on report-jobs and rq, every confirmed race lies in a non-atomic move; counted: non-atomic moves that are not races | milestone 6 |
+| **L7** | Do statically derived step classes match cutting explored runs? | both give the same classes on report-jobs and rq | milestone 7 |
+| **D1** | Is the deployment space useful? | each report-jobs finding appears in exactly the configurations where it should | milestone 6 |
+| **A1** | Is lifecycle state enough as upper state? | pair-check recall on report-jobs and rq against select-and-guard | milestone 7 |
 
-| Topic | Outline | Depends on |
-|---|---|---|
-| **Handing off to real code** | below the detail the model holds, run the real code and lift the result back; the boundary is a port with a policy | everything else; no precedent for the lifting |
-| **From experiment to code** | an agent writes code and tests from an experiment's kept runs; after a rebuild the compiler checks that the code matches the design | experiments (8.8) |
-| **More domains** | the same machinery for material other than software | a domain other than software worth trying |
+### 15.3 Open questions
 
-## 13. Open questions
-
-**The model**
-- How the constraints between two choices on the two ends of a wire are written, and who writes them.
-- How precisely a field can be followed through serialization (JSON, ORM objects, rows, task messages), and what is shown when the trail is lost.
-- When two logical groupings conflict (a load balancer's group cuts across domain groups), which one the logical facet shows.
-
-**The compiler**
-- Whether the default component split (packages, then call-graph clusters, then LLM naming) matches how developers see their project. This is the weakest part of the design.
-- Whether LLMs reliably tell a mechanism from an ordinary local decision, and which ones do.
-- How a move is identified when several moves close inside one function. In report-jobs, `generate_report` closes three moves at `s.commit()`, so the call and closing function that identify moves stably on rq do not tell them apart ([multi-level models](research/multi-level-models/report.md#10-what-is-evidence-and-what-is-inference)). *Measured 2026-11-17:* the call, the closing function and the order of the closing site in it tell all of report-jobs' moves apart and survive a change that moves lines; line numbers do not (F-L9). Still open for code where the order of sites changes.
-- How reliable a business level is when the project has no docs.
-- Which coding agents report the LLM they run reliably enough for the call ledger.
-- How much answer quality differs between an exploring agent, a bare API call and a local model, per role.
-
-**The build model** (6.10)
-- What the build model should say about build steps that are code (`setup.py`, a Dockerfile's `RUN` lines, Makefiles, shell scripts), beyond listing them as unread.
-- When the cost of readers for more build tools (Poetry, PDM, Hatch, Kubernetes manifests, Helm) argues for build-tool models (section 12).
-
-**The interpreter**
-- Which step kinds may safely be reordered during search is unproven for this rule set. Version one therefore does not reorder (8.4); the question returns only if partial-order reduction is added.
-- Database isolation levels: a transaction under READ COMMITTED does not make a group of steps atomic. Our trial suggests the answer belongs in the database pack's own lower level (F-Z4).
-- Search speed and state counts for realistic models are unmeasured.
-- Whether a computed verdict on each move (atomic, guarded or non-atomic, by Lipton's reduction over its effects) is a good enough pointer to where search should look for races ([multi-level models, 5.3](research/multi-level-models/report.md#53-from-runs-to-the-model-step-classes)).
-- Replaying a schedule across model versions has no precedent and may confuse when IDs change.
-
-**Properties and proof** (8.11)
-- Whether the direction of an LLM-written summary can ever be more than `unknown` without a mechanical full graph to compare it with.
-- How many spurious witnesses proof mode gives on real code, and whether their repairs stay small (experiment V3).
-- Whether systems shaped like report-jobs (workers, a queue, rows) have a cutoff, so that a small bounded search settles every size.
-- Whether a person-written property fits the provenance values at all, or needs its own.
-- Which fairness the scheduler should assume when a property states none.
-
-**The debugger and viewer**
-- What the viewer looks like. This needs its own study, probably with competing designs.
-- What exactly is sent to the agent as context from the focus.
-- How hypothetical records look next to inferred and assumed ones.
-
-**Levels**
-- How business steps that are done by people or by physical processes are checked.
-- When an extra level should be inserted because one is too crowded, and how the user approves it. Which merge test to use is experiment L5 of the [ladder strategies](ladder-strategies.md#l5-which-merge-test).
-- Which ladder strategy, and which options, should be the default ([ladder strategies, 8](ladder-strategies.md#8-experiments)).
-
----
-
-## Sources
-
-- [Glossary](glossary.md): every term used here.
-- [Findings](findings.md): the facts cited as F-numbers.
-- Research reports: [static analysis and LLM system models](research/static-analysis-llm-system-models/report.md), [model interpreter semantics](research/model-interpreter-semantics/report.md), [abstraction levels](research/abstraction-levels/report.md), [multi-level models](research/multi-level-models/report.md), [levels in other domains](research/levels-in-other-domains/report.md), [verification and proof](research/verification-and-proof/report.md).
-- [Ladder strategies](ladder-strategies.md): how `mentalc` builds the level ladder in interchangeable ways, and the experiments that compare them.
+- What the build model should say about build steps that are code, beyond listing them as unread.
+- Whether the default component split matches how developers see their project.
+- How precisely a field can be followed through serialization, and what is shown when the trail is lost.
+- Database isolation: a transaction under READ COMMITTED does not make a group of steps atomic; the answer belongs in the Postgres pack (F-Z4).
+- What the viewer looks like.
+- Whether the result is easier for a person. Every reader measured so far was an LLM.

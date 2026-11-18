@@ -1,8 +1,8 @@
-# Mental: reference resolution and dependencies (proposal)
+# Mental: reference resolution and dependencies
 
-**Status: Proposal.** This document proposes an extension of the specification; it is not part of it until the owner accepts it. Nothing here is accepted or built. **Date:** 2026-11-14. **Updated 2026-11-16:** indexes such as SCIP and other build outputs as a source of resolution answers ([6.6](#66-indexes-scip-and-other-tools-answers) to [6.8](#68-getting-more-from-an-indexer), [E6](#e6-indexes-against-the-own-resolver)). The owner reopened this question; it stays open until E6 is measured.
+**Status: Proposed.** Nothing here is built.
 
-This document specifies what `mentalc` does when it cannot tell what a name in the code refers to: an import that leads nowhere, a call on a value of unknown type, a library with no pack, a dependency with no exact version. It extends the [specification](specification.md) (sections 3, 6.2, 6.2.1 and 7) and the [`extract` guidelines](guidelines/extract.md) (X7 to X9). Where it changes an accepted text, the change is listed in [section 15](#15-proposed-changes-to-accepted-documents) and is not applied until the owner accepts it.
+This document gives the detail under [section 6 of the specification](specification.md#6-stage-2-from-code-to-facts): what `mentalc` does when it cannot tell what a name in the code refers to. That can be an import that leads nowhere, a call on a value of unknown type, a library with no pack, or a dependency with no exact version. Individual sites are resolved by a type checker; this document covers the inputs it needs, what counts as a gap, when a build fails and how an accepted gap enters the model.
 
 Evidence is cited as **F-U numbers**, defined with their sources in [findings, section U](findings.md#u-unresolved-references-and-dependencies). The research behind them is in [`research/unresolved-references/`](research/unresolved-references/report.md).
 
@@ -24,7 +24,6 @@ Each section carries a status, as in the specification: **Proposed** (the workin
 12. [Execution and trust](#12-execution-and-trust)
 13. [Experiments](#13-experiments)
 14. [Other ecosystems](#14-other-ecosystems)
-15. [Proposed changes to accepted documents](#15-proposed-changes-to-accepted-documents)
 16. [Tests](#16-tests)
 17. [Open questions](#17-open-questions)
 
@@ -68,7 +67,7 @@ Every site where the code names something gets one of three outcomes: `Resolved`
 No build tool, package manager, interpreter or script. Resolution reads files as data. When only an executing tool can supply a missing input, `mentalc` names the command and stops; it does not run it ([section 12](#12-execution-and-trust)).
 
 ### R4. Evidence has a rank, and every fact says which rank it has
-What is written in a committed file outranks what happens to be installed on this machine, which outranks a default. `mentalc` never fills a hole with the most likely answer (X9).
+What is written in a committed file outranks what happens to be installed on this machine, which outranks a default. `mentalc` never fills a hole with the most likely answer.
 
 ### R5. Version classes, not version values
 A dependency's exact version matters to the model only where it selects between packs. The model reasons about classes of versions, as it reasons about classes of input (P3). A version that slides inside one pack's range changes nothing.
@@ -100,9 +99,6 @@ These would enter the [glossary](glossary.md) on acceptance.
 | **Acceptance** | An entry in an authored, committed file stating that a root cause is accepted as it is, with a reason. It produces assumption records. |
 | **Opaque call** | The model's form of a call whose target is outside the model and has no pack: a call node wired to a stub, with an assumption attached. |
 | **Resolution report** | The counts of sites by outcome and the list of root causes, for a whole repository and for each module. |
-| **Own resolver** | The part of `extract` that resolves sites from repository source and packs alone: import roots, names, direct calls, access paths. It does no type inference beyond what E2 may add. |
-| **Index** | A file of answers, per source position, made by a language's own indexer or compiler, such as a SCIP index from scip-python. `mentalc` reads it as data and never produces it. |
-| **Candidate answer** | An outcome for one site proposed by one source (the own resolver, a pack, an index, an artifact), before the Resolve step chooses. Every chosen outcome records the source it came from. |
 
 ## 4. Reference sites and outcomes
 
@@ -143,7 +139,7 @@ A closed list. Each reason belongs to one of three groups, and the group decides
 |---|---|---|---|
 | **Missing input** | `missing_module` | an import names no module in any import root, the standard library or any known package | supply the input: fix the roots, check out the submodule, add the pin or environment |
 | | `unparsed` | the target lies in a file region the parser could not recover | fix the file, or set the Python version |
-| **Outside the rules** | `no_type` | the receiver has no type that its own statement gives it (X9): an unannotated parameter, an element of an untyped container | an annotation, or one of the designs in [experiment E2](#e2-untyped-receivers) |
+| **Outside the rules** | `no_type` | the receiver has no type that its own statement gives it: an unannotated parameter, an element of an untyped container | an annotation |
 | | `not_found` | the module or class is known and does not define the name | usually a real defect or generated code; inspect |
 | | `ambiguous` | several definitions can be meant: a conditional definition, a `try`/`except ImportError` pair | an acceptance that picks one, or both become candidates |
 | | `not_converged` | the bounded fixpoint over module-level bindings ran out | raise the bound; report as a tool limit |
@@ -152,7 +148,7 @@ A closed list. Each reason belongs to one of three groups, and the group decides
 Two rules apply to every reason:
 
 - **One root, many followers.** An unresolved site whose only problem is an earlier unresolved site carries a `cause` naming that site. Reports count roots. In `x = unknown(); x.save(); x.close()` there is one root and two followers.
-- **Candidates are never edges.** When the repository defines exactly the name being looked up in one or more places, the extractor records them as `candidates` on the unresolved fact. A candidate is input for a later, checked resolution step. It is never an edge (X9), because name matching links unrelated same-named definitions (F-U6).
+- **Candidates are never edges.** When the repository defines exactly the name being looked up in one or more places, the extractor records them as `candidates` on the unresolved fact. A candidate is input for a later, checked resolution step. It is never an edge, because name matching links unrelated same-named definitions (F-U6).
 
 ## 5. External references
 
@@ -190,7 +186,7 @@ Equality of names (`import requests` is distribution `requests`) is **not** evid
 
 ## 6. Where resolution evidence comes from
 
-**Status: Proposed for rungs 0 to 3; Experiment for rungs 4 and 5.**
+**Status: Proposed.** Rungs 0 to 2 are what stage 1 of the build, the build model, reads.
 
 Evidence is gathered in rungs. Each rung only reads files. A higher rung never overrules a lower one; it fills what the lower ones left open.
 
@@ -200,14 +196,11 @@ Evidence is gathered in rungs. Each rung only reads files. A higher rung never o
 | 1 | committed lockfiles and manifests | pins | `declared` | no | no |
 | 2 | an environment already on the machine | pins, import-name mapping | `observed` | no | no |
 | 3 | packs | package classes, type, effect and slot rows | pack | no | no |
-| 4 | pinned artifacts fetched by URL and hash | type surface of unmodelled packages | `declared` | no | yes |
-| 5 | resolutions proposed by an LLM backend, checked by `mentalc` | targets for individual unresolved sites | checked | no | backend |
-| I | an index or other tool output that someone else produced for this commit ([6.6](#66-indexes-scip-and-other-tools-answers), Experiment) | a candidate target for each site the tool answered | `indexed` | no | no |
 | — | anything that runs a build tool or package manager | a lockfile or environment that does not exist yet | — | **yes** | usually |
 
 The last row is not a rung. `mentalc` never takes it. It names the command and fails ([section 12](#12-execution-and-trust)).
 
-Row I is not numbered because its place in the order is what [E6](#e6-indexes-against-the-own-resolver) decides. Rungs 0 to 3 supply inputs (roots, pins, packs); an index supplies answers for single sites, as rung 5 does. Until E6 is measured, an index answer fills a site the other rungs left open, and **where it disagrees with an answer from rungs 0 to 3, neither wins silently**: the disagreement is a diagnostic.
+Individual sites are answered by a type checker set up from these inputs ([specification, section 6](specification.md#6-stage-2-from-code-to-facts)), not by a resolver of Mental's own.
 
 ### 6.1 Rung 0: the repository
 
@@ -260,85 +253,6 @@ An environment that already exists on the machine is evidence of what is install
 ### 6.4 Rung 3: packs
 
 Packs supply everything about behavior. For resolution they add three declarations ([section 7.4](#74-what-a-pack-declares-for-resolution)): which import names a package provides, which versions the pack was written for, and whether the pack is closed.
-
-### 6.5 Rungs 4 and 5
-
-Rung 4 (reading the type surface of a pinned artifact) and rung 5 (checked LLM proposals) are experiments [E4](#e4-how-much-library-surface-to-read) and [E2](#e2-untyped-receivers). Neither is needed for the gate to be sound, since the gate works from what is unresolved, whatever the rungs achieved.
-
-### 6.6 Indexes: SCIP and other tools' answers
-
-**Status: Experiment** ([E6](#e6-indexes-against-the-own-resolver)).
-
-**Why it is on the table.** Almost every record of the model depends on resolution ([section 1](#1-the-problem)), and so does every trace a viewer shows. The owner's position is that the precision of resolved references has the largest effect on what Mental shows, and that a real type checker resolves far better than any resolver Mental can write by hand. The hardest sites for the own resolver are receivers whose type comes through calls: `s.commit()`, where `s` comes from `with Session() as s` and `Session = sessionmaker(...)` in another module, or a query chain `s.query(Report).filter_by(...).one_or_none()`. Rules from source alone resolve these only when a pack row types every step. A type checker reads the library's own annotations and needs no row. SCIP (Sourcegraph's index format) carries a type checker's answers in one file format for many languages: scip-python is built on Pyright, and there are indexers for TypeScript, Java, Go, Rust, C, C++, C#, Ruby (F-U6, F-U20).
-
-**What each part does.** An index does not replace the extractor. The work splits like this:
-
-| Part | Does | Per language? |
-|---|---|---|
-| **Extractor** (`extract`, with ruff for Python) | finds **every** site and its kind (4.1), its role (a write is a write), keys (route paths, task names, variable names), escapes and control flow; gives the own resolver's answer or none | yes |
-| **Own resolver** (part of the extractor) | answers what source alone settles exactly: imports of repository modules through the import roots, names defined in the same module, direct calls to repository functions, bases and decorators named through an import, access paths for external names (5.1). It does **no type inference** beyond what E2 may add | yes |
-| **Packs** | say what an external thing is, does and returns; they are still the only source for framework behavior a type checker cannot see, such as Celery's `.delay` sending a message or `boto3.client("s3")` depending on a string | per ecosystem |
-| **Index reader** | reads a SCIP file and turns each occurrence into a candidate answer in Mental's own form (4.2) | no: the format is the same for every indexer |
-| **Resolve step** | per site, takes the candidates, chooses by rank, records the source, reports disagreements, and counts the sites no one answered | no |
-
-The pipeline after Resolve never knows which source an answer came from; it reads it from the outcome when it needs to.
-
-**Rules.**
-
-- **`mentalc` never runs an indexer** (R3). scip-python needs Node and an activated environment, and asks `pip show` in that environment for package names and versions unless it is given an `--environment` file ([scip-python README](https://github.com/sourcegraph/scip-python/blob/scip/README.md)); starting that environment's interpreter runs code the environment controls. A CI step, the agent or the user runs the indexer, and `mentalc` reads the file, as 12.3 already does for exported lockfiles. When an index is required and missing, the gap names the command.
-- **The extractor's site list is the authority on which questions exist.** An index may answer a site; it never removes one. A site with no occurrence in the index is not answered by the index, whatever the reason. SCIP has no notion of "unresolved": scip-python writes a file-local symbol whose documentation says "unable to resolve module" (F-U6), and nothing in the format marks a name the indexer could not resolve.
-- **Roles, kinds, keys and escapes come from the extractor**, never from the index. SCIP's role bits are optional and an indexer may leave them unset.
-- **An index answers for one commit.** The index's metadata names the tool and its version ([scip.proto `ToolInfo`](https://github.com/scip-code/scip/blob/main/scip.proto)); `mentalc` records them with the commit it was told the index belongs to. An index whose files do not match the snapshot's files is an error, not a hint.
-- **Identity stays Mental's.** SCIP names a symbol by where it is defined and embeds the version, in the shape ``scip-python python SQLAlchemy 2.0.36 `sqlalchemy.orm.session`/Session#commit().``. Mental keeps the version on the pin (5.2) and keys packs by public names (`sqlalchemy.orm.Session`). The reader strips the version and maps the defining path to the pack's name. The descriptor conventions differ slightly by language, so this mapping is the one per-language piece of the reader.
-- **SCIP is an import format, not Mental's internal one.** It cannot carry what an outcome needs: an unresolved reason, a site kind, an access path such as `Member[sessionmaker].ReturnValue`. Answers from every source are translated into the outcome of 4.2.
-
-**Matching an index to the sites.** Both point at the same files, but not at the same ranges. The extractor's site for `s.commit()` is the whole call; SCIP has one occurrence per identifier (`s` as a local, `commit` as `Session#commit()`). The reader matches a site to the occurrence on the name the site is about. For this to work:
-
-- **the same bytes:** the index must come from the commit being built, or every position is off;
-- **the same paths:** SCIP paths are relative to the directory the indexer ran in, snapshot paths to the repository or project root (report-jobs keeps its code under `src/`); the prefix is part of the input;
-- **the same columns:** ruff counts bytes; a SCIP document states its own position encoding (UTF-8, UTF-16 or UTF-32 code units, [scip.proto `PositionEncoding`](https://github.com/scip-code/scip/blob/main/scip.proto)), and positions are converted when a line holds non-ASCII text before the name.
-
-Chains pair one to one: in `s.query(Report).filter_by(...)` the extractor has one site each for `query` and `filter_by`, and SCIP one occurrence on each name. Occurrences the extractor has no site for (locals, parameters, every other name) are ignored.
-
-**What is known about scip-python today** (read on GitHub on 2026-11-16, not measured): it is maintained (release 0.6.8, October 2026) and MIT-licensed on npm; it bundles **Pyright 1.1.301**, released in March 2023, and the issue asking to update it has been open since 26 August 2024 ([#156](https://github.com/sourcegraph/scip-python/issues/156)); it supports Python 3.10 and later; open issue [#228](https://github.com/sourcegraph/scip-python/issues/228) reports that a recursion error in protocol matching on scikit-learn 1.8 aborts indexing. The SCIP format itself is Apache-2.0 and now lives in the [`scip-code`](https://github.com/scip-code/scip) organisation. Depending on the format rather than on one indexer limits this risk: another producer can write the same file.
-
-### 6.7 Other build outputs as evidence
-
-**Status: Later**, except the items marked for version one.
-
-An index is one case of a broader idea: files that other tools produce for the same commit can close gaps. **A build output helps resolution only where the language's compiler resolves names before run time.** A JVM `.class` file already names each call's target in its constant pool (owner class, method name, parameter types), written by `javac`; it needs reading, not decompiling, though its positions are lines only, without columns. A Python `.pyc` file only says "load attribute `commit`" with no type, so for Python the only sources of resolved references are type checkers and observed runs.
-
-| Kind | Formats | What it can close |
-|---|---|---|
-| Indexer output | SCIP (version one, 6.6); LSIF, SemanticDB, Kythe | resolved references |
-| Compiled code | JVM `.class` and `.jar`; .NET assemblies with portable PDB, which carry columns | call targets, base classes |
-| Type surfaces of dependencies | `.pyi` stubs and `py.typed` packages (version one, [E4](#e4-how-much-library-surface-to-read) option B); TypeScript `.d.ts`; `rustdoc` JSON; Go export data | what a library call returns, so the next call on it resolves |
-| Generated interface specs | FastAPI's `openapi.json` (version one); protobuf descriptor sets; GraphQL schemas | provided ports and routes |
-| Rendered infrastructure | `docker compose config` (already an input, 12.3); `helm template`, `kustomize build`, `terraform show -json` | instances, config values, wires between services |
-| Schemas | migration histories such as Alembic; database schema dumps | stores and their tables |
-| Dependency inventories | SBOMs (CycloneDX, SPDX) made in CI | pins with package URLs and hashes |
-| Observed runs | profiler call data (`cProfile` statistics record caller and callee), JVM Flight Recorder, OpenTelemetry spans | edges no static tool finds: dynamic dispatch, framework callbacks, calls between services |
-
-Static call graphs recover about 70% of real call edges in Python (F-U3), so observed runs are the one source for the rest. They prove that an edge exists and never that one does not. They touch the specification's Later item "observed traces and conformance".
-
-The rules of 6.6 apply to all of them: `mentalc` never produces them (R3); each carries the commit and the tool that made it, and a mismatch is an error; each has an evidence rank; and they add answers, never silence.
-
-### 6.8 Getting more from an indexer
-
-**Status: Open.**
-
-The SCIP format (`scip.proto`) is only the shape of the file; the resolving happens in the indexers. The format has no plugin mechanism but has three places for extra data: `Occurrence.diagnostics` (severity, code, message, source) could carry "unresolved here, and why"; `SymbolInformation.signature_documentation` carries a symbol's type, but only as hover text such as `s: Session`; and protobuf readers skip unknown fields, so new field numbers would not break standard tools ([scip.proto](https://github.com/scip-code/scip/blob/main/scip.proto)). The type of a receiver, which is what Mental needs most, is not a structured field: SCIP says which symbol a name points to, not what type an expression has.
-
-Ways to get more, cheapest first:
-
-| | How | Cost |
-|---|---|---|
-| **A. Upstream only** | use the indexers as they are; contribute missing pieces upstream, for example diagnostics where resolution fails | depends on the maintainers accepting changes |
-| **B. A thin tool on the type checker** | a small program per language that runs upstream Pyright as a library, or ty in Rust, takes the extractor's site list and returns target, receiver type and failure reason in Mental's own form | one small tool per language, on a maintained checker; for ty, whether its semantic crate can be used as a library is unverified |
-| **C. Language servers** | ask a language server go-to-definition, type-definition and hover for each site | standard across languages and maintained by others; slower; types as text; some servers run build scripts |
-| **D. Fork an indexer** | extend scip-python to emit what Mental needs | owning a fork of Pyright already three years behind, then the same for each language; the most expensive option |
-
-Which one is needed depends on what E6 finds missing: if only failure reasons are missing, A suffices; if receiver types are missing, B.
 
 ## 7. Packages, pins and packs
 
@@ -462,7 +376,7 @@ Gaps are grouped under the one thing that would close them.
 | a **package** of class `unknown` | every site into it | a pack; or an acceptance as inert or opaque |
 | a package whose **pin** is missing | its version-decides gap | a lockfile line, or an environment |
 | a **module** nothing provides | every import of it and all followers | an import root, a submodule checkout, the generated file |
-| an **untyped binding** (one parameter, one attribute) | every site that uses it | an annotation, or experiment E2 |
+| an **untyped binding** (one parameter, one attribute) | every site that uses it | an annotation |
 | a **dynamic construct** | that site | an acceptance |
 | an **input file** the tool cannot read | everything that depended on it | the supported format |
 
@@ -525,7 +439,7 @@ Under the `agent` backend the same text is the result of `mental_task_next`, mar
 
 ### 10.1 The acceptance
 
-An acceptance is written in `mentalc.toml`, which is authored and committed like an experiment file. It names a root cause by code names, never by line numbers (P9).
+An acceptance is written in `mentalc.toml`, which is authored and committed like an experiment file. It names a root cause by code names, never by line numbers (P8).
 
 ```toml
 [[assume]]
@@ -561,7 +475,7 @@ Rules:
 
 An opaque call is the model's honest form of "something happens here that we cannot see".
 
-- **Structure.** A `call` node on a required port of an `External` entity for the package. Close wires that port to a stub, as it does for every port that leads outside (specification 6.2.2).
+- **Structure.** A `call` node on a required port of an `External` entity for the package. Close wires that port to a stub, as it does for every port that leads outside (specification 10).
 - **Outcomes.** The stub may return or raise. Both are choices of the environment, like any stub's answer.
 - **The assumption.** An `assumption` record, provenance `assumed`, states what the build takes for granted about the call, with its alternative. The default takes the call to touch no state variable of the model.
 - **In the step function.** The node fires as a call to a stub. The assumption joins the path condition of every run that executes the node, so the run knows what it rests on (P6: the record has a meaning in the step function).
@@ -573,9 +487,9 @@ A result is only as strong as the assumptions under it, so each result lists the
 - A **witness** lists the assumptions on its path.
 - A **clean search** reads "none within these bounds, under assumptions A1 to An", where the list is every resolution assumption reachable in the explored space.
 - A **port** whose behavior contains no opaque call and no accepted gap is **closed**. This is derived from the records, not stored.
-- The presentation rule "never hide an assumption" (specification 9.4) already covers all of it. A collapsed view may not hide an opaque call.
+- The presentation rule "never hide an assumption" (specification 13) already covers all of it. A collapsed view may not hide an opaque call.
 
-Flipping a resolution assumption is an edit like any other (specification 8.8): the run is repeated with the alternative.
+Flipping a resolution assumption is an edit like any other (specification 15.1): the run is repeated with the alternative.
 
 ## 11. The resolution report
 
@@ -658,21 +572,6 @@ G4 already makes process and network calls a clippy error outside the listed edg
 
 **Decide by:** on each corpus repository, the number of root causes at first build, how many are closed by inputs (rungs 0 to 3) and how many need acceptances, and for B the share of ports that would be left opaque. If a first build asks for more acceptances than a person will read, A needs B as its first-run mode.
 
-### E2. Untyped receivers
-
-`no_type` is expected to be the largest group of roots in ordinary Python, since most parameters carry no annotation in application code. Three designs:
-
-| | A. Propagate along resolved calls | B. LLM proposes, checker confirms | C. Ask for annotations |
-|---|---|---|---|
-| **How** | in `resolve`: a parameter's type is the set of own-statement types of the arguments at every resolved call of the function; an instance attribute's type is the set of own-statement types assigned to it in the class | a task per untyped binding; the LLM picks from candidates the extractor found; `mentalc` accepts only if every member used on the binding exists on the candidate and at least one resolved call passes a value of that type | the gap names the parameter; the fix is an annotation in the code |
-| **Deterministic** | yes | the check is; the proposal is cached like any answer | yes |
-| **Cost** | more resolver code, against the letter of X9 ("reviewer rejects flow-sensitive inference"), though it is not flow-sensitive | LLM calls; a new task role; measuring false acceptances, which no published design reports (F-U23) | changes the user's repository |
-| **Evidence** | call-site typing is what lifts PyCG-style tools above name matching (F-U3) | LLMs are right on 94% of a type micro-benchmark, but on 64 to 68% of user-defined types they have not seen, and far worse at whole call graphs (F-U21, F-U22) | type checkers already ask for this |
-
-**Note on A and B.** The check in B is the inference in A: if a resolved call site witnesses the type, the extractor can read it there without being told. B adds something only where A has no witness.
-
-**Decide by:** the share of `no_type` roots each design closes on the corpus; for B the acceptance rate and, by hand review of a sample, the false-acceptance rate. Recommended order: measure with none, then A, then B on what remains.
-
 ### E3. What an opaque call may touch
 
 | | A. Inert by assumption (recommended) | B. Havoc |
@@ -682,18 +581,6 @@ G4 already makes process and network calls a clippy error outside the listed edg
 | **Against** | a race through the unknown code is missed, though the result says under which assumption | false alarms; larger search |
 
 **Decide by:** on corpus repositories with a pack removed on purpose, whether known findings survive under A (reported with the assumption) and how many false findings B adds. B can also be offered as the flipped alternative of the assumption, which costs nothing until someone flips it.
-
-### E4. How much library surface to read
-
-Access paths need no library files. Reading them could still help in three ways: checking that a pack's rows name members that exist in the pinned version, continuing a path through an unmodelled package by its return annotations, and telling a class from a function.
-
-| | A. None (recommended first) | B. From the environment | C. Fetch the pinned artifact |
-|---|---|---|---|
-| **Reads** | nothing | stubs and annotated source already installed | the wheel named by the lockfile's URL and hash |
-| **Cost** | none | a parser pass over library files | a network edge in `mentalc`; private registries need credentials |
-| **Limit** | paths stop at unmodelled calls | only where an environment exists | never builds a source distribution, so packages without wheels stay closed |
-
-Few packages have separate stubs (114 of the 2,000 most downloaded were in typeshed in 2024), while most have at least some inline annotations (F-U13). **Decide by:** how many roots B and C close beyond A on the corpus, against the code they need.
 
 ### E5. Lockfile formats
 
@@ -705,25 +592,11 @@ Few packages have separate stubs (114 of the 2,000 most downloaded were in types
 
 **Decide by:** how often the formats of the corpus repositories change across a few months of history, and whether an exported file per build is acceptable in practice.
 
-### E6. Indexes against the own resolver
-
-The question of [6.6](#66-indexes-scip-and-other-tools-answers): how much an index improves resolution over the own resolver with packs, how often it is wrong, and so where it should rank and when it should be required.
-
-| | A. Own resolver only | B. Index as optional evidence | C. Index required in automated builds | D. Index required everywhere |
-|---|---|---|---|---|
-| **Behavior** | rungs 0 to 3 (and E2 if adopted); no index read | an index, when given, fills sites the other rungs left open; disagreements are diagnostics | a CI build without a matching index fails with the indexer command; a local build runs as B | every build without a matching index fails with the indexer command; the agent runs it locally through its own permission prompt (12.3) |
-| **For** | nothing outside `mentalc` to install or run | the best of both where an index exists | the models that are kept and compared come from the most precise inputs | one kind of model everywhere |
-| **Against** | the hardest receivers stay gaps unless packs type every step | two builds of one commit can give different models, and the cached LLM answers built on them differ | the same: local and CI models of one commit differ | Node, the indexer and an environment become requirements of every build |
-
-The owner's expectation is that the index answers are significantly more precise; under the principle "fail rather than degrade", C or D follow if that holds.
-
-**Decide by:** on the corpus of the plan below, per site kind of 4.1: the sites each source answers that the other does not; every disagreement, checked by hand to see which answer is right; the wrong answers of each source; the time and the setup each needs. **The comparison waits until the own resolver is built.** A comparison against answers worked out by hand is not evidence, so none is recorded here. Also decide the conflict rule: whether an index answer may override the own resolver's or a pack's answer when they disagree, or only fill what they left open.
-
-### The plan for all six
+### The plan for the experiments
 
 1. **Corpus.** report-jobs, plus three to five open-source repositories on the version-one stack (FastAPI, Celery, SQLAlchemy), chosen before measuring: one with a `src/` layout, one monorepo, one with generated code, one without a lockfile.
 2. **Baseline.** Run `mentalc resolve` with the hand-written packs only. Record sites by outcome, roots by kind, counting and not.
-3. **One change at a time.** Add the environment rung; then E2-A; then E2-B; then E4-B; then an index (E6-B). After each, record the roots closed and the time taken. For the index, also record every disagreement with the earlier answers and which side was right.
+3. **One change at a time.** Add the environment; then a second type checker. After each, record the roots closed and the time taken.
 4. **Seed gaps.** Remove a pack, an import root, an annotation, a lockfile line. The gate must fire each time, with the right root cause.
 5. **Decide.** Each experiment's criteria above. Results are recorded as findings; the losing designs stay in this document, marked as measured and not chosen.
 
@@ -750,42 +623,11 @@ Three things carry over unchanged:
 
 - **Version classes (R5) matter most where pins are weakest.** Maven and Gradle have no committed pin in most repositories. A JVM pack that covers a whole major version makes most of those missing pins irrelevant, and the gate names the few that are not.
 - **Compiled metadata is a type surface that needs no build.** Class files and reference assemblies in the local caches describe the public API of JVM and .NET libraries.
-- **An index has the same shape in every language.** Each language brings its own extractor (a sibling of `python/` emitting the same facts, as `extract` already plans) and its own indexer, but `mentalc` has one index reader and one Resolve step; only the mapping from SCIP descriptors to pack names is per language (6.6). The indexers that make SCIP worth having for compiled languages need the build: scip-java runs as a compiler plugin, scip-clang needs a compilation database, rust-analyzer runs build scripts and procedural macros, scip-typescript needs `node_modules` (F-U1, F-U18). R3 holds because `mentalc` only reads their output; whoever runs them takes on the build.
 - **Generated code stays out of reach without execution.** CodeQL's no-build mode loses it too (F-U5). For Mental it is a missing-module gap with the generating command in its fix.
 
 **Dependencies from GitHub and other git hosts.** These need no special handling. Where a lockfile exists it records the commit, so the pin is exact. The package URL carries the repository and commit. What changes is the pack: a pack written for the registry release is applied to a fork with a warning (7.3).
 
 **Linking repositories.** When several repositories are compiled (specification, section 12), an external symbol in one and a definition in another meet by identity: the same package URL and access path. And a dependency whose source is available at its pinned commit can be compiled by `mentalc` into a pack, which is the long-term answer to unknown packages.
-
-## 15. Proposed changes to accepted documents
-
-None of these is applied. Each is a change to make if this document is accepted.
-
-| # | Document | Change |
-|---|---|---|
-| 1 | [Specification 3](specification.md#3-architecture-three-tools), 6.5 | "A build either produces a full model or fails" gains its definition: a full model is one in which every counting reference is resolved, external with known behavior, or covered by an assumption record (R2, 9.3) |
-| 2 | Specification 6.1 | Add the command `mentalc resolve`. Add the environment and `mentalc.toml` acceptances to the inputs. Add `deps.jsonl` to the output |
-| 3 | Specification 6.2 | The gate becomes a step between phase 3 and phase 4. Detect reads import roots, the Python version and pins, since Extract needs them |
-| 4 | Specification 6.2.1 | "A call that cannot be resolved is listed as `unresolved` and counted apart" becomes: it is a gap, handled by the gate. Infrastructure: `docker compose config` runs without interpolation (12.3) |
-| 5 | Specification 4.9 | Add `.mental/deps.jsonl` |
-| 6 | Specification 7 | Packs gain `package`, `imports`, `versions`, `class`, `closed` (7.4). A pack may consist of the statement that a package is inert |
-| 7 | Specification 8.5, 8.4 | Results list the resolution assumptions they rest on (10.3) |
-| 8 | [X7](guidelines/extract.md#x7-lookups-return-outcomes-never-option) | Reasons: add `missing_module`, `no_type`, `unparsed`; drop `no_pack`, which becomes the package class of an `External` outcome. Unresolved facts carry `cause` and `candidates` |
-| 9 | [X8](guidelines/extract.md#x8-conservation) | Conservation covers every site kind of 4.1, not only calls, decorators and branches |
-| 10 | [G11](guidelines/README.md#g11-fail-rather-than-degrade) | Add: a counting gap without an acceptance, a stale acceptance and an unknown lockfile version end the command with an error |
-| 11 | [Glossary](glossary.md) | Add the terms of section 3. `External` gains: "its identity is a package and an access path" |
-| 12 | `mentalc` guidelines | A tidy test that `repo.rs` starts no program other than the compose renderer (12.4) |
-
-Only if E6 adopts an index:
-
-| # | Document | Change |
-|---|---|---|
-| 13 | Specification 6.2.1, "Why not tree-sitter or a language server" | Separate depending on an indexer or language server (still not done) from reading an index file someone else produced (6.6). The argument "would bring Node or a Python environment" applies to running the indexer, which `mentalc` does not do |
-| 14 | [X1](guidelines/extract.md#x1-ruffs-parser-pinned-nothing-heavier) | "Do not use … SCIP indexers or a language server" stays for `extract`; add that `mentalc` may read a SCIP file in the Resolve step |
-| 15 | Specification 6.1 and 6.2 | An index joins the inputs; the Resolve step between Extract and Link merges candidate answers (6.6) |
-| 16 | [Specification 6.8](specification.md#68-incremental-builds), [C12](guidelines/mentalc.md#c12-the-cache-key-is-content-never-the-llm) | An index answer that enters a prompt slice enters the cache key with it, so a changed index recompiles exactly the units whose answers changed |
-| 17 | `mentalc` dependency allowlist | A reader for the protobuf wire format: a small hand-written decoder, or a crate; not chosen |
-| 18 | X7 | Every outcome records its source: own resolver, pack, index, artifact, checked LLM proposal |
 
 ## 16. Tests
 
@@ -807,7 +649,7 @@ Only if E6 adopts an index:
 
 ## 17. Open questions
 
-- **How large is `no_type` in real application code?** Everything about E2 depends on it, and no study measures it for Python. Step 2 of the plan gives the number.
+- **How large is `no_type` in real application code?** Measured on five projects: 34% of the receivers neither checker resolves are an unannotated parameter or a chain from one ([type checkers as libraries](research/type-checkers-as-libraries/report.md)).
 - **How many packages does a typical service use that would need a pack?** The class scheme works if the answer is tens. Classifying the standard library alone is real work, and its size is unmeasured.
 - **Who may declare a package inert?** A pack author's statement and a user's acceptance are both claims. Whether a shipped list of inert packages needs evidence beyond review is undecided.
 - **Closedness of hand-written packs.** A closed pack that misses an effect is a silent gap, the very thing this document forbids. A check of pack rows against the package's real surface (E4) would narrow it; nothing removes it.
@@ -815,10 +657,6 @@ Only if E6 adopts an index:
 - **Conditional imports and platform markers.** `try: import ujson as json` followed by `except ImportError: import json` is two candidates today. Whether that should be a variation point instead is open.
 - **Acceptances at scale.** If a first build of a large repository asks for fifty acceptances, the strict policy fails in practice, whatever its merits. E1 measures this.
 - **The environment as an input.** Recording what was read from an environment keeps builds reproducible on one machine. Two developers with different environments and no lockfile get different models, each correctly labelled `observed`. Whether a build should refuse `observed` pins in automated runs is undecided.
-- **Where an index is required.** Optional, required in automated builds, or required everywhere (E6, B to D). Required only in CI means two models of one commit; required everywhere makes Node and an indexer part of every build.
-- **Who wins a disagreement.** An index answer against a pack-backed answer or an exact answer of the own resolver. Choosing a side by rule before E6 is measured would be a guess.
-- **Index versions.** Two versions of one indexer can answer differently on the same commit. Whether the indexer's name and version belong in the cache key, or only in the record of the build, is open.
-- **Paths of the index.** Which directory the indexer runs in (repository root or project subdirectory), and how a submodule's or a dependency's index is matched to its mounted root ([source-access report](research/source-access/report.md)).
 
 ---
 
@@ -827,4 +665,3 @@ Only if E6 adopts an index:
 - [Findings, section U](findings.md#u-unresolved-references-and-dependencies): every F-U number, with its source.
 - Research: the [survey report](research/unresolved-references/report.md), four [survey notes](research/unresolved-references/notes/) and five notes that re-read the primary sources (`verified_*.md`).
 - Mental's own texts this builds on: specification sections 3, 4, 6, 7 and 8; `extract` guidelines X7 to X11; the cross-cutting rules G4, G8 and G11.
-- Sections 6.6 to 6.8 and E6 (2026-11-16): the SCIP schema ([scip.proto](https://github.com/scip-code/scip/blob/main/scip.proto)), the [scip-python README](https://github.com/sourcegraph/scip-python/blob/scip/README.md) and issues [#156](https://github.com/sourcegraph/scip-python/issues/156) and [#228](https://github.com/sourcegraph/scip-python/issues/228), read on that date; and the [source-access survey](research/source-access/report.md).

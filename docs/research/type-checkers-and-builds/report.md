@@ -1,6 +1,6 @@
 # How type checkers learn a project's structure from its build
 
-**Question.** How do type checkers and language tools decide what a project is: which files belong together, which module name each file has, which Python version and which installed packages apply, and how a repository splits into units that are checked separately? Do they read build files, run the build tool, guess, or take a model that the build system exports? What follows for Mental's build model ([spec 6.10](../../specification.md#610-the-build-model-first))?
+**Question.** How do type checkers and language tools decide what a project is: which files belong together, which module name each file has, which Python version and which installed packages apply, and how a repository splits into units that are checked separately? Do they read build files, run the build tool, guess, or take a model that the build system exports? What follows for Mental's build model ([spec 6.10](../../specification.md#5-stage-1-the-build-model))?
 
 **Date:** 2026-11-17. Read from the tools' own documentation and, for Buck, from the source of its export script. Some long pages came back partly as summaries; claims that rest only on a summary, or on my reading rather than the page's text, are marked *unverified*.
 

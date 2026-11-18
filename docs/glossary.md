@@ -11,10 +11,10 @@ Most examples come from the sample repository in [`examples/report-jobs`](../exa
 | Term | Definition |
 |---|---|
 | **System** | The software being studied, together with the people and outside services it talks to. |
-| **Model** | A description of the system that a program can run. It is a set of records, compiled from one commit of a repository. It says what exists (entities, ports, wires), what can be remembered (stores, state variables) and what can happen (behaviors). The model is *not* the code and holds no real values: it holds named conditions and classes of input. |
+| **Model** | A description of the system that a program can run. It is a set of records, compiled from a repository. It says what exists (entities, ports, wires), what can be remembered (stores, state variables) and what can happen (behaviors). The model is *not* the code and holds no real values: it holds named conditions and classes of input. |
 | **Record** | One item of the model, one line in a file: an entity, a port, a predicate and so on. Every record has an ID, an anchor and a provenance. |
 | **Run** | One execution of the model by the interpreter. Four things identify it: the model version, the binding, the schedule and the edits. Given those four, a run always produces the same trace. |
-| **Trace** | The output of a run: the ordered list of steps that happened, with what caused each one. It is what you watch and step through. Earlier drafts and some figures call it a *script*. |
+| **Trace** | The output of a run: the ordered list of steps that happened, with what caused each one. It is what you watch and step through. |
 | **Scenario** | A situation in plain language that someone wants to see, such as "the first upload fails, the retry succeeds". A scenario is turned into a binding; it is not a record of the model. |
 | **Finding** | Something the tools report as wrong or unknown: a race, a write the lifecycle forbids, input nothing handles, a gap in the model. |
 
@@ -96,9 +96,9 @@ In the Git example the repository is an entity even though it is "just a directo
 
 **State variable.** The part of a store that behavior depends on. *Example:* `reports.status`, one value per row, read to decide whether to work and written in four handlers. A column that nothing branches on is data, not a state variable.
 
-**Lifecycle machine.** The legal changes of one state variable: its values, the allowed moves between them, and the node that performs each move. *Example:* `PENDING → RUNNING → DONE`, `RUNNING → FAILED`, `RUNNING → PENDING` on retry. A write that is not a legal move is an **illegal write**.
+**Lifecycle machine.** The legal changes of one state variable: its values, the allowed moves between them, and the node that performs each move. It is derived from the write sites and the tests the code makes before them, so it states what the code relies on. *Example:* `PENDING → RUNNING → DONE`, `RUNNING → FAILED`, `RUNNING → PENDING` on retry. A write that is not a legal move is an **illegal write**.
 
-**Mechanism.** A recurring arrangement that keeps a promise for other code, modeled as an entity with its own states: a lock, a connection pool, a retry policy, an event loop. A *known* mechanism comes from a pack (Celery's retry policy). An *improvised* mechanism is built by hand in the code. *Example:* the worker reads `status`, checks for `PENDING` and writes `RUNNING`; the column is being used as a lock, called a **claim**. A mechanism has three marks: state that persists, a lifecycle, and an invariant other code relies on.
+**Mechanism.** A recurring arrangement that keeps a promise for other code: a lock, a connection pool, a retry policy. A *known* mechanism comes from a pack (Celery's retry policy). An *improvised* one is built by hand in the code and shows up as a move. *Example:* the worker reads `status`, checks for `PENDING` and writes `RUNNING`; the column is being used as a lock, called a **claim**, and the move's verdict says whether the claim is safe.
 
 **Invariant.** A statement about state that must hold in every reachable state, written in the words of one level. *Example:* "a report is delivered at most once".
 
@@ -130,23 +130,37 @@ The summary must agree with the full graph; a check enforces it.
 
 ## Levels
 
-**Level.** A complete way of describing the system at one height, with its own entities, its own steps and its own words. One step at a level stands for several steps at the level below. Which levels a model has is decided by its ladder strategy. The first design's fixed ladder (strategy `fixed`) uses these levels, from the top: *business*, *system*, *services*, *components*, *mechanisms*, *statements*. The strategy `closing-rules` builds levels from seven kinds: *outcome*, *stage*, *goal*, *exchange*, *activation*, *move*, *effect*.
+**Level.** One reader's way of describing the system, with its own steps and its own words. One step at a level stands for several steps at the level below. Going up answers *why*; going down answers *how*. The kinds of level, from the top: *outcome*, *goal*, *activation*, *move*, *effect* (one read, write or send); *stage* and *exchange* are admitted only where they add something. Opening a service to see its components is not a change of level: it is space zoom.
 
-**Ladder.** The levels of one model, with their charters, step classes and step maps, as built by one ladder strategy. A model has one active ladder; others can be stored beside it for comparison.
+**Closing rule.** The rule that says when one step of a level ends, stated over things the model already has. *Example:* a goal closes when the actor's request is answered and the subject is at rest; an activation closes when it must wait.
 
-**Ladder strategy.** A way of building the ladder: which levels exist, where their steps end, how steps map upward and how they are named. It is a setting of `mentalc`, like the LLM backend, and every strategy is judged by the same checks. *Example:* `closing-rules[naming=head]`. See [ladder strategies](ladder-strategies.md).
+**Move.** A group of nodes that makes one change to shared state; it closes at the write. *Example:* in `generate_report`, "read the row, test `PENDING`, write `RUNNING`" is one move, the claim. A move is identified by its function and the order of its closing site in it.
 
-**Vocabulary.** The entities, state and step kinds that may be mentioned at one level. *Example:* at the business level, "report", "requested", "delivered"; at the mechanism level, "claim", "holder", "retry".
+**Verdict of a move.** *Atomic:* its reads and write can be reordered into one block nothing else can enter. *Guarded:* the write is conditional on what was read, inside the store (`UPDATE … WHERE status = 'PENDING'`). *Non-atomic:* it reads, decides in the program, then writes unconditionally. Non-atomic moves are where races live.
 
-**Refinement.** The relation between two adjacent levels: the lower level implements the upper one. It consists of an abstraction function and a step map, and it is checked.
+**Subject.** A thing with identity and a lifecycle that the system works on: a report, a job. Outcomes and goals are stated about subjects.
 
-**Abstraction function.** The rule that computes upper-level state from lower-level state. *Example:* a report is *delivered* when `status = DONE` and the upload succeeded.
+**Step class.** A kind of step at one level, identified by code names, so that any run can be shown at any level. *Example:* the goal "request a report" is the actor *client*, the port `POST /reports` and the change "a `PENDING` report exists".
 
-**Step map.** The record of which lower steps make up each upper step, and which lower steps are invisible above. *Example:* "claim the report" is "read `status`, test it, write `RUNNING`".
+**Step map.** The record of which lower step classes make up each upper step class. *Example:* the activation "generate the report" is made of the moves "claim", "upload" and "mark done".
+
+**Support step.** A lower step that nothing on the way to the outcome reads, such as a worker's heartbeat. Support steps are folded behind a count, never deleted.
+
+**Charter.** What a level is for: its readers, its question, what one step is, what it hides, and its neighbours above (*why*) and below (*how*).
+
+**Cut.** What a view shows of one run: a set of steps that covers the run once, high everywhere and opened where something is wrong. "The goal level" is the cut that takes every goal.
+
+**Ladder and ladder strategy.** The ladder is the levels of one model with their charters, step classes and step map. A ladder strategy is a way of building it. Version one builds one strategy, `closing-rules`; the others were measured and not chosen ([ladder strategies](research/multi-level-models/ladder-strategies.md)).
+
+**Vocabulary.** The words that may be used at one level. *Example:* at the goal level, "report", "requested", "delivered"; never "Redis".
+
+**Abstraction barrier.** The rule that a name or a step at one level uses only that level's vocabulary. A violation is a finding.
+
+**Abstraction function.** The rule that computes upper-level state from lower-level state. In version one a subject's upper state is its lifecycle state variable.
 
 **Term.** A word of the project's own language, with a definition and links to the code and docs that use it. All terms together are the project's glossary, from which every level takes its names. *Example:* `report` is "a CSV of orders for a date range", anchored to the `Report` class and the route `POST /reports`.
 
-**Abstraction barrier.** The rule that a behavior at one level touches only that level's vocabulary. A violation is a finding.
+**Assumed level.** A level beneath the effect that the repository does not contain: the inside of a library, a runtime, the operating system. The model does not discover it. A pack stands for it and states where it leaks. *Example:* "read a file" stands for system calls and page-cache lookups; a cache miss changes only the timing, so the step holds.
 
 ## How a record is known
 
@@ -162,6 +176,8 @@ The summary must agree with the full graph; a check enforces it.
 | `observed` | seen in a real execution | a log line matched to a step |
 | `hypothetical` | a design idea that is in no code | "add a load balancer in front of the API" |
 
+**Grounded.** A record is grounded when it is anchored to evidence about the real system: source, build files, lockfiles, artifacts. The model is a simulation of the running system, and these are the observations that keep it close to it. Where evidence is missing, the model has a gap and says so.
+
 **Source.** Who produced the record: an extractor, a pack, a person, or an LLM (with a link to the exact call in the call ledger).
 
 **Checks.** The list of checks a record has passed.
@@ -172,25 +188,39 @@ The summary must agree with the full graph; a check enforces it.
 
 ## Building
 
-**Extractor.** A deterministic program that reads code or infrastructure files and produces facts: syntax trees, the call graph, branch points, effects, routes, containers. Extractors never guess.
+**Stage.** One of the six parts of a build, in order: build model, facts, mechanical model, LLM, link-load-close, levels.
+
+**Extractor.** A deterministic program that reads build files, code or infrastructure files and produces facts: the build model, reference sites, the call graph, branch points, effects, entry points. Extractors never guess.
+
+**Reference site.** A place where the code names something: an import, a call, a decorator, a base class, the receiver of an attribute write, a function handed to outside code. Every site gets exactly one outcome.
+
+**Outcome of a site.** *Resolved:* the target is a definition in the repository. *External:* the target is outside the repository and has an identity, such as `sqlalchemy.orm.Session.commit`. *Unresolved:* the type checker cannot say, with a reason from a short closed list.
+
+**Gap.** Something unknown that could change the model: an unresolved site, a call into a library with no pack, a missing input such as an environment. A gap *counts* when it lies in code an entry point can reach, or is a decorator, base class or escape.
+
+**Gate.** The point after the facts and before the first LLM call where a build with counting gaps fails, one diagnostic per root cause, each with its fix. An *acceptance* in `mentalc.toml` turns a gap into a visible assumption.
+
+**Mechanical model.** The model as it stands after stage 3, from facts alone: entities, ports, full behaviors, predicates with the code's own expressions, machines, moves with verdicts. It is complete and hard to read. The interpreter runs it; the LLM only names and summarizes over it.
 
 **Pack.** A ready-made model of a library, framework, runtime or outside system. Its behaviors use the same record format as the model of your code; what the extractor reads from it (types, effects, slots, raised exceptions) is written as rows in CodeQL's models-as-data style. A pack says what `session.commit()` does, how Celery retries, how Postgres behaves. Packs are data and never execute.
 
-**Compile unit.** The smallest piece of work given to the LLM, usually one provided port: the handler's code, its obligations, summaries of what it calls and the relevant glossary terms.
+**Compile unit.** The piece of work given to the LLM for a summary: one provided port, with its full behavior, its obligations, pack summaries of what it calls and the relevant glossary terms.
 
 **Task and answer.** A task is one request to the LLM written by `mentalc`: its role, its prompt, its inputs and the exact shape of the expected answer. An answer is the records that come back. An answer becomes part of the model only after it passes the checks.
 
-**LLM backend.** Whatever turns a task into an answer: the user's coding agent, an API, a local model, a headless agent, or *replay*, which answers only from stored answers and is what tests use. The backend is a setting of `mentalc`.
+**LLM backend.** Whatever turns a task into an answer: the user's coding agent, an API, or *replay*, which answers only from stored answers and is what tests use. The backend is a setting of `mentalc`.
 
 **Call ledger.** The log of every LLM call made during builds: role, model, prompt template with its version and hash, the task and answer hashes, checks passed. Each LLM-written record points to its call.
 
 **Repair.** A follow-up task sent when an answer fails a check, naming exactly what failed.
 
-**Link, load, close.** *Link* connects required ports to provided ports and fills slots. *Load* creates instances from infrastructure files. *Close* adds actors, drivers and stubs so the model can run on its own.
+**Link, load, close.** *Link* connects required ports to provided ports and fills slots. *Load* creates instances from launches. *Close* adds actors, drivers and stubs so the model can run on its own.
 
-**Build model.** A small model of how a project is built, made before anything else (like Maven's `pom.xml`): its build units, the artifacts they become, the launches that start them, the dependencies between units and the configuration they read. *Example:* report-jobs has one build unit `app` under `src/`, one image, and three launches of it: `api`, `worker` and `beat`. In version one it is made by plain readers of build files (spec 6.10).
+**Build model.** A small model of how a project is built, made before anything else (like Maven's `pom.xml`): its build units, the artifacts they become, the launches that start them, the dependencies between units and the configuration they read. *Example:* report-jobs has one build unit `app` under `src/`, one image, and three launches of it: `api`, `worker` and `beat`. It is stage 1 of every build and is made by plain readers of build files.
 
-**Build unit.** One part of a project that is built on its own: a `pyproject.toml` project, a uv workspace member, a directory a Dockerfile builds. Not to be confused with a *component*, which is a box inside a service.
+**Build chain.** The links from source to running process: source to build unit, build unit and pins to artifact, artifact to launch, launch to instances. It is the reason a line of source says anything about a process. The build step is recorded with its inputs and output, not simulated. Each link is `inferred`, `attested` or `assumed`; a chain that does not hold (an image built from another commit) is a finding.
+
+**Build unit.** One part of a project that is built on its own: a `pyproject.toml` project, a uv workspace member, a directory an image is built from. Each of its packages at an exact version is a **pin**. Not to be confused with a *component*, which is a box inside a service.
 
 **Launch.** One way an artifact is started: a command, a working directory, an environment. One image can have several launches; in report-jobs, one image is started as `uvicorn app.api:app`, as a Celery worker and as Celery beat.
 
@@ -220,7 +250,7 @@ The summary must agree with the full graph; a check enforces it.
 
 **Edit.** A change made to the model or the state for one run only, such as flipping an assumption, setting a state variable or adding a hypothetical entity. Edits are how "what if" questions are asked.
 
-**Strategy.** How the choices are made. *Concrete:* everything is bound, one trace. *Symbolic:* unbound inputs split the run into branches. *Bounded-exhaustive:* every schedule within stated bounds is tried. *Sampled:* random schedules, with no claim that nothing was missed. *Conformance:* a recorded real execution makes the choices.
+**Strategy.** How the choices of a run are made. *Concrete:* everything is bound, one trace. *Bounded-exhaustive:* every schedule within stated bounds is tried. *Replay:* a stored schedule decides. Symbolic and sampled runs are Later.
 
 **Bounds.** The limits of an exhaustive search: number of requests, replicas, duplicated messages, preemptions, depth. Results always state their bounds.
 
@@ -242,17 +272,17 @@ The summary must agree with the full graph; a check enforces it.
 
 **Replay verdict.** The result of replaying a stored schedule on a changed model, per choice: *matched*, *infeasible* (the choice no longer exists) or *diverged*.
 
-**Property.** A statement about every run that a search or a prover checks, written in one level's words. *Safety* says nothing bad happens ("at most one worker holds a report"); *liveness* says something good eventually happens ("every requested report ends `DONE` or `FAILED`"). Some properties follow from the model's form and need nobody to write them: no deadlock, no illegal write, no message nothing handles. The others are `property` records, proposed by the LLM or written by a person, and accepted by a person. An *invariant* is a safety property about state.
+**Property.** *Later.* A statement about every run that a search or a prover checks, written in one level's words. *Safety* says nothing bad happens ("at most one worker holds a report"); *liveness* says something good eventually happens ("every requested report ends `DONE` or `FAILED`"). Some properties follow from the model's form and need nobody to write them: no deadlock, no illegal write, no message nothing handles. The others are `property` records, proposed by the LLM or written by a person, and accepted by a person. An *invariant* is a safety property about state.
 
-**Fairness.** An assumption that the scheduler does not starve a step forever, needed to check liveness. *Weak:* a step that stays enabled eventually happens. *Strong:* a step that is enabled again and again eventually happens. *Example:* without weak fairness on the workers, "every report ends" fails because a worker may simply never run.
+**Fairness.** *Later.* An assumption that the scheduler does not starve a step forever, needed to check liveness. *Weak:* a step that stays enabled eventually happens. *Strong:* a step that is enabled again and again eventually happens. *Example:* without weak fairness on the workers, "every report ends" fails because a worker may simply never run.
 
-**Over- and under-approximation.** The direction in which a record may differ from the code. A record that *over-approximates* allows everything the code can do, and possibly more: a predicate left as a free choice where the code links it to another. One that *under-approximates* may allow less: two code steps fused into one, so that nothing can run between them. A "holds" result carries over to the code only if every record it rests on over-approximates or is exact; a violation carries over only if its steps are possible in the code.
+**Over- and under-approximation.** *Later.* The direction in which a record may differ from the code. A record that *over-approximates* allows everything the code can do, and possibly more: a predicate left as a free choice where the code links it to another. One that *under-approximates* may allow less: two code steps fused into one, so that nothing can run between them. A "holds" result carries over to the code only if every record it rests on over-approximates or is exact; a violation carries over only if its steps are possible in the code.
 
-**Verdict of a property.** *Violation*, with a witness that is *model-only* or *reproduced* in the code; or *holds*, with an *extent* (*bounded*, with the bounds, or *unbounded*, with the prover) and a *basis* (*sound* if every record it rests on over-approximates or is exact, otherwise *unsound*, naming the records). Only *holds, unbounded, sound* is called a **proof**, and always with its assumptions.
+**Verdict of a property.** *Later.* *Violation*, with a witness that is *model-only* or *reproduced* in the code; or *holds*, with an *extent* (*bounded*, with the bounds, or *unbounded*, with the prover) and a *basis* (*sound* if every record it rests on over-approximates or is exact, otherwise *unsound*, naming the records). Only *holds, unbounded, sound* is called a **proof**, and always with its assumptions.
 
-**Inductive invariant.** A property that holds in the initial state and that every step preserves. It is how a property is proved for runs of any length and any number of instances, which no bounded search can do. *Example:* "for each report, at most one activation is between claim and mark", once the claim is a compare-and-set.
+**Inductive invariant.** *Later.* A property that holds in the initial state and that every step preserves. It is how a property is proved for runs of any length and any number of instances, which no bounded search can do. *Example:* "for each report, at most one activation is between claim and mark", once the claim is a compare-and-set.
 
-**Cutoff.** A theorem that checking a small instance of a system settles every size ("two processes suffice"). It holds only for the class of systems the theorem covers.
+**Cutoff.** *Later.* A theorem that checking a small instance of a system settles every size ("two processes suffice"). It holds only for the class of systems the theorem covers.
 
 ## Showing
 
@@ -287,11 +317,11 @@ The summary must agree with the full graph; a check enforces it.
 | Word | Meaning in Mental | Not this |
 |---|---|---|
 | **Port** | an interaction point on an entity's boundary | a TCP port number |
-| **Level** | a height of description: business, services, statements | a message layer |
+| **Level** | one reader's way of describing the system: outcome, goal, move | a message layer; a box opened inside another (that is space zoom) |
 | **Layer** | one nesting of a message: HTTP in TLS in TCP | a level |
 | **Step** | one event in a run | a node (a part of a behavior) |
 | **Model** | the compiled description of the system | an LLM (always called "LLM" or "LLM model ID") |
 | **Trace** | the output of a run in the interpreter | a distributed-tracing span; a real execution is called an *observed trace* |
 | **Task** | a request from `mentalc` to an LLM | a Celery task (always "Celery task") |
 | **Check** | a rule that an answer or the model must pass | a test in the repository |
-| **Experiment** | an authored file holding a hypothetical change to the model | a research experiment |
+| **Stage** | one of the six parts of a build | the *stage* kind of level (a subject moving to its next stage) |
