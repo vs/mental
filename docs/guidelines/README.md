@@ -136,7 +136,7 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 
 #### G11. Fail rather than degrade
 - **Rule:** a missing input or key, an unknown field or format version, a cache miss in offline or `check` mode, and exhausted repairs end the command with an error that says how to fix it; no code path writes a partial model or falls back silently.
-- **Why:** a degraded model is later read as complete (spec 3 and 6.5).
+- **Why:** a degraded model is later read as complete (spec P9).
 - **Source:** [Specula fail-open stop gate][specula-gate] (counterexample); [ruff's silent cache reset][ruff-cache-evict] (deliberately not copied).
 - **Enforced by:** one test per failure path ([T12](testing.md#t12-inject-faults-through-seams-that-already-exist)); reviewer.
 
@@ -348,7 +348,7 @@ Ten principles carry the rules that are statements of intent; the rest stay as r
 | M21 Parser tables through serde | reviewer | ci:diff-coverage |
 | M22 Format frozen by a golden | ci: insta check | |
 | M23 Brute-force guard oracle | reviewer | ci:mutants |
-| M24 Milestone 1 fixture suite | reviewer | completeness test |
+| M24 Reference model fixture suite | reviewer | completeness test |
 | M25 A testkit, not a fifth crate | reviewer | |
 | X1 ruff's parser and ty's crates, pinned | tidy:extract_ruff_ty_pinned, banned_crates | |
 | X2 No ruff type escapes | tidy:crate_graph | clippy:unreachable_pub |

@@ -4,7 +4,7 @@
 
 ## One job
 
-`mentalvm` interprets the model (spec 12): `initial`, `enabled` and `fire` define every step, and four functions use them: a concrete or symbolic `run`, bounded-exhaustive `explore`, `replay` with verdicts, and the witness minimizer. Its outcomes are model gaps, deadlocks, illegal writes, zero-time cycles, violated invariants and normal ends.
+`mentalvm` interprets the model (spec 12): `initial`, `enabled` and `fire` define every step, and four functions use them: a concrete `run`, bounded-exhaustive `explore`, `replay` with verdicts, and the witness minimizer. Its outcomes are model gaps, deadlocks, illegal writes, zero-time cycles, violated invariants and normal ends.
 
 **It never:** reads source code; depends on `mentalc` (models arrive as files); does I/O, reads the clock or entropy, or spawns threads in its core; hides a reduction inside the step function.
 

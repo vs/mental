@@ -182,8 +182,8 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 
 #### X22. report-jobs is the acceptance test
 - **Rule:** one `insta::assert_json_snapshot!` of the full output for `examples/report-jobs/src`, plus explicit counts: 5 files, 6 entry points (2 routes, 2 Celery tasks, 1 schedule, 1 command), 2 state variables, every branch listed. An annotated copy (`tests/fixtures/report_jobs.py`, fragment headers) carries inline expectations, and a drift test strips the annotations and compares the result with the real example files.
-- **Why:** spec 6, F-S10 and milestone 2.
-- **Source:** spec 6 and 11.4; [ruff whole-output snapshots][ruff-parser-fx].
+- **Why:** spec 6, F-S10 and milestone 3.
+- **Source:** spec 6 and 14.2; [ruff whole-output snapshots][ruff-parser-fx].
 - **Enforced by:** public-API test; reviewer approves snapshot diffs. The call-graph edge count is asserted under the definition in spec 6; the trial's 41 is re-measured under it, not copied.
 
 [ruff-versioning]: https://github.com/astral-sh/ruff/blob/b140af2f48bddf33a1ae984174af3180236aaaaf/docs/versioning.md

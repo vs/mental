@@ -24,8 +24,8 @@ Each section carries a status, as in the specification: **Proposed** (the workin
 12. [Execution and trust](#12-execution-and-trust)
 13. [Experiments](#13-experiments)
 14. [Other ecosystems](#14-other-ecosystems)
-16. [Tests](#16-tests)
-17. [Open questions](#17-open-questions)
+15. [Tests](#15-tests)
+16. [Open questions](#16-open-questions)
 
 ---
 
@@ -629,7 +629,7 @@ Three things carry over unchanged:
 
 **Linking repositories.** When several repositories are compiled (specification, section 12), an external symbol in one and a definition in another meet by identity: the same package URL and access path. And a dependency whose source is available at its pinned commit can be compiled by `mentalc` into a pack, which is the long-term answer to unknown packages.
 
-## 16. Tests
+## 15. Tests
 
 **Status: Proposed.** In the style of the guidelines: each rule with how it is checked.
 
@@ -647,12 +647,12 @@ Three things carry over unchanged:
 | Determinism | the same repository and recorded environment give byte-identical `deps.jsonl` and report |
 | Fixtures by category | new `extract` fixture categories beside those of X19: `roots` (namespace packages, `src/` layout, two roots), `external` (access paths), `gaps` (one per reason), `escapes` |
 
-## 17. Open questions
+## 16. Open questions
 
 - **How large is `no_type` in real application code?** Measured on five projects: 34% of the receivers neither checker resolves are an unannotated parameter or a chain from one ([type checkers as libraries](research/type-checkers-as-libraries/report.md)).
 - **How many packages does a typical service use that would need a pack?** The class scheme works if the answer is tens. Classifying the standard library alone is real work, and its size is unmeasured.
 - **Who may declare a package inert?** A pack author's statement and a user's acceptance are both claims. Whether a shipped list of inert packages needs evidence beyond review is undecided.
-- **Closedness of hand-written packs.** A closed pack that misses an effect is a silent gap, the very thing this document forbids. A check of pack rows against the package's real surface (E4) would narrow it; nothing removes it.
+- **Closedness of hand-written packs.** A closed pack that misses an effect is a silent gap, the very thing this document forbids. A check of pack rows against the package's real surface would narrow it; nothing removes it.
 - **Reachability and dynamic entry points.** The soundness argument of 8.3 rests on decorators, bases and escapes always counting. A framework that finds handlers by naming convention alone (a function named `handle_*` in a certain folder) creates entry points with no site at all. Such frameworks need a slot row keyed on names and paths, which the pack grammar does not have yet.
 - **Conditional imports and platform markers.** `try: import ujson as json` followed by `except ImportError: import json` is two candidates today. Whether that should be a variation point instead is open.
 - **Acceptances at scale.** If a first build of a large repository asks for fifty acceptances, the strict policy fails in practice, whatever its merits. E1 measures this.

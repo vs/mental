@@ -5,7 +5,7 @@
 ## One job
 
 `model` defines the record format and decides whether a set of records is well formed. It holds:
-- the record types, one struct per kind (spec 7.4 to 4.8);
+- the record types, one struct per kind (spec 7.4);
 - semantic IDs (`Id`, `Kind`, the slug alphabet);
 - anchors;
 - guard expressions, their evaluator and the partition check;
@@ -23,7 +23,7 @@ model/
     lib.rs          the public surface and FORMAT_VERSION
     id.rs           Id, Kind, the slug alphabet, slugify        (+ id/tests.rs)
     record.rs       the Record trait (fn id(&self) -> &Id) and the Model struct
-    record/         structure.rs  state.rs  behavior.rs  above.rs (term, level, ...)
+    record/         build.rs  structure.rs  state.rs  behavior.rs  above.rs (term, level, ...)
     anchor.rs
     guard.rs        Expr, parse, Display, the Logic trait, eval, the partition check
     jsonl.rs        read(&str) and write(&[T]) -> String
@@ -43,7 +43,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 | normal | `serde` (with `derive`), `serde_json`, `blake3` |
 | dev | `insta`, `proptest` |
 
-`thiserror` is **not** on the list, although the README's error rule ([G9](README.md#g9-errors-by-layer)) names it for libraries. `model` has two small error types (`IdError`, `ParseError`); they implement `Display` and `std::error::Error` by hand, in about 20 lines. The owner approved this exception on 2026-11-14 (plan D9).
+`thiserror` is **not** on the list, although the README's error rule ([G9](README.md#g9-errors-by-layer)) names it for libraries. `model` has two small error types (`IdError`, `ParseError`); they implement `Display` and `std::error::Error` by hand, in about 20 lines. The owner approved this exception on 2026-11-14.
 
 ## Rules
 
@@ -81,7 +81,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 
 #### M6. Identity is the key
 - **Rule:** two records, cases or classes with the same ID are a `duplicate-id` diagnostic naming both, even when their lines are byte-identical. A node repeated across the cases of one behavior is not a duplicate, but every appearance must carry the same fields (`node-mismatch`).
-- **Why:** Mental has one writer, so any duplicate is a writer bug; conflicting facts under one identity mean a bug upstream. Glean merges identical facts because it has many writers, and the owner chose the stricter rule (plan D7, 2026-11-14).
+- **Why:** Mental has one writer, so any duplicate is a writer bug; conflicting facts under one identity mean a bug upstream. Glean merges identical facts because it has many writers, and the owner chose the stricter rule on 2026-11-14.
 - **Source:** [Glean `FactSet::define` L278-L293][gl-factset], as the counterexample for a single-writer format.
 - **Enforced by:** checker fixture.
 
@@ -114,7 +114,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 #### M11. Identity stays apart from anchors and hashes
 - **Rule:** anchors live in `anchors.jsonl`; content hashes are blake3 over canonical line bytes, stored beside a record, never inside its `Id`; display names never feed IDs.
 - **Why:** moving code must not change IDs, and a cache key must not pose as an identity.
-- **Source:** spec 7.2 and 4.4; [Kythe `storage.proto` L56-L70][ky-names].
+- **Source:** spec 7.2 and 7.3; [Kythe `storage.proto` L56-L70][ky-names].
 - **Enforced by:** unit test that moving an anchor changes only the bytes of `anchors.jsonl`; reviewer.
 
 ### Checks
@@ -139,7 +139,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 
 #### M15. Only full IDs are stored
 - **Rule:** stored records hold fully qualified IDs everywhere, guards and node references included; short forms such as `pred:x` or `.../case:y` exist only in human-facing display.
-- **Why:** the reference check stays textual, with no scope-resolution rule to get wrong. Accepted and written into spec 7.2 and 7.4.
+- **Why:** the reference check stays textual, with no scope-resolution rule to get wrong. Accepted and written into spec 7.2.
 - **Source:** inferred; no studied project resolves parent-relative references (SCIP's `local` is file-scoped).
 - **Enforced by:** the guard parser accepts only full IDs (unit test).
 
@@ -158,14 +158,14 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 - **Enforced by:** `good`/`bad` tables; round-trip property test; fixture `unknown-predicate`.
 
 #### M18. Partition by enumeration with a cap
-- **Rule:** the partition check enumerates every assignment of the n dimensions a behavior's guards mention (a plain predicate is one yes-or-no dimension; a state variable tested by predicates with `equals` is one dimension over its domain values, so impossible combinations are never enumerated), reports the lowest gap or overlap as a witness assignment, and above n = 16 emits `guard-check-too-large` instead of skipping. No BDD or SAT. Spec 7.4.
+- **Rule:** the partition check enumerates every assignment of the n dimensions a behavior's guards mention (a plain predicate is one yes-or-no dimension; a state variable tested by predicates with `equals` is one dimension over its domain values, so impossible combinations are never enumerated), reports the lowest gap or overlap as a witness assignment, and above n = 16 emits `guard-check-too-large` instead of skipping. No BDD or SAT. This is the guard-algebra check of spec 9.1.
 - **Why:** about 15 lines, deterministic, with concrete messages; the BDD crates are 2,400 to 10,600 lines with forbidden dependencies.
 - **Source:** truth-table oracles in [boolean_expression `bdd.rs` L755-L800][be-bdd] and [biodivine fuzz tests][bd-fuzz].
 - **Enforced by:** unit tests with known witnesses; insta snapshot of the messages; oracle test ([M23](#m23-the-guard-checker-has-a-brute-force-oracle)).
 
 #### M19. One evaluator for two and three values
 - **Rule:** `Expr::eval` is generic over a `Logic` trait implemented for `bool` and for `Option<bool>` (Kleene logic), so `mentalvm`'s "not decided yet" uses the same code.
-- **Why:** the ordered-reads rule of spec 7.4 is three-valued evaluation; one evaluator serves the checker and the interpreter.
+- **Why:** during a run a predicate has no value until the run decides it (φ, the predicate values assumed so far, in spec 12.1), so the interpreter evaluates guards in three values; one evaluator serves the checker and the interpreter.
 - **Source:** [cfg-expr `Logic` trait][ce-expr].
 - **Enforced by:** property test: with every predicate `Some(_)`, `Option<bool>` evaluation equals `bool` evaluation.
 
@@ -197,10 +197,10 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 - **Source:** [boolean_expression `bdd.rs` L755-L800][be-bdd]; [biodivine fixed-seed fuzzing][bd-fuzz].
 - **Enforced by:** property test; mutation testing.
 
-#### M24. Milestone 1 is a fixture suite
+#### M24. The reference model is a fixture suite
 - **Rule:** the hand-written report-jobs reference model passes `check` with no diagnostics, and `tests/data/err/<code>/` holds one seeded-error model per diagnostic code, each producing exactly that code.
-- **Why:** this is milestone 1's acceptance check (spec 14.2: "accepts the reference model and rejects seeded errors").
-- **Source:** spec 14.2; [rust-analyzer `parse_ok`/`parse_err`][ra-parser-tests].
+- **Why:** the reference model is what a build is compared against ([C24](mentalc.md#c24-the-golden-report-jobs-build)), so it must itself pass every check, and every diagnostic code needs a model that shows it firing.
+- **Source:** [rust-analyzer `parse_ok`/`parse_err`][ra-parser-tests].
 - **Enforced by:** public-API test in `tests/`; completeness test of [M13](#m13-diagnostic-codes-are-closed-and-complete).
 
 #### M25. A testkit, not a fifth crate
