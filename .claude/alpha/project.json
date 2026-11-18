@@ -122,8 +122,9 @@
             "run": "! grep -nE 'ty_\\*' docs/guidelines/README.md | grep -i ban"
           }
         ],
-        "status": "pending",
-        "component": "extract"
+        "status": "done",
+        "component": "extract",
+        "branch": "alpha/p4-ty-banned-crates"
       },
       {
         "id": "p4-guidelines-refs",
