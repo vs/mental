@@ -192,7 +192,7 @@ The walk lists every **reference site**:
 
 Escapes are the complete list of ways outside code can call into the repository (F-U7).
 
-A site is identified by names: the qualified name of its enclosing scope (a function, a class body, or the module for code at the top of a file), its kind and the name it refers to, as written. When several sites in one scope share all three, each of them gets its order among them, counted from 0; `generate_report` in report-jobs calls `s.commit()` three times, and those sites end in `-0`, `-1` and `-2`. A line number is never part of the ID: a change outside the scope changes no ID, and neither does moving a line inside it, unless the line holds one of a group of identical sites.
+A site is identified by names: the qualified name of its enclosing scope (a function, a class body, or the module for code at the top of a file), its kind and the name it refers to, as written. Sites are grouped by scope, kind and the slug of the name with any trailing segments made only of digits removed, so `s.commit()` and `s.commit_0()` fall in one group; every site in a group of two or more gets its order in the group, counted from 0, appended to its own slug. `generate_report` in report-jobs calls `s.commit()` three times, and those sites end in `-0`, `-1` and `-2`. Grouping this way keeps a counter from ever matching a name that already ends in digits. A line number is never part of the ID: a change outside the scope changes no ID, and neither does moving a line inside it, unless the line holds one of a group of identical sites.
 
 ### 6.2 Resolve with a type checker
 
