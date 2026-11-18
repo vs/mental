@@ -3,3 +3,7 @@
 
 [files]
 extend-exclude = [".claude/alpha/state/", ".claude/alpha/notes/", ".claude/settings.local.json", ".claude/worktrees/", ".DS_Store", ".claude/alpha/hooks/__pycache__/", ".claude/alpha/checks/__pycache__/", ".env", ".env.*", "**/.env", "**/.env.*", "/target/", "model/**/coverage.xml", "extract/**/coverage.xml", "mentalc/**/coverage.xml", "Cargo.lock", "CHANGELOG.md"]
+
+[default.extend-words]
+# Fixel Display and Fixel Text, the typefaces of docs/alpha/design-language.md
+Fixel = "Fixel"
