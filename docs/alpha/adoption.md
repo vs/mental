@@ -7,7 +7,7 @@ alpha adopted this repo. These steps bring its code up to the principles in [pri
 | Phase | Done | Steps |
 | --- | --- | --- |
 | P4 Rework | 9 | 9 |
-| P5 Burn-down | 1 | 3 |
+| P5 Burn-down | 2 | 3 |
 
 ## P4 Rework
 
@@ -119,7 +119,7 @@ Done when:
 | Step | Component | Status |
 | --- | --- | --- |
 | `p5-baseline-typos` | - | done |
-| `p5-baseline-markdown` | - | in progress |
+| `p5-baseline-markdown` | - | done |
 | `p5-baseline-links` | - | pending |
 
 ### `p5-baseline-typos`: Clear the typos baseline
