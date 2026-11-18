@@ -609,7 +609,7 @@ Products (Mental for Claude Code, Mental for Codex, Mental Desktop) are thin she
 
 ### 14.2 Milestones
 
-**Status: Proposed.** Each milestone ends with something checkable on report-jobs, and each gets its own implementation plan in [`docs/plans/`](plans/) before it starts.
+**Status: Proposed.** Each milestone ends with something checkable on report-jobs, and each gets its own implementation plan in [`docs/plans/`](plans/) before it starts. The hand-written **reference model** of report-jobs, in `examples/report-jobs/model/`, grows with the milestones: each one writes by hand, before its code, the records of the kinds it is the first to produce, and its acceptance test compares the build against everything written so far.
 
 | # | Milestone | Done when | LLM |
 |---|---|---|---|

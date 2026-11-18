@@ -186,7 +186,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 - **Enforced by:** reviewer; diff branch coverage shows missing error branches.
 
 #### M22. The format is frozen by a golden
-- **Rule:** an insta snapshot of the JSONL written for a small hand-built model that covers every record kind; any byte change to the format is a reviewed snapshot diff. The hand-written report-jobs reference model is checked by `check` and never rewritten ([T6](testing.md#t6-the-golden-is-never-a-snapshot)).
+- **Rule:** an insta snapshot of the JSONL written for a small hand-built model that covers every record kind; any byte change to the format is a reviewed snapshot diff. The hand-written report-jobs reference model, which grows by milestone, is checked by `check` and never rewritten ([T6](testing.md#t6-the-golden-is-never-a-snapshot)).
 - **Why:** format changes become visible decisions.
 - **Source:** [SCIP reprolang snapshots][scip-repro]; Cargo.lock compatibility tests.
 - **Enforced by:** CI with `INSTA_UPDATE=no`.

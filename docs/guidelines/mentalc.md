@@ -212,7 +212,7 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 - **Enforced by:** the tests; mutation testing on `task.rs` and `mcp.rs`.
 
 #### C24. The golden report-jobs build
-- **Rule:** `mentalc build --offline` on `examples/report-jobs` with the committed answers succeeds; the produced model matches the hand-written reference at `examples/report-jobs/model/` under a written comparison rule; the four findings of spec 8.2 are asserted by `Code` and anchor; a second test applies the one-line fix and asserts that exactly the expected units recompile. The test also runs on a release build.
+- **Rule:** `mentalc build --offline` on `examples/report-jobs` with the committed answers succeeds; the produced model matches the hand-written reference at `examples/report-jobs/model/`, for every kind written so far ([T6](testing.md#t6-the-golden-is-never-a-snapshot)), under a written comparison rule; the four findings of spec 8.2 are asserted by `Code` and anchor; a second test applies the one-line fix and asserts that exactly the expected units recompile. The test also runs on a release build.
 - **Why:** the findings of spec 8.2 and the incremental rebuild of spec 9.4 become regression tests; the reference is a specification, so tooling never rewrites it ([T6](testing.md#t6-the-golden-is-never-a-snapshot)).
 - **Source:** spec 8.2, 9.4, 14.2 and F-S10; [SQLite as-delivered testing][sqlite-testing].
 - **Enforced by:** `tests/report_jobs.rs`, in debug and release CI jobs.
