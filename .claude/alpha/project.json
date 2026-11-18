@@ -585,7 +585,7 @@
       {
         "id": "R1",
         "text": "mentalc reads a standard Python project's dependency files into a build model, parses every file and gives every reference site an outcome from a type checker, with no LLM.",
-        "acceptance": "Given examples/report-jobs with no environment, when mentalc build runs, then it writes one build unit with a pin for each package in uv.lock and reports the missing environment with its fix, uv sync; given the environment, then every site has the outcome the reference model gives it and the write receivers resolve to Report; and given a copy with one package removed from the environment, then the build fails and names the fix."
+        "acceptance": "Given examples/report-jobs with no environment, when mentalc build runs, then it writes one build unit with a pin for each package in uv.lock other than the project itself and reports the missing environment with its fix, uv sync; given the environment, then every site has the outcome the reference model gives it and the write receivers resolve to Report; and given a copy with one package removed from the environment, then the build fails and names the fix."
       },
       {
         "id": "R3",
