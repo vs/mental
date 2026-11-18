@@ -89,7 +89,7 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 ### Side effects
 
 #### G4. I/O and ambient inputs only at named edges
-- **Rule:** only the edge files listed above call the file system, processes, network, environment, clock, threads or stdio; everywhere else these calls are clippy errors, and an edge file opts out with `#[expect(clippy::disallowed_methods, reason = "...")]`.
+- **Rule:** only the edge files listed above call the file system, processes, network, environment, clock, threads or stdio; everywhere else these calls are clippy errors, and an edge file opts out with `#[expect(clippy::disallowed_methods, reason = "...")]`. Each edge file, and test code, has a row in the Exceptions table of [CONTRIBUTING.md](../../CONTRIBUTING.md#exceptions) naming the path, the lint and why; a new edge is a new row there and in the list above.
 - **Why:** pure code is testable from a string fixture and reproducible, and the boundary is machine-checked rather than remembered.
 - **Source:** [rust-analyzer architecture.md L451-L457][ra-arch-core]; [typst `World` trait][typst-world].
 - **Enforced by:** clippy `disallowed-methods` in `clippy.toml`; tidy test `edges_are_listed`.
@@ -181,7 +181,7 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 - **Enforced by:** clippy `too_many_lines` (threshold 60), `too_many_arguments` (threshold 5), `fn_params_excessive_bools`; tidy test `file_length`; reviewer for literal arguments.
 
 #### G18. One lint configuration
-- **Rule:** lints are set once in the workspace `Cargo.toml` and `clippy.toml` (the alpha baseline plus the settings below); crate-specific lints are inner attributes at a crate or module root; a suppression is `#[expect(lint, reason = "...")]`, never `#[allow]`.
+- **Rule:** lints are set once in the workspace `Cargo.toml` and `clippy.toml` (the alpha baseline plus the settings below); crate-specific lints are inner attributes at a crate or module root; a suppression is `#[expect(lint, reason = "...")]`, never `#[allow]`, and has a row in the Exceptions table of [CONTRIBUTING.md](../../CONTRIBUTING.md#exceptions) naming the path, the lint and why.
 - **Why:** one command (`cargo clippy -- -D warnings` plus `cargo test`) checks everything, and a stale suppression fails.
 - **Source:** [rust-analyzer workspace lints, `Cargo.toml` L174-L237][ra-lints]; alpha's Rust recipe.
 - **Enforced by:** CI `cargo clippy --all-targets -- -D warnings`; alpha's generated `tests/setup.rs`.
@@ -254,7 +254,7 @@ Crate-level additions, as inner attributes: `#![deny(clippy::wildcard_enum_match
 ## Mapping to alpha
 
 How each rule would enter the alpha kit. **Goes to** is the main home:
-- `principle:<id>`: a project principle in `docs/principles.toml` (`(alpha)` marks one the kit already has);
+- `principle:<id>`: a project principle in [`docs/alpha/principles.toml`](../alpha/principles.toml), where the eight below are registered for alpha's reviewer (`(alpha)` marks one the kit already has);
 - `clippy:<setting>`: a lint in the workspace `Cargo.toml` or a key in `clippy.toml`;
 - `tidy:<test>`: a test in `model/tests/tidy.rs` ([T20](testing.md#t20-tidy-tests-run-inside-cargo-test));
 - `ci:<step>`: a step in the CI workflow (`ci:diff-coverage` and `ci:mutants` are alpha's existing gates);

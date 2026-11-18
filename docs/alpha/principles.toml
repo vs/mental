@@ -774,6 +774,138 @@ override = ""
 
 [principles.component_params]
 
+# Project principles from docs/guidelines/README.md ("Project principles");
+# each carries the guideline rules named in its statement.
+
+[[principles]]
+id = "fixed-crate-graph"
+title = "Four crates, one direction"
+statement = "The workspace has exactly the edges model <- extract <- mentalc and model <- mentalvm; model depends on no workspace crate, mentalc and mentalvm share only files in the model format, and an item is pub only when another crate uses it (G1, G2)."
+rationale = "Each tool can then be built, tested and replaced alone, and the interpreter never depends on the compiler."
+applies = ["always"]
+core = false
+checked_by = ["reviewer"]
+active = true
+components = ["model", "extract", "mentalc"]
+override = ""
+
+[principles.params]
+
+[principles.component_params]
+
+[[principles]]
+id = "deterministic-output"
+title = "Same inputs, same bytes"
+statement = "The same inputs give byte-identical output: ordered collections only, stable blake3 hashes over canonical bytes, seeds and clocks passed in as parameters, canonical sorted JSONL (G6, G7, G8, M7, X16, V6, T18)."
+rationale = "A model that changes between identical builds cannot be diffed, cached or trusted."
+applies = ["always"]
+core = false
+checked_by = ["reviewer"]
+active = true
+components = ["model", "extract", "mentalc"]
+override = ""
+
+[principles.params]
+
+[principles.component_params]
+
+[[principles]]
+id = "fail-rather-than-degrade"
+title = "A partial result is an error"
+statement = "A missing input or key, an unknown field or format version, a cache miss offline and exhausted repairs end the command with an error naming the fix; no code path writes a partial model or falls back silently (G11, M9, M10, C11, C13)."
+rationale = "A degraded model is later read as complete (spec P9)."
+applies = ["always"]
+core = false
+checked_by = ["reviewer"]
+active = true
+components = ["model", "extract", "mentalc"]
+override = ""
+
+[principles.params]
+
+[principles.component_params]
+
+[[principles]]
+id = "no-bloat"
+title = "Every line and crate earns its place"
+statement = "No framework where a function does, every dependency justified once and within its crate's allowlist, none of the banned weight, size limits kept, nothing out of version one's scope (G3, G15, G16, G17, M20, X17, V18)."
+rationale = "Compile time, fewer things to break, and a codebase one person can own."
+applies = ["always"]
+core = false
+checked_by = ["reviewer"]
+active = true
+components = ["model", "extract", "mentalc"]
+override = ""
+
+[principles.params]
+
+[principles.component_params]
+
+[[principles]]
+id = "one-canonical-form"
+title = "One text form per identity"
+statement = "IDs enter only through the parser, every accepted ID and guard re-displays to the same bytes, one slug alphabet with no escaping, and the JSONL text is canonical (M1, M2, M3, M7)."
+rationale = "Two spellings of one identity break references, caches and diffs."
+applies = ["always"]
+core = false
+checked_by = ["reviewer"]
+active = true
+components = ["model"]
+override = ""
+
+[principles.params]
+
+[principles.component_params]
+
+[[principles]]
+id = "extractors-never-guess"
+title = "Unknown is recorded, never guessed or dropped"
+statement = "Every lookup returns resolved, external or unresolved with a closed reason; every call, decorator and branch appears in the output exactly once; no heuristic edge or inference of our own on top of the type checker (X7, X8, X9)."
+rationale = "Extractors own completeness (spec P6); a guess presented as fact is worse than a recorded gap."
+applies = ["always"]
+core = false
+checked_by = ["reviewer"]
+active = true
+components = ["extract"]
+override = ""
+
+[principles.params]
+
+[principles.component_params]
+
+[[principles]]
+id = "one-judge-for-every-backend"
+title = "Every LLM answer passes the same checks"
+statement = "Checking, repair, caching and ledger writes happen in accept, whatever backend answered; checks re-run on every cache hit; repairs are capped and the build fails closed (C4, C9, C11)."
+rationale = "The model is only as trustworthy as its weakest backend path, so there must be only one path."
+applies = ["always"]
+core = false
+checked_by = ["reviewer"]
+active = true
+components = ["mentalc"]
+override = ""
+
+[principles.params]
+
+[principles.component_params]
+
+# Inactive until the mentalvm component exists (milestone 6).
+[[principles]]
+id = "semantics-stay-in-the-step"
+title = "Reductions live in strategies, never in the step"
+statement = "The step function prunes nothing, and every choice it offers is named with its values; search reductions belong to strategies (V3, V5)."
+rationale = "A step that prunes changes what the model means, and a replay against a changed model must say where it diverged."
+applies = ["always"]
+core = false
+checked_by = ["reviewer"]
+active = false
+components = []
+override = ""
+
+[principles.params]
+
+[principles.component_params]
+
 [[repo_checks]]
 id = "actions"
 command = "mise run check:actions"

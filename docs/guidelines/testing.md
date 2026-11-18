@@ -136,7 +136,7 @@ The helper is the only place that knows the API. When the API changes, one helpe
 - **Enforced by:** reviewer; tests run in debug.
 
 #### T16. Mutation testing on the diff
-- **Rule:** CI runs `cargo mutants --in-diff` on the PR diff, in place, with a `mutants` profile (`debug = "none"`) and a timeout multiplier; any missed mutant fails. A mutant that can't be killed on purpose is skipped with `#[mutants::skip]` and a reason comment above it, or with an `exclude_re` entry that has a reason; speed-only code is made observable (pinned state counts) instead of skipped.
+- **Rule:** CI runs `cargo mutants --in-diff` on the PR diff, in place, with a `mutants` profile (`debug = "none"`) and a timeout multiplier; any missed mutant fails. A mutant that can't be killed on purpose is skipped with `#[mutants::skip]` and a reason comment above it, or with an `exclude_re` entry that has a reason, and either way has a row in the Exceptions table of [CONTRIBUTING.md](../../CONTRIBUTING.md#exceptions); speed-only code is made observable (pinned state counts) instead of skipped.
 - **Why:** coverage shows code ran; mutants show behavior was checked.
 - **Source:** [cargo-mutants in-diff][cm-indiff], [CI][cm-ci], [config][cm-config], [performance][cm-perf]; alpha rule `mutants-skips`.
 - **Enforced by:** CI step (alpha `ci:mutants`); tidy test `mutants_skip_has_reason`.
