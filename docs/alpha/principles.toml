@@ -889,7 +889,7 @@ override = ""
 
 [principles.component_params]
 
-# Inactive until the mentalvm component exists (milestone 6).
+# Inactive until the mentalvm component exists (milestone 5).
 [[principles]]
 id = "semantics-stay-in-the-step"
 title = "Reductions live in strategies, never in the step"

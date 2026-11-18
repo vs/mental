@@ -27,7 +27,7 @@ Most examples come from the sample repository in [`examples/report-jobs`](../exa
 
 **Boundary and interior.** The boundary is the set of an entity's ports. The interior is what is inside: child entities and the wires between them. A *closed* entity shows only its boundary. An *open* entity shows its interior too. Opening an entity must explain every one of its ports: each port is connected to something inside, or the gap is reported.
 
-**Type and instance.** A type is a kind of entity described once, such as "Celery worker". An instance is one concrete copy that exists in a run. Version one creates one instance per entity. Runs act on instances.
+**Type and instance.** A type is a kind of entity described once, such as "Celery worker". An instance is one concrete copy that exists in a run. Version one runs each entity as one instance, with the entity's ID. Runs act on instances.
 
 **Port.** A named point on an entity's boundary through which one kind of interaction passes. See [Ports in depth](#ports-in-depth).
 
@@ -81,7 +81,7 @@ Everything that enters or leaves an entity passes through one of its ports. Ther
 
 | What the code does | Required port (on the caller) | Provided port (on the other side) | Wire | Message |
 |---|---|---|---|---|
-| **Database access.** `s.query(Report)…`, `s.commit()` | `reports/api/port:db`, protocol SQL | `postgres/port:sql` on the Postgres entity. Inside Postgres, the tables `reports` and `orders` are stores | found from `DATABASE_URL`; carries a transaction | one SQL statement: a read or a write of named columns |
+| **Database access.** `s.query(Report)…`, `s.commit()` | `reports/api/port:db`, protocol SQL | `postgres/port:sql` on the Postgres entity. Inside Postgres, the tables `reports` and `orders` are stores | found from the SQLAlchemy pack rows; carries a transaction | one SQL statement: a read or a write of named columns |
 | **Object store access.** `s3.put_object(Bucket, Key, Body)` | `reports/worker/port:storage`, protocol S3 API | `s3/port:objects` on the external S3 entity; the bucket is a store | found from the bucket name; HTTPS underneath | one `PutObject` with a key and a body; the answer is success or `ClientError` |
 | **Queue access.** `generate_report.delay(id)` | `reports/api/port:enqueue-generate-report` | on the worker: the provided port `task:generate_report`. Redis sits between them as an entity with a queue | matched by task name; the channel may duplicate | one task message with the report ID |
 | **Git repository access.** A tool runs `update-ref` or reads `.git/objects` | `tool/port:repo`, protocol "Git repository files" | on the repository entity: `repo/port:refs` and `repo/port:objects`. Refs and objects are stores | file system calls on a directory | "read ref `main`", "write object", "lock, then rename `main.lock`" |
@@ -223,7 +223,7 @@ The summary must agree with the full graph; a check enforces it.
 
 **Link, load, close.** *Link* connects required ports to provided ports and fills slots. *Load* creates one instance per entity. *Close* adds actors, drivers and stubs so the model can run on its own.
 
-**Build model.** A small model of how a project is built, made before anything else (like Maven's `pom.xml`): its build units, each with its source roots, Python version, pins and environment. *Example:* report-jobs has one build unit, named after its project, with a pin for each package in `uv.lock`. It is stage 1 of every build and is made by plain readers of build files.
+**Build model.** A small model of how a project is built, made before anything else (like Maven's `pom.xml`): its build units, each with its source roots, Python version, pins and environment. *Example:* report-jobs has one build unit, named after its project, with a pin for each package in `uv.lock` other than the project itself. It is stage 1 of every build and is made by plain readers of build files.
 
 **Build unit.** One part of a project that is built on its own: a directory with a `pyproject.toml`. Each of its packages at an exact version is a **pin**. Not to be confused with a *component*, which is a box inside a service.
 
@@ -261,7 +261,7 @@ The summary must agree with the full graph; a check enforces it.
 
 **Fork.** A choice shown as a branching point in a trace; the side not taken can be taken later by flipping it.
 
-**Witness.** A shortest run found by search that reaches a bad state, with its schedule, so it can be replayed. *Example:* the run in which both workers read `PENDING` before either writes `RUNNING`.
+**Witness.** A shortest run found by search that reaches a bad state, with its schedule, so it can be replayed. *Example:* the run in which two activations of `generate_report` both read `PENDING` before either writes `RUNNING`.
 
 **Stuck outcome.** Why a run cannot continue: a **model gap** (a message nothing handles), a **deadlock**, an **illegal write**, or a **zero-time cycle**.
 

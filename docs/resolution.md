@@ -285,11 +285,12 @@ The class is what turns thousands of sites into a short list. A repository uses 
 Each referenced package gets one line in `.mental/deps.jsonl`:
 
 ```json
-{"package":"pkg:pypi/sqlalchemy","pin":"declared","version":"2.0.36","source":"registry",
- "evidence":{"file":"uv.lock","quote":"version = \"2.0.36\""},
+{"package":"pkg:pypi/sqlalchemy","pin":"declared","version":"2.0.58","source":"registry",
+ "evidence":{"file":"uv.lock","quote":"version = \"2.0.58\""},
  "imports":["sqlalchemy"],"imports_from":"pack","class":"modelled","pack":"sqlalchemy@2"}
-{"package":"pkg:pypi/botocore","pin":"unpinned","imports":["botocore"],"imports_from":"pack",
- "class":"modelled","pack":"botocore@1"}
+{"package":"pkg:pypi/botocore","pin":"declared","version":"1.44.6","source":"registry",
+ "evidence":{"file":"uv.lock","quote":"version = \"1.44.6\""},
+ "imports":["botocore"],"imports_from":"pack","class":"modelled","pack":"botocore@1"}
 ```
 
 | `pin` | Means | Provenance of what follows from it |

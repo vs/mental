@@ -216,7 +216,7 @@ The binary declares `required-features = ["cli"]`, and the WebAssembly build use
 
 #### V22. Replay round trips gate CI
 
-- **Rule:** for every corpus witness, explore, serialize the run file, parse it, replay it: all choices `matched`, same outcome. report-jobs after the CAS fix replays the stored race schedule to `diverged` at `worker[1]/n:claim`, and a fresh `explore` with the same bounds is clean; a deletion test yields `infeasible`.
+- **Rule:** for every corpus witness, explore, serialize the run file, parse it, replay it: all choices `matched`, same outcome. report-jobs after the CAS fix replays the stored race schedule to `diverged` at the second activation's `reports/worker/beh:generate-report/n:claim`, and a fresh `explore` with the same bounds is clean; a deletion test yields `infeasible`.
 - **Why:** spec 12.3 and F-S11; Shuttle's round-trip tests are `#[ignore]`d today because replay broke unnoticed.
 - **Source:** [Shuttle `tests/basic/replay.rs` L32-L51][sh-replay-tests].
 - **Enforced by:** CI; tidy test `no_should_panic_or_ignore`.

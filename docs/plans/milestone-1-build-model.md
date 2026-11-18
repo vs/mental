@@ -10,7 +10,7 @@ A standard project is what `uv init` makes: a `pyproject.toml`, a `uv.lock`, a `
 
 **Done when:**
 
-1. `mentalc build` in `examples/report-jobs`, with no `.venv`, writes 1 build unit and one pin per package in `uv.lock`, equal to the hand-written reference in `examples/report-jobs/model/`, reports the one gap `environment-missing` with its fix (`uv sync`), and exits 1.
+1. `mentalc build` in `examples/report-jobs`, with no `.venv`, writes 1 build unit and one pin per package in `uv.lock` other than the project itself, equal to the hand-written reference in `examples/report-jobs/model/`, reports the one gap `environment-missing` with its fix (`uv sync`), and exits 1.
 2. After `uv sync`, it parses the five files and writes site records equal to the hand-written reference: every reference site has exactly one outcome, and every `report.status = …` write receiver resolves to `Report`. It writes the resolution report and exits 0.
 3. In a copy with one package removed from the environment, it reports `module-missing` for that package, names the fix, and exits 1.
 4. Building twice gives the same bytes.
@@ -31,13 +31,13 @@ Settled with the owner on 2026-11-18.
 
 | # | Question | Decision | Why |
 |---|---|---|---|
-| D1 | What is a project? | What Python already calls one: a directory with a `pyproject.toml`. It is the build unit; the system and the unit take the project's name. Mental adds no project file of its own. A directory without one is the gap `project-missing` | nobody would write a Mental-specific definition; the example is made standard instead |
+| D1 | What is a project? | What Python already calls one: a directory with a `pyproject.toml`. It is the build unit; the system and the unit take the project's name. Mental needs no file of its own to read a project. A directory without one is the gap `project-missing` | nobody would write a Mental-specific definition; the example is made standard instead |
 | D2 | Where are the source roots? | The two standard layouts: `src/` when the project has one, else the project directory | report-jobs already keeps its code in `src/app/` |
 | D3 | Which Python version? | `.python-version`; else the environment's `pyvenv.cfg`. The record says which source won. `requires-python` is recorded and never used as the version | a range is not a version |
-| D4 | Who reads files for ty? | ty reads the roots and the environment from disk itself, read-only, in `extract/src/python/resolve.rs`: one named edge | it is the setup the experiment measured |
+| D4 | Who reads files for ty? | ty reads the roots and the environment from disk itself, read-only, inside `extract/src/python/resolve.rs`; it is not an edge of our own code | it is the setup the experiment measured |
 | D5 | Which sites? | All seven kinds of the specification: import, decorator, callee, base class, write receiver, escape, handler type | complete from the start |
 | D6 | What fails the build? | A missing input (`project-missing`, `lock-missing`, `python-version-unknown`, `environment-missing`) and a missing module. Every other unresolved site is listed in the resolution report and fails nothing yet | which gaps count needs entry points, which do not exist yet |
-| D7 | How is a site identified? | By names: the enclosing function's qualified name, the site's kind and the name it refers to as written, for example `site:app-tasks-generate-report-callee-s-commit`. A counter is added only when two sites in one function share all three. Never a line number | a change outside the function, or a moved line inside it, changes no ID; Semgrep, rust-analyzer and Infer identify things the same way |
+| D7 | How is a site identified? | By names: the qualified name of the enclosing scope (function, class body or module), the site's kind and the name it refers to as written. Identical sites in one scope get their order among them, counted from 0: the three `s.commit()` calls of `generate_report` are `site:app-tasks-generate-report-callee-s-commit-0` to `-2`. Never a line number | a change outside the scope changes no ID, and neither does a moved line unless it holds one of a group of identical sites; Semgrep, rust-analyzer and Infer identify things the same way |
 | D8 | Is every site in the hand-written reference? | Yes: every site record of report-jobs is written by hand before the code | the reference is a specification of the whole output |
 | D9 | How do tests get an environment? | Resolver tests use tiny environments checked in as fixtures: a `pyvenv.cfg` and a few stub packages. One CI job runs `uv sync` in report-jobs and runs the acceptance of goals 2 and 3; locally it runs when `RUN_SLOW_TESTS` is set | fast tests with no network; the real path still runs on every pull request |
 
@@ -72,7 +72,7 @@ model/    src/  id.rs  diagnostic.rs  jsonl.rs  anchor.rs  record.rs  record/bui
 extract/  src/  lib.rs
                 build.rs  build/pyproject.rs  build/lock.rs  build/python.rs    strings in, records and diagnostics out
                 python.rs  python/parse.rs  python/sites.rs                     one file in, sites out
-                python/resolve.rs                                               sites + unit -> outcomes [edge: ty reads]
+                python/resolve.rs                                               sites + unit -> outcomes (ty reads)
 mentalc/  src/  main.rs  cli.rs  lib.rs  repo.rs  build.rs
 examples/report-jobs/   pyproject.toml  uv.lock  .python-version  src/app/
 examples/report-jobs/model/   the reference: build_unit, pin, site

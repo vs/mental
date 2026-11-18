@@ -45,7 +45,7 @@ Already decided by the owner: no async runtime in version one; clap derive; this
 
 Also decided by the owner on 2026-11-14, when these guidelines were accepted:
 
-- `extract` does no I/O of its own: `mentalc` reads the repository, then hands `extract` strings; ty alone reads the roots and the environment itself ([X5](extract.md#x5-pure-stages-one-module-each));
+- `extract` does no I/O: `mentalc` reads the repository, then hands `extract` strings;
 - `model` uses no `thiserror`: its two error types have hand-written `Display`, so its allowlist stays `serde`, `serde_json`, `blake3` (an exception to the "thiserror in libraries" rule);
 - `blake3` is the only hash in the workspace;
 - `mentalc` adds `anyhow` (error context in the binary) and `tempfile` (atomic writes of the cache and ledger) to its allowlist;
@@ -53,6 +53,8 @@ Also decided by the owner on 2026-11-14, when these guidelines were accepted:
 - CI adds nextest, `cargo insta test --check` and `cargo fuzz build`;
 - any duplicate ID in a model is an error, even when the two lines are identical ([M6](model.md#m6-identity-is-the-key));
 - the format rules of the [specification](../specification.md#7-the-model): full IDs only, `equals` on enum predicates, one format version, one file per kind, no stored kind.
+
+Decided by the owner on 2026-11-18, in the [milestone 1 plan](../plans/milestone-1-build-model.md#3-decisions): ty reads the roots and the environment from disk itself, read-only, inside `extract/src/python/resolve.rs`. It is the one exception to `extract` doing no I/O, and it is not an edge of our own code.
 
 **I/O edges.** Only these files may touch the file system, processes, network, environment, clock or stdio ([G4](#g4-io-and-ambient-inputs-only-at-named-edges)):
 

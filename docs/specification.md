@@ -98,7 +98,7 @@ Nothing here is final. A measured result overrules any sentence in this document
 | — **The gate** | Is anything missing that could change the model? | a failed build with fixes, or a go | no | 1, 2 |
 | 3. **Mechanical model** | What is the system, stated only from facts? | entities, ports, full behaviors, predicates, machines, moves with verdicts; the first findings | no | 3 |
 | 4. **LLM** | What should things be called, and how do the paths group? | names, input classes, summary cases, terms | yes | 4 |
-| 5. **Link, load, close** | What is connected to what, and what runs? | wires, instances, actors, drivers, stubs | no | 5 |
+| 5. **Link, load, close** | What is connected to what, and what runs? | wires, actors, drivers, stubs | no | 5 |
 | 6. **Levels** | What does a reader at each level see? | step classes, the step map, charters | names only | 6 |
 
 Three properties of this order:
@@ -133,7 +133,7 @@ Every command has a `--json` form. `--offline` forbids every LLM call: answers c
 
 Before it reads a line of code, `mentalc` builds a small model of how the project is built: the **build model**, the way Maven's `pom.xml` describes a Maven project. Type checkers do not do this for Python: they guess the roots and use one environment per config, and take a real project model only where a build system exports one ([type checkers and builds](research/type-checkers-and-builds/report.md)). The build model is that export.
 
-A project is what Python already calls one: a directory with a `pyproject.toml`, as `uv init` makes it, with a `uv.lock`, a `.python-version` file and, after `uv sync`, a `.venv`. Mental adds no project file of its own.
+A project is what Python already calls one: a directory with a `pyproject.toml`, as `uv init` makes it, with a `uv.lock`, a `.python-version` file and, after `uv sync`, a `.venv`. Mental needs no file of its own to read a project.
 
 ### 5.1 Records
 
@@ -144,7 +144,7 @@ A project is what Python already calls one: a directory with a `pyproject.toml`,
 
 "Component" stays the word for a box inside a service; a part built on its own is a **build unit**. The system and its build unit take the project's name.
 
-*In report-jobs:* one build unit, named `reports` after the project, with a pin for each package in `uv.lock`.
+*In report-jobs:* one build unit, named `reports` after the project, with a pin for each package in `uv.lock` other than the project itself.
 
 ### 5.2 Readers
 
@@ -192,7 +192,7 @@ The walk lists every **reference site**:
 
 Escapes are the complete list of ways outside code can call into the repository (F-U7).
 
-A site is identified by names: the qualified name of its enclosing function, its kind and the name it refers to, as written. A counter is added only when two sites in one function share all three. A line number is never part of the ID, so a change outside the function, or a moved line inside it, changes no ID.
+A site is identified by names: the qualified name of its enclosing scope (a function, a class body, or the module for code at the top of a file), its kind and the name it refers to, as written. When several sites in one scope share all three, each of them gets its order among them, counted from 0; `generate_report` in report-jobs calls `s.commit()` three times, and those sites end in `-0`, `-1` and `-2`. A line number is never part of the ID: a change outside the scope changes no ID, and neither does moving a line inside it, unless the line holds one of a group of identical sites.
 
 ### 6.2 Resolve with a type checker
 
@@ -297,12 +297,12 @@ The model is a flat set of **records** that refer to each other by ID. Every rec
 | characteristic, input class | `reports/api/port:post-reports/in:range`, `…/in:range/class:too-large` |
 | behavior, case, node | `reports/worker/beh:generate-report`, `…/case:skip`, `…/n:claim` |
 | build unit, pin | `reports/unit:reports`, `reports/unit:reports/pin:sqlalchemy` |
-| site | `reports/unit:reports/site:app-tasks-generate-report-callee-s-commit` |
+| site | `reports/unit:reports/site:app-tasks-generate-report-callee-s-commit-0` |
 
 Rules:
 
 - The root slug is the system's name: the project's name in `pyproject.toml`.
-- Slugs are ASCII `[a-z0-9]+(-[a-z0-9]+)*`, made from a code name by one function. No counters and no positions; a collision is resolved by adding another code name.
+- Slugs are ASCII `[a-z0-9]+(-[a-z0-9]+)*`, made from a code name by one function. No counters and no positions; a collision is resolved by adding another code name. The one exception is identical sites in one scope, which are counted ([6.1](#61-parse-and-list-sites)).
 - An ID has one canonical text form; a non-canonical ID is rejected, never normalized. Stored references are always full IDs.
 - Every ID is unique across the model.
 - **A move is identified** by its function and the order of its closing site in that function, never by a line number (F-L9).
@@ -319,7 +319,7 @@ Anchors live apart from the records, in `anchors.jsonl`, so moving code without 
 | Stage 2 | `site` (a reference site with its outcome) |
 | Stage 3 | `entity`, `port`, `state_var`, `machine`, `predicate`, `behavior` at full detail, `move` ([8](#8-stage-3-the-mechanical-model)) |
 | Stage 4 | names on the above; `characteristic` with its input classes; `behavior` summaries; `term` ([9](#9-stage-4-what-the-llm-adds)) |
-| Stage 5 | `wire`, `instance`, actor and stub entities, `assumption` ([10](#10-stage-5-link-load-close)) |
+| Stage 5 | `wire`, actor and stub entities, `assumption` ([10](#10-stage-5-link-load-close)) |
 | Stage 6 | `level`, `step_class` ([11](#11-stage-6-levels)) |
 
 The fields of each kind are fixed in the implementation plan of the milestone that first writes it, and written back here. A field is added to the specification before it is added to a struct.
@@ -352,14 +352,14 @@ From the facts alone, with no LLM, `mentalc` writes a model that is complete and
 
 | Record | Built from |
 |---|---|
-| **entity**, **port** | entry points become provided ports, grouped into services by the pack slot they come from (an HTTP application, a task worker, a scheduler, a command); effects on outside systems become required ports; tables, queues and buckets become **stores** |
+| **entity**, **port** | entry points become provided ports, grouped into services by the pack slot they come from. A service's slug is the name the pack gives that kind of slot (`api` for an HTTP application, `worker` for a task worker, `scheduler`, `command`), with the module of its application object added when two services would share it; effects on outside systems become required ports; tables, queues and buckets become **stores** |
 | **predicate** | each test the code makes, with the code's own expression, what it is about and the node that decides it. Its slug comes from the expression's symbols; its display name comes later |
 | **behavior**, full detail | per provided port, a graph of **nodes** (read, write, send, call, reply, branch, lock, commit, raise, …) and guarded edges, one obligation per branch. A node lists the predicates it **decides**; a node that touches shared state carries the **evidence** the code gives for atomicity: a transaction, a lock, a conditional update |
 | **state variable** | the stored value code branches on, its domain (from the enum or the literals written), its scope and constraints |
 | **machine** | the lifecycle of a state variable, derived from its write sites: each write is a transition to the written value, from the value that a test before the write established, or from any value when no test did |
 | **move** | a group of nodes that makes one change to shared state, with a verdict ([8.1](#81-moves-and-verdicts)) |
 
-The derived machine states what the code *relies on*, not what it enforces. The worker tests for `PENDING` and then writes `RUNNING`: the transition is `PENDING → RUNNING`. When a second worker writes `RUNNING` over `RUNNING`, that write is illegal, and that is the race.
+The derived machine states what the code *relies on*, not what it enforces. The worker tests for `PENDING` and then writes `RUNNING`: the transition is `PENDING → RUNNING`. When a second activation writes `RUNNING` over `RUNNING`, that write is illegal, and that is the race.
 
 ### 8.1 Moves and verdicts
 
@@ -433,7 +433,7 @@ Link joins each required port to the provided port it reaches. Most links are ex
 
 ### 10.2 Load and close
 
-- **Load** creates one **instance** per entity. How many activations of a port run at once is a bound of the search, not a fact about a deployment. A configuration read is a binding that a run chooses (`WEBHOOK_URL` set or unset); the branch stays in the model (F-S6).
+- **Load** runs each entity as one **instance**, which takes the entity's ID; no instance records are written. How many activations of a port run at once is a bound of the search, not a fact about a deployment. A configuration read is a binding that a run chooses (`WEBHOOK_URL` set or unset); the branch stays in the model (F-S6).
 - **Close** makes the model runnable alone. Every provided port open to the outside gets a **driver** that can send any input class. Every required port leading outside gets a **stub** that answers with any declared outcome. Users, operators and the clock become **actors**.
 
 ## 11. Stage 6: levels
@@ -590,7 +590,7 @@ Products (Mental for Claude Code, Mental for Codex, Mental Desktop) are thin she
 
 | # | Milestone | Done when | LLM |
 |---|---|---|---|
-| 1 | **Resolve a simple project.** The workspace, IDs, diagnostics, canonical JSONL, the stage 1 readers; parse, list sites, resolve with ty, the resolution report | `mentalc build` on report-jobs writes one build unit with a pin for each package in `uv.lock` and, with no environment, reports that gap with its fix; with the environment, every site has the outcome the reference gives it and its write receivers resolve to `Report`; a missing module fails the build and names the fix ([plan](plans/milestone-1-build-model.md)) | no |
+| 1 | **Resolve a simple project.** The workspace, IDs, diagnostics, canonical JSONL, the stage 1 readers; parse, list sites, resolve with ty, the resolution report | `mentalc build` on report-jobs writes one build unit with a pin for each package in `uv.lock` other than the project itself and, with no environment, reports that gap with its fix; with the environment, every site has the outcome the reference gives it and its write receivers resolve to `Report`; a missing module fails the build and names the fix ([plan](plans/milestone-1-build-model.md)) | no |
 | 2 | **Facts.** Packs for the first stack; obligations, effects, state variables, entry points; the gate | 6 entry points (2 routes, 2 tasks, 1 schedule, 1 command), 2 state variables, every branch listed, `WEBHOOK_URL` reported as an optional configuration read | no |
 | 3 | **Mechanical model.** Stage 3 records, moves with verdicts, the static checks | the four findings of report-jobs are predicted, with no LLM and no interpreter | no |
 | 4 | **LLM.** The task protocol, `agent`, `api` and `replay` backends, ledger, cache, the four tasks and their checks | every port has a named summary that passes coverage, guard algebra and summary agreement | yes |

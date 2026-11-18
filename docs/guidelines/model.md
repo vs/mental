@@ -80,10 +80,10 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 
 #### M5. Names say what, never when or where
 
-- **Rule:** IDs contain no positions, counters, line numbers, hashes, versions or timestamps, and a slug made only of digits is rejected. When two code names collide, add another code name (module, file stem or class) to the colliding IDs only, never an index.
+- **Rule:** IDs contain no positions, counters, line numbers, hashes, versions or timestamps, and a slug made only of digits is rejected. When two code names collide, add another code name (module, file stem or class) to the colliding IDs only, never an index. The one exception is reference sites: identical sites in one scope get their order among them, counted from 0 (spec 6.1, owner decision of 2026-11-18).
 - **Why:** IDs stay stable across rebuilds (P8), and unrelated code changes don't rename things.
 - **Source:** [Kythe `storage.proto` L85-L90][ky-vname]; [cargo lockfile "only when necessary to disambiguate"][cg-lockfile-ref].
-- **Enforced by:** parser rule and unit test; an `extract` fixture with two same-named handlers ([X19](extract.md#x19-fixtures-by-category)).
+- **Enforced by:** parser rule and unit test; an `extract` fixture with two same-named handlers ([X19](extract.md#x19-fixtures-by-category)); a site fixture with three identical calls in one function.
 
 #### M6. Identity is the key
 
