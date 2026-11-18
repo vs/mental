@@ -229,7 +229,8 @@
             "run": "grep -q 'fixed-crate-graph' docs/alpha/principles.toml && grep -q 'deterministic-output' docs/alpha/principles.toml && grep -q 'Exceptions' docs/guidelines/README.md"
           }
         ],
-        "status": "pending"
+        "status": "done",
+        "branch": "alpha/p4-project-principles"
       },
       {
         "id": "p4-diagrams",
