@@ -37,7 +37,7 @@ mentalc/
     cache.rs          content-addressed answer store                                [edge: fs]
     ledger.rs         calls.jsonl and raw answers by hash                           [edge: fs]
     backend.rs        trait Backend
-    backend/          api.rs agent_cli.rs replay.rs                                 [edge: network, process]
+    backend/          api.rs replay.rs                                              [edge: network]
     mcp.rs            serve(reader: impl BufRead, writer: impl Write)
   packs/              hand-written TOML packs (spec 6.6), embedded with include_str!
   prompts/            <role>/<name>.md templates, embedded with include_str!
@@ -88,7 +88,7 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 ### Backends
 
 #### C5. The backend is synchronous
-- **Rule:** `trait Backend { fn caps(&self) -> Caps; fn complete(&self, task: &RenderedTask) -> Result<RawAnswer, BackendError>; }`, implemented only by the push backends (`api`, `local`, `agent-cli`, `replay`). The `agent` backend implements nothing: it is the CLI and MCP surface over `next_task` and `accept`.
+- **Rule:** `trait Backend { fn caps(&self) -> Caps; fn complete(&self, task: &RenderedTask) -> Result<RawAnswer, BackendError>; }`, implemented only by the push backends of version one, `api` and `replay`. The `agent` backend implements nothing: it is the CLI and MCP surface over `next_task` and `accept`.
 - **Why:** 15 calls per build need no concurrency, and an async runtime would add dozens of crates. Accepted and written into spec 9.3.
 - **Source:** [rmcp `Cargo.toml`, tokio mandatory][rmcp-cargo]; spec 9.1 cost estimate (F-S10).
 - **Enforced by:** tidy tests `banned_crates` and `no_async`.
@@ -168,7 +168,7 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 - **Enforced by:** insta transcript tests per era built from the spec's own examples; a subprocess test of clean exit on end of input; a manual Claude Code and Codex smoke check at each release (reviewer checklist).
 
 #### C17. A fixed tool list over shared core functions
-- **Rule:** the tools are `mental_task_next`, `mental_task_submit(task_id, answer)` and optionally `mental_build_status`, in that order. The per-task answer schema travels inside the task, never as a dynamic `inputSchema`. Check failures, unknown or stale `task_id`s and exhausted repairs return a normal result with `isError: true` and the repair text; only protocol faults are JSON-RPC errors. The CLI and MCP call the same core function per operation.
+- **Rule:** the tools are `mental_task_next` and `mental_task_submit(task_id, answer)`, in that order. The per-task answer schema travels inside the task, never as a dynamic `inputSchema`. Check failures, unknown or stale `task_id`s and exhausted repairs return a normal result with `isError: true` and the repair text; only protocol faults are JSON-RPC errors. The CLI and MCP call the same core function per operation.
 - **Why:** MCP forbids `tools/list` varying as a side effect, recommends server-minted handles, and says clients feed `isError` results back to the model; sharing the core keeps both surfaces thin.
 - **Source:** [MCP tools, `tools.mdx` L60-L66, L690-L785][mcp-tools]; [SysMoBench returned errors as plain text][smb-server] (counterexample).
 - **Enforced by:** snapshot of `tools/list`; test that every check failure maps to `isError: true`.
