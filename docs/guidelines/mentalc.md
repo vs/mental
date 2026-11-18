@@ -38,7 +38,8 @@ mentalc/
     cache.rs          content-addressed answer store                                [edge: fs]
     ledger.rs         calls.jsonl and raw answers by hash                           [edge: fs]
     backend.rs        trait Backend
-    backend/          api.rs replay.rs                                              [edge: network]
+    backend/api.rs    the api backend: HTTP to the LLM API                          [edge: network]
+    backend/replay.rs answers only from stored answers, read through cache.rs
     mcp.rs            serve(reader: impl BufRead, writer: impl Write)
   packs/              hand-written TOML packs (spec 6.6), embedded with include_str!
   prompts/            <role>/<name>.md templates, embedded with include_str!
