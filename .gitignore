@@ -2,6 +2,7 @@
 docs/local/
 .mental/
 __pycache__/
+.venv/
 
 # alpha
 .claude/alpha/state/

@@ -4,10 +4,13 @@ A small sample system and the first target for `mentalc`. It is about 150 lines 
 
 | Part | File | What it does |
 |---|---|---|
+| Project | [`pyproject.toml`](pyproject.toml), [`uv.lock`](uv.lock), [`.python-version`](.python-version) | A standard uv project named `reports`: 11 dependencies, 41 locked packages, Python 3.12. |
 | API | [`src/app/api.py`](src/app/api.py) | `POST /reports` checks the date range, stores a `PENDING` row and queues a Celery task. `GET /reports/{id}` returns the status. |
 | Workers (two replicas) | [`src/app/tasks.py`](src/app/tasks.py) | `generate_report` claims the row, builds a CSV from `orders`, uploads it to S3 and marks the row `DONE`, with up to three retries. `requeue_stuck` runs every five minutes and re-queues rows stuck in `RUNNING`. |
 | Operator tool | [`src/app/cli.py`](src/app/cli.py) | `reportctl retry` re-queues a `FAILED` report. |
 | Data | [`src/app/models.py`](src/app/models.py) | Tables `reports` (with the `status` column) and `orders`. |
 | Deployment | [`src/docker-compose.yml`](src/docker-compose.yml) | `api`, `worker` ×2, `beat`, Redis and Postgres. |
+
+`uv sync` creates the environment in `.venv`.
 
 Nothing here is compiled yet. The [specification](../../docs/specification.md) uses this system for its examples and its acceptance tests.

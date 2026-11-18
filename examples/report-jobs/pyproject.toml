@@ -1,0 +1,18 @@
+[project]
+name = "reports"
+version = "0.1.0"
+description = "A small sample system: an API queues report jobs and Celery workers build them."
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115.6",
+    "pydantic>=2.10.4",
+    "uvicorn>=0.34.0",
+    "sqlalchemy>=2.0.36,<2.1",
+    "psycopg2-binary>=2.9.10",
+    "celery>=5.4.0",
+    "kombu>=5.4.2",
+    "redis>=5.2.1",
+    "boto3>=1.35.90",
+    "requests>=2.32.3",
+    "click>=8.1.8",
+]
