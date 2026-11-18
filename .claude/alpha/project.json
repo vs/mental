@@ -247,10 +247,11 @@
             "run": "test -z \"$(ls docs/images/*.png 2>/dev/null)\" && for f in docs/images/*.svg; do git grep -q \"$(basename $f)\" -- '*.md' || exit 1; done"
           }
         ],
-        "status": "pending",
+        "status": "done",
         "depends_on": [
           "p4-guidelines-refs"
-        ]
+        ],
+        "branch": "alpha/p4-diagrams"
       },
       {
         "id": "p4-glossary-verdicts",
