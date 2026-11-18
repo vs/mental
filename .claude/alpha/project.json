@@ -212,7 +212,8 @@
             "confirm": "The owner has decided which milestone writes examples/report-jobs/model/, and the guidelines and the milestone plans say so"
           }
         ],
-        "status": "pending"
+        "status": "done",
+        "branch": "alpha/p4-golden-model"
       },
       {
         "id": "p4-project-principles",
