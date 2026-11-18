@@ -264,7 +264,7 @@ The summary must agree with the full graph; a check enforces it.
 
 **Footprint.** What a node or step reads and writes.
 
-**Atomicity.** Whether a group of steps can be treated as one. Computed from footprints and evidence. *Stutter:* only forwards, touches no state. *Isolated:* touches nothing another activation can touch at the same time. *Guarded:* protected by a lock, a sufficient transaction or one conditional update. *Non-atomic:* none of these; another activation can get in between.
+**Atomicity.** Whether a group of steps can be treated as one. Computed from footprints and evidence, never declared. For a move it is the move's verdict, *atomic*, *guarded* or *non-atomic* (see *Verdict of a move* above and [spec 8.1](specification.md#81-moves-and-verdicts)); in a non-atomic one, another activation can get in between.
 
 **Race.** Two activations touch the same state, at least one writes, and no evidence orders them. A non-atomic check-then-act is the commonest form.
 
