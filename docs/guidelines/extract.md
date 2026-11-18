@@ -4,11 +4,11 @@
 
 ## One job
 
-`extract` turns build files, Python source files and the output of `docker compose config` into facts, in `model` types: the build model (stage 1 of the [specification](../specification.md#5-stage-1-the-build-model)), then reference sites with their outcomes, the call graph, obligations (branch points), effects, state variables and their write sites, and entry points through pack slots (stage 2). It lists every reference site itself and asks a type checker, ty, what each one points to.
+`extract` turns build files and Python source files into facts, in `model` types: the build model (stage 1 of the [specification](../specification.md#5-stage-1-the-build-model)), then reference sites with their outcomes, the call graph, obligations (branch points), effects, state variables and their write sites, and entry points through pack slots (stage 2). It lists every reference site itself and asks a type checker, ty, what each one points to.
 
-**It never:** calls an LLM; names an abstraction; guesses dynamic behavior (a guess belongs to Link and is marked `heuristic` there); touches the file system or runs a process; lets a ruff or ty type escape its API; names a library in Rust code; resolves a reference by rules of its own.
+**It never:** calls an LLM; names an abstraction; guesses dynamic behavior (a guess belongs to Link and is marked `heuristic` there); touches the file system in its own code or runs a process; lets a ruff or ty type escape its API; names a library in Rust code; resolves a reference by rules of its own.
 
-`mentalc` reads the repository and runs `docker compose config` at its I/O edge, then hands `extract` the file contents and the compose JSON as strings. This tightens rule 5 of the research note, which let `discover` and `compose` do I/O themselves, so that there is a single I/O edge, as the [architecture note](../research/implementation-guidelines/notes/mentalc_architecture.md) asks.
+`mentalc` reads the repository at its I/O edge, then hands `extract` the file contents as strings. The type checker is the one exception: ty reads the roots and the environment from disk itself, read-only, inside `python/resolve.rs` ([X5](#x5-pure-stages-one-module-each)). This tightens rule 5 of the research note, which let `discover` do I/O itself, so that our own code has a single I/O edge, as the [architecture note](../research/implementation-guidelines/notes/mentalc_architecture.md) asks.
 
 ## Module layout
 
@@ -35,7 +35,7 @@ A second language later is a sibling of `python/` that emits the same `model` fa
 | Kind | Crates |
 |---|---|
 | workspace | `model` |
-| normal | `ruff_python_parser`, `ruff_python_ast`, `ruff_text_size`, `ruff_source_file` and ty's crates (`ty_python_semantic`, `ty_project` and what they need), all from one pinned commit of the ruff repository and bumped together; `serde`, `serde_json` (compose JSON, pack rows); `toml` (pack files); `thiserror` |
+| normal | `ruff_python_parser`, `ruff_python_ast`, `ruff_text_size`, `ruff_source_file` and ty's crates (`ty_python_semantic`, `ty_project` and what they need), all from one pinned commit of the ruff repository and bumped together; `serde`, `serde_json` (pack rows); `toml` (`pyproject.toml`, `uv.lock`, pack files); `thiserror` |
 | dev | `insta` (with `glob`, `json`), `proptest`; `model` with the `testkit` feature |
 
 The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace toolchain follows ruff's.
@@ -76,7 +76,7 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 
 #### X5. Pure stages, one module each
 
-- **Rule:** each stage in the layout is one module with a pure function and its own `tests.rs`; `extract` has no I/O edge at all.
+- **Rule:** each stage in the layout is one module with a pure function and its own `tests.rs`; `extract` has no I/O edge of its own. The only reads are ty's, of the roots and the environment, read-only, inside `python/resolve.rs`.
 - **Why:** each stage can be snapshotted on its own; PyCG's five shared mutable managers are the counterexample.
 - **Source:** [ruff `build_cfg(&[Stmt])`][ruff-cfg]; [PyCG `pycg.py` L161][pycg-main].
 - **Enforced by:** clippy `disallowed-methods` with no `#[expect]` allowed in `extract` (tidy test `edges_are_listed`).
@@ -204,7 +204,7 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 #### X22. report-jobs is the acceptance test
 
 - **Rule:** one `insta::assert_json_snapshot!` of the full output for `examples/report-jobs/src`, plus explicit counts: 5 files, 6 entry points (2 routes, 2 Celery tasks, 1 schedule, 1 command), 2 state variables, every branch listed. An annotated copy (`tests/fixtures/report_jobs.py`, fragment headers) carries inline expectations, and a drift test strips the annotations and compares the result with the real example files.
-- **Why:** spec 6, F-S10 and milestone 3.
+- **Why:** spec 6, F-S10 and milestone 2.
 - **Source:** spec 6 and 14.2; [ruff whole-output snapshots][ruff-parser-fx].
 - **Enforced by:** public-API test; reviewer approves snapshot diffs. The call-graph edge count is asserted under the definition in spec 6; the trial's 41 is re-measured under it, not copied.
 

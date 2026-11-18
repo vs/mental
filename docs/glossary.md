@@ -2,7 +2,7 @@
 
 The words Mental uses, with one precise meaning each. The [specification](specification.md) uses them exactly as defined here.
 
-Most examples come from the sample repository in [`examples/report-jobs`](../examples/report-jobs/). In it, an API accepts report requests, stores a `PENDING` row in Postgres and queues a Celery task through Redis. Two worker replicas take tasks, build a CSV, upload it to S3 and mark the row `DONE`.
+Most examples come from the sample repository in [`examples/report-jobs`](../examples/report-jobs/). In it, an API accepts report requests, stores a `PENDING` row in Postgres and queues a Celery task through Redis. Workers take tasks, build a CSV, upload it to S3 and mark the row `DONE`.
 
 **Contents:** [the whole idea](#the-whole-idea) · [structure](#structure) · [ports in depth](#ports-in-depth) · [state](#state) · [behavior](#behavior) · [levels](#levels) · [how a record is known](#how-a-record-is-known) · [building](#building) · [running](#running) · [showing](#showing) · [tools and products](#tools-and-products) · [words with several meanings](#words-with-several-meanings)
 
@@ -27,7 +27,7 @@ Most examples come from the sample repository in [`examples/report-jobs`](../exa
 
 **Boundary and interior.** The boundary is the set of an entity's ports. The interior is what is inside: child entities and the wires between them. A *closed* entity shows only its boundary. An *open* entity shows its interior too. Opening an entity must explain every one of its ports: each port is connected to something inside, or the gap is reported.
 
-**Type and instance.** A type is a kind of entity described once, such as "Celery worker". An instance is one concrete copy that exists in a run, such as `worker[0]` and `worker[1]`. Instances are created from infrastructure files (`replicas: 2`). Runs act on instances.
+**Type and instance.** A type is a kind of entity described once, such as "Celery worker". An instance is one concrete copy that exists in a run. Version one creates one instance per entity. Runs act on instances.
 
 **Port.** A named point on an entity's boundary through which one kind of interaction passes. See [Ports in depth](#ports-in-depth).
 
@@ -183,7 +183,7 @@ The summary must agree with the full graph; a check enforces it.
 | `observed` | seen in a real execution | a log line matched to a step |
 | `hypothetical` | a design idea that is in no code | "add a load balancer in front of the API" |
 
-**Grounded.** A record is grounded when it is anchored to evidence about the real system: source, build files, lockfiles, artifacts. The model is a simulation of the running system, and these are the observations that keep it close to it. Where evidence is missing, the model has a gap and says so.
+**Grounded.** A record is grounded when it is anchored to evidence about the real system: source, build files, lockfiles. The model is a simulation of the running system, and these are the observations that keep it close to it. Where evidence is missing, the model has a gap and says so.
 
 **Source.** Who produced the record: an extractor, a pack, a person, or an LLM (with a link to the exact call in the call ledger).
 
@@ -221,25 +221,21 @@ The summary must agree with the full graph; a check enforces it.
 
 **Repair.** A follow-up task sent when an answer fails a check, naming exactly what failed.
 
-**Link, load, close.** *Link* connects required ports to provided ports and fills slots. *Load* creates instances from launches. *Close* adds actors, drivers and stubs so the model can run on its own.
+**Link, load, close.** *Link* connects required ports to provided ports and fills slots. *Load* creates one instance per entity. *Close* adds actors, drivers and stubs so the model can run on its own.
 
-**Build model.** A small model of how a project is built, made before anything else (like Maven's `pom.xml`): its build units, the artifacts they become, the launches that start them, the dependencies between units and the configuration they read. *Example:* report-jobs has one build unit `app` under `src/`, one image, and three launches of it: `api`, `worker` and `beat`. It is stage 1 of every build and is made by plain readers of build files.
+**Build model.** A small model of how a project is built, made before anything else (like Maven's `pom.xml`): its build units, each with its source roots, Python version, pins and environment. *Example:* report-jobs has one build unit, named after its project, with a pin for each package in `uv.lock`. It is stage 1 of every build and is made by plain readers of build files.
 
-**Build chain.** The links from source to running process: source to build unit, build unit and pins to artifact, artifact to launch, launch to instances. It is the reason a line of source says anything about a process. The build step is recorded with its inputs and output, not simulated. Each link is `inferred`, `attested` or `assumed`; a chain that does not hold (an image built from another commit) is a finding.
+**Build unit.** One part of a project that is built on its own: a directory with a `pyproject.toml`. Each of its packages at an exact version is a **pin**. Not to be confused with a *component*, which is a box inside a service.
 
-**Build unit.** One part of a project that is built on its own: a `pyproject.toml` project, a uv workspace member, a directory an image is built from. Each of its packages at an exact version is a **pin**. Not to be confused with a *component*, which is a box inside a service.
+**Build-tool model.** *Later.* A pack for the build layer: a model of one build tool at one version (uv, pip), with its concepts and the rules that turn build files into a build model. Written by an LLM from the tool's documentation, and accepted only after it agrees with the real tool's own output on a corpus.
 
-**Launch.** One way an artifact is started: a command, a working directory, an environment. One image can have several launches; in report-jobs, one image is started as `uvicorn app.api:app`, as a Celery worker and as Celery beat.
-
-**Build-tool model.** *Later.* A pack for the build layer: a model of one build tool at one version (compose, uv, pip), with its concepts and the rules that turn build files into a build model. Written by an LLM from the tool's documentation, and accepted only after it agrees with the real tool's own output on a corpus.
-
-**Deployment space.** *Under test.* The ways the same build can be deployed: which services run, how many instances of each, which configuration values are set. A *deployment configuration* picks one of each, and `mentalvm` can run any configuration.
+**Deployment space.** *Later.* The ways the same build can be deployed: which services run, how many instances of each, which configuration values are set. A *deployment configuration* picks one of each, and `mentalvm` can run any configuration.
 
 **Driver and stub.** A driver is a generated actor that can send any input class to a port open to the outside. A stub is a generated stand-in that answers a required port leading outside the model with any of its declared outcomes.
 
 **Diagnostic.** One reported item from a build: a failed check, a gap, an assumption made, a finding.
 
-**Reference model.** The hand-written records of an example system, in `examples/<system>/model/`, that a build is compared against. It is a specification, never rewritten by a tool, and it grows by milestone: each milestone writes, before its code, the records of the kinds it is the first to produce. *Example:* milestone 1 writes report-jobs' build unit, pins, artifacts, launches and configuration inputs.
+**Reference model.** The hand-written records of an example system, in `examples/<system>/model/`, that a build is compared against. It is a specification, never rewritten by a tool, and it grows by milestone: each milestone writes, before its code, the records of the kinds it is the first to produce. *Example:* milestone 1 writes report-jobs' build unit, pins and sites.
 
 ## Running
 
@@ -261,7 +257,7 @@ The summary must agree with the full graph; a check enforces it.
 
 **Strategy.** How the choices of a run are made. *Concrete:* everything is bound, one trace. *Bounded-exhaustive:* every schedule within stated bounds is tried. *Replay:* a stored schedule decides. Symbolic and sampled runs are Later.
 
-**Bounds.** The limits of an exhaustive search: number of requests, replicas, duplicated messages, preemptions, depth. Results always state their bounds.
+**Bounds.** The limits of an exhaustive search: number of requests, activations of a port at once, duplicated messages, preemptions, depth. Results always state their bounds.
 
 **Fork.** A choice shown as a branching point in a trace; the side not taken can be taken later by flipping it.
 

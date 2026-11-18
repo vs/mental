@@ -82,7 +82,7 @@ The helper is the only place that knows the API. When the API changes, one helpe
 
 ### T6. The golden is never a snapshot
 
-- **Rule:** the hand-written reference model at `examples/report-jobs/model/` is a specification: tests compare against it with a plain helper that prints the first differing lines, and no snapshot tool, `--update` flag or test ever writes into `examples/`. It grows by milestone: each milestone's plan writes by hand, before its code, the reference records of the kinds that milestone first produces (milestone 1: the five build kinds), and every later comparison covers all kinds written so far.
+- **Rule:** the hand-written reference model at `examples/report-jobs/model/` is a specification: tests compare against it with a plain helper that prints the first differing lines, and no snapshot tool, `--update` flag or test ever writes into `examples/`. It grows by milestone: each milestone's plan writes by hand, before its code, the reference records of the kinds that milestone first produces (milestone 1: the build unit, the pins and every site), and every later comparison covers all kinds written so far.
 - **Why:** a golden that tooling can rewrite stops being a specification and becomes an observation. Writing each part with the milestone that fixes its fields (spec 7.4) keeps the reference from waiting on kinds that have no fields yet.
 - **Source:** spec 14.2; the testing note's snapshot policy.
 - **Enforced by:** tidy test `no_snapshots_into_examples`; CI fails if `examples/` changes during the test run.
@@ -166,7 +166,7 @@ The helper is the only place that knows the API. When the API changes, one helpe
 
 ### T18. Deterministic and hermetic
 
-- **Rule:** tests never read the clock, the network or a real LLM; time-dependent code takes `now` as a parameter; each crate has a test that runs its main output twice (and once in a fresh temp directory) and requires byte-identical bytes. CI has no API key and no network.
+- **Rule:** tests never read the clock, the network or a real LLM; time-dependent code takes `now` as a parameter; each crate has a test that runs its main output twice (and once in a fresh temp directory) and requires byte-identical bytes. CI has no API key and no network, with one exception: the job that makes the report-jobs environment with `uv` before the acceptance tests, which then read it as files. Resolver tests use tiny environments checked in as fixtures.
 - **Why:** a flaky test breaks mutation testing and trust.
 - **Source:** [TigerBeetle VOPR][tb-vopr]; [cargo-mutants on flaky trees][cm-results].
 - **Enforced by:** clippy `disallowed-methods` ([G4](README.md#g4-io-and-ambient-inputs-only-at-named-edges), [G8](README.md#g8-seeds-and-clocks-are-parameters)); determinism tests; CI environment.

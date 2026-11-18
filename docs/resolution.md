@@ -212,17 +212,13 @@ Individual sites are answered by a type checker set up from these inputs ([speci
 
 ### 6.1 Rung 0: the repository
 
-**Import roots.** A module name is a path relative to an import root, so the roots decide what every import means. The roots are, in order of rank:
-
-1. roots listed in `mentalc.toml`;
-2. roots **declared** by the repository: the package location in `pyproject.toml`, a `pythonpath` setting of the test runner, a `PYTHONPATH` or working directory in the infrastructure files, and the directory a service command is run from when the command names a module (`uvicorn app.api:app`);
-3. roots by **convention**: the repository root and `src/`, used only when nothing is declared, and labelled `convention` in the report.
+**Import roots.** A module name is a path relative to an import root, so the roots decide what every import means. The roots are those of the two standard project layouts: `src/` when the project has one, else the project directory.
 
 A directory with Python files is a package whether or not it has an `__init__.py`. An absolute import must resolve under exactly one root: under none it is a `missing_module` candidate (the other rungs may still claim it), under two it is `ambiguous`.
 
-*In report-jobs,* the `app/` folder has no `__init__.py` and lives under `src/`, not the repository root. The root `src/` is declared by the compose file there: the build context is `.` and the service command is `uvicorn app.api:app`. Without this rule every `from app.db import …` in the example is a missing module.
+*In report-jobs,* the `app/` folder has no `__init__.py` and lives under `src/`, not the project directory. `src/` is the root by the standard layout. Without it every `from app.db import …` in the example is a missing module.
 
-**Python version.** Taken from declared evidence (`requires-python`, a `.python-version` file, the base image of the service). It selects the parser's target and the standard-library module list.
+**Python version.** Taken from a `.python-version` file, else from the environment's `pyvenv.cfg`. `requires-python` is a range and is never used as the version. It selects the parser's target and the standard-library module list.
 
 **Standard-library modules.** A table embedded in `mentalc`, generated from typeshed's `stdlib/VERSIONS` file, which lists each module with the Python versions that have it (F-U11).
 
@@ -238,13 +234,15 @@ A pin is `declared` when a committed file states it exactly.
 | `uv.lock`, `poetry.lock`, `pdm.lock`, `Pipfile.lock` | each tool's own format, by its schema version | none has a published schema; uv states its format is not stable (F-U10) |
 | `requirements*.txt`, `*.lock` in requirements syntax | only lines that pin: `name==version`, or a URL with a commit | the format allows ranges, includes and options; a line that does not pin yields a `ranged` or `unpinned` package |
 
+Milestone 1 reads `uv.lock` only.
+
 Rules:
 
 - **An unknown schema version is an error** naming the file and the version, never a best-effort read (G11).
 - **Git-sourced packages are pinned by commit.** Every lock format above records the resolved commit (F-U10), so a package from GitHub is as exact as one from a registry.
 - **Several lockfiles that disagree** raise one gap naming both files.
 - **A lock may hold several versions of one package** for different platforms. The pin is then the set, and the version-class rule of [section 7.3](#73-from-pin-to-pack) is applied to the whole set.
-- **A package imported but absent from the declared pins** is `unpinned`, however sure its presence at run time. *In report-jobs,* `tasks.py` imports `botocore.exceptions`, and `requirements.lock` pins `boto3` but not `botocore`: the file is a list of direct dependencies, not a full lock.
+- **A package imported but absent from the declared pins** is `unpinned`, however sure its presence at run time. *Example:* code imports `botocore.exceptions`, and a requirements file pins `boto3` but not `botocore`: the file is a list of direct dependencies, not a full lock. A `uv.lock` pins every package, so this cannot happen in report-jobs.
 
 How often this rung has anything to read depends on the ecosystem: 84 to 86% of popular Poetry and Pipenv projects commit their lockfile, and nearly every Go project, but under 1% of Gradle projects (F-U2).
 
@@ -252,7 +250,7 @@ How often this rung has anything to read depends on the ecosystem: 84 to 86% of 
 
 An environment that already exists on the machine is evidence of what is installed. `mentalc` reads it; it never creates or changes one.
 
-- **Where.** The path set in `mentalc.toml`, otherwise `.venv` in the project, which is where uv and PDM put it by default. Poetry and pipenv keep environments outside the project, so those need the setting (F-U11). `mentalc` does not search the machine.
+- **Where.** `.venv` in the project, which is where uv and PDM put it by default. Poetry and pipenv keep environments outside the project (F-U11); those are not read in milestone 1. `mentalc` does not search the machine.
 - **What is read.** Per installed distribution: the name and version from `METADATA`, the top-level import names from `RECORD` (and `top_level.txt` where present, which is common but in no standard), and `direct_url.json`, which records the commit of a package installed from git (F-U11).
 - **What is not done.** `.pth` files are not interpreted and no interpreter is started. An editable install that works through an import hook cannot be followed by any static tool (F-U11); its source is resolved through the import roots if it lies in the repository, and is a gap otherwise.
 - **Rank.** A pin from the environment is `observed`. When a `declared` pin exists for the same package and differs, the declared one stands and a warning reports the drift.
@@ -288,7 +286,7 @@ Each referenced package gets one line in `.mental/deps.jsonl`:
 
 ```json
 {"package":"pkg:pypi/sqlalchemy","pin":"declared","version":"2.0.36","source":"registry",
- "evidence":{"file":"requirements.lock","quote":"sqlalchemy==2.0.36"},
+ "evidence":{"file":"uv.lock","quote":"version = \"2.0.36\""},
  "imports":["sqlalchemy"],"imports_from":"pack","class":"modelled","pack":"sqlalchemy@2"}
 {"package":"pkg:pypi/botocore","pin":"unpinned","imports":["botocore"],"imports_from":"pack",
  "class":"modelled","pack":"botocore@1"}
@@ -507,9 +505,9 @@ Flipping a resolution assumption is an edit like any other (specification 15.1):
 
 ```text
 $ mentalc resolve
-import roots   src/   (declared: compose build context, service command `uvicorn app.api:app`)
-python         3.12   (declared: service base image)
-packages       12:  11 declared in requirements.lock, 1 unpinned (botocore)
+import roots   src/   (src layout)
+python         3.12   (.python-version)
+packages       12:  12 declared in uv.lock
                class: 10 modelled, 2 inert, 0 unknown
 
 reference sites            all      counting
@@ -520,9 +518,6 @@ reference sites            all      counting
 resolution rate           100%       100%
 
 root causes: none
-warnings:
-  botocore is imported (app/tasks.py:8) and not pinned; requirements.lock lists direct dependencies only.
-  the botocore pack covers every version, so nothing depends on the pin.
 ```
 
 The numbers above are illustrative: the real ones are measured when the extractor first runs on report-jobs.
@@ -541,7 +536,7 @@ No other tool for coding agents reports this number (F-U6). CodeQL's two metrics
 
 ### 12.1 The rule
 
-`mentalc` never starts a build tool, a package manager, an interpreter or a script from the repository, and makes no network request to resolve dependencies. The one process it starts today is `docker compose config`, treated in 12.3.
+`mentalc` never starts a build tool, a package manager, an interpreter or a script from the repository, and makes no network request to resolve dependencies. It starts no process at all.
 
 ### 12.2 Why the agent's permission prompt is not enough
 
@@ -560,11 +555,10 @@ So the default-deny must be inside `mentalc`.
 - **It names the command and stops.** A gap whose fix needs execution prints the command in its fix text. The agent or the user runs it, through the agent's own permission prompt, which then sees the real command. `mentalc` reads the result on the next build.
 - **It reads tool output as data.** A lockfile, an environment, an exported `pylock.toml`: once it exists as a file, reading it executes nothing.
 - **It does not run git.** `.gitmodules` is read as text ([section 6.1](#61-rung-0-the-repository)).
-- **`docker compose config` is made deterministic.** The command only parses and renders, but by default it substitutes variables from the shell it is run in (F-U16). That makes the model depend on the developer's shell, and it can copy secrets from the shell into the model. Proposed: run it with interpolation off, substitute only from the repository's own `.env` file, and record every variable that stays unset as an environment assumption.
 
 ### 12.4 Enforcement
 
-G4 already makes process and network calls a clippy error outside the listed edge files. This section adds a rule on content: the only program `repo.rs` may start is the compose renderer, checked by a tidy test over the arguments of `Command::new`.
+G4 already makes process and network calls a clippy error outside the listed edge files. This section adds a rule on content: `mentalc` starts no program, checked by a tidy test that finds no `Command::new` outside test code.
 
 ## 13. Experiments
 

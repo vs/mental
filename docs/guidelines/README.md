@@ -23,8 +23,8 @@ A rule that only a reviewer can check is kept only when it prevents real bloat o
 | [README.md](README.md) | this index; cross-cutting rules G1-G21; mapping to alpha |
 | [testing.md](testing.md) | the testing playbook: layers, the `check` helper, fixtures, snapshots, properties, fuzzing, fault injection, mutants, coverage, determinism, speed, tidy tests (T1-T21) |
 | [model.md](model.md) | record types, semantic IDs, canonical JSONL, guards, checks, diagnostics (M1-M25) |
-| [extract.md](extract.md) | Python and compose to facts: parser, stages, packs, control flow, fixtures (X1-X22) |
-| [mentalc.md](mentalc.md) | the compiler: pipeline, LLM loop, backends, cache, ledger, MCP, CLI, the one outside process (C1-C26) |
+| [extract.md](extract.md) | build files and Python to facts: parser, stages, packs, control flow, fixtures (X1-X22) |
+| [mentalc.md](mentalc.md) | the compiler: pipeline, LLM loop, backends, cache, ledger, MCP, CLI (C1-C25) |
 | [mentalvm.md](mentalvm.md) | the interpreter: step, choices, replay, search, minimizer, WebAssembly (V1-V25) |
 
 ## The workspace at a glance
@@ -33,7 +33,7 @@ One Cargo workspace at the repository root, with flat top-level crate folders:
 
 ```text
 model/      library   record format, IDs, guards, JSONL, checks, Diagnostic     deps: serde, serde_json, blake3
-extract/    library   build files, Python, compose JSON -> build model, facts; no LLM   deps: model, ruff, ty, ...
+extract/    library   build files, Python -> build model, facts; no LLM   deps: model, ruff, ty, ...
 mentalc/    binary    pipeline, LLM tasks and backends, cache, ledger, checks, MCP; packs/ and prompts/ embedded
 mentalvm/   library + thin binary   step, run, explore, replay; core does no I/O and compiles to WebAssembly
 
@@ -45,7 +45,7 @@ Already decided by the owner: no async runtime in version one; clap derive; this
 
 Also decided by the owner on 2026-11-14, when these guidelines were accepted:
 
-- `extract` does no I/O: `mentalc` reads the repository and runs `docker compose config`, then hands `extract` strings;
+- `extract` does no I/O of its own: `mentalc` reads the repository, then hands `extract` strings; ty alone reads the roots and the environment itself ([X5](extract.md#x5-pure-stages-one-module-each));
 - `model` uses no `thiserror`: its two error types have hand-written `Display`, so its allowlist stays `serde`, `serde_json`, `blake3` (an exception to the "thiserror in libraries" rule);
 - `blake3` is the only hash in the workspace;
 - `mentalc` adds `anyhow` (error context in the binary) and `tempfile` (atomic writes of the cache and ledger) to its allowlist;
@@ -59,7 +59,7 @@ Also decided by the owner on 2026-11-14, when these guidelines were accepted:
 | Crate | Edge files |
 |---|---|
 | `model` | none |
-| `extract` | none (`mentalc` hands it file contents and the compose JSON) |
+| `extract` | none of its own (`mentalc` hands it file contents; ty reads the roots and the environment, read-only) |
 | `mentalc` | `main.rs`, `cli.rs`, `repo.rs`, `cache.rs`, `ledger.rs`, `backend/api.rs` |
 | `mentalvm` | `main.rs` |
 
@@ -420,7 +420,6 @@ Ten principles carry the rules that are statements of intent; the rest stay as r
 | C23 Pull protocol at three layers | reviewer | ci:mutants |
 | C24 Golden report-jobs build | ci: debug and release acceptance jobs | |
 | C25 Golden tasks | ci: insta check | |
-| C26 Time limit on the one process | principle:timeouts | reviewer |
 | V1 Configurations are values | principle:pure-core | public-API snapshot |
 | V2 Cheap, ordered clones | clippy:disallowed-types | tidy:mentalvm_no_interior_mutability; property test |
 | V3 The step prunes nothing | principle:semantics-stay-in-the-step | property test |

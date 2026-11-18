@@ -62,7 +62,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before your first commit.
 | [Findings](docs/findings.md) | Facts from our two hand-made trials, the research and checks of outside facts | you want the evidence behind a decision |
 | [Resolution](docs/resolution.md) | Detail under the specification's section 6: packages and pins, gaps, the gate, acceptances, the trust rule | you want to know what happens when a reference cannot be resolved |
 | [Guidelines](docs/guidelines/README.md) | Implementation rules per crate, and the testing playbook | you are about to write code |
-| [Milestone 1 plan](docs/plans/milestone-1-build-model.md) | The first implementation step: the build model | you want to know what is built first |
+| [Milestone 1 plan](docs/plans/milestone-1-build-model.md) | The first implementation step: resolve a simple project | you want to know what is built first |
 | [`examples/report-jobs`](examples/report-jobs/) | The sample system used in every example, and the first target | you want to see the code being modeled |
 
 Research reports:
