@@ -119,7 +119,7 @@ Done when:
 | Step | Component | Status |
 | --- | --- | --- |
 | `p5-baseline-typos` | - | done |
-| `p5-baseline-markdown` | - | pending |
+| `p5-baseline-markdown` | - | in progress |
 | `p5-baseline-links` | - | pending |
 
 ### `p5-baseline-typos`: Clear the typos baseline
