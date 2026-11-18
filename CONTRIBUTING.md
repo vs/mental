@@ -182,7 +182,7 @@ A check skipped or loosened in one place, or a baseline loosened, needs a row he
 | `mentalc/src/main.rs` | `clippy::exit` | sets the exit code 0, 1 or 2 ([G12](docs/guidelines/README.md#g12-exit-codes-and-a-thin-main)) |
 | `mentalc/src/cli.rs` | `clippy::disallowed_methods` | the CLI edge: renders to stdout ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `mentalc/src/cli.rs` | `clippy::print_stdout` | human and JSON output ([G12](docs/guidelines/README.md#g12-exit-codes-and-a-thin-main)) |
-| `mentalc/src/repo.rs` | `clippy::disallowed_methods` | the file-system edge and the one process, `docker compose config` ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
+| `mentalc/src/repo.rs` | `clippy::disallowed_methods` | the file-system edge ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `mentalc/src/cache.rs` | `clippy::disallowed_methods` | writes the answer cache under `.mental/` ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `mentalc/src/ledger.rs` | `clippy::disallowed_methods` | appends the call ledger under `.mental/` ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |
 | `mentalc/src/backend/api.rs` | `clippy::disallowed_methods` | the network edge of the `api` backend ([G4](docs/guidelines/README.md#g4-io-and-ambient-inputs-only-at-named-edges)) |

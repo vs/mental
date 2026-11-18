@@ -25,7 +25,7 @@ mentalc/
     lib.rs            pub fn run(cli: Cli) -> anyhow::Result<ExitStatus>
     cli.rs            clap derive; human and JSON rendering                         [edge: stdout]
     config.rs         mentalc.toml -> Config (role -> backend and LLM, repair cap)
-    repo.rs           RepoSnapshot: reads files, runs `docker compose config`       [edge: fs, process]
+    repo.rs           RepoSnapshot: reads files, writes `.mental/`                  [edge: fs]
     build.rs          the pipeline: one function, phases in spec order
     stage/            gate.rs mechanical.rs vocabulary.rs name.rs summarize.rs group.rs
                       link.rs load.rs close.rs levels.rs  (each a pure function; LLM stages have plan and apply)
@@ -249,15 +249,6 @@ Explicitly not: `tokio` or any async runtime, `rmcp`, `reqwest`, `jsonschema`, `
 - **Why:** a diff in a golden task is exactly the signal that cache keys changed.
 - **Source:** [Codex context snapshots with normalization][codex-normalize].
 - **Enforced by:** insta in CI.
-
-### Outside processes
-
-#### C26. The one process has a time limit
-
-- **Rule:** `repo.rs` runs `docker compose config` with a time limit of 60 s; when it passes, `mentalc` kills the process and exits 2 with an error that names the command and says to run it by hand to see why it stalls (a stopped Docker daemon, a remote `include:` being fetched). A non-zero exit is also exit 2, with the command's stderr. The limit is a parameter of the function, not a setting.
-- **Why:** the standard library's `wait` has no timeout, so a stalled command would hang `mentalc build` with no message; `compose config` normally answers in well under a second.
-- **Source:** spec 5.2 (the one process `mentalc` starts); principle "every external call has a timeout and a failure path".
-- **Enforced by:** a test in `repo/tests.rs` that runs a command which never exits with a short limit and asserts the kill and the error text; a test of a command that exits non-zero.
 
 ## Open questions for the owner
 

@@ -584,18 +584,13 @@
     "items": [
       {
         "id": "R1",
-        "text": "mentalc reads a repository's build files into a build model, with no LLM.",
-        "acceptance": "Given examples/report-jobs, when mentalc build runs, then it writes one build unit with its pins, three artifacts, five launches and twelve configuration inputs, and reports its three gaps, each with a fix."
-      },
-      {
-        "id": "R2",
-        "text": "Every reference site in the code gets an outcome from a type checker, and a gate stops the build on gaps that matter.",
-        "acceptance": "Given report-jobs, when sites are resolved with ty, then every site has an outcome and the write receivers resolve to Report; and given a copy with a seeded missing module, then the gate fails and names the fix."
+        "text": "mentalc reads a standard Python project's dependency files into a build model, parses every file and gives every reference site an outcome from a type checker, with no LLM.",
+        "acceptance": "Given examples/report-jobs with no environment, when mentalc build runs, then it writes one build unit with a pin for each package in uv.lock other than the project itself and reports the missing environment with its fix, uv sync; given the environment, then every site has the outcome the reference model gives it and the write receivers resolve to Report; and given a copy with one package removed from the environment, then the build fails and names the fix."
       },
       {
         "id": "R3",
         "text": "mentalc extracts facts with packs and static tools only.",
-        "acceptance": "Given report-jobs, when extraction runs, then the facts list 6 entry points (2 routes, 2 tasks, 1 schedule, 1 command) and 2 state variables, list every branch as an obligation, and report WEBHOOK_URL as read and unset, with no LLM call."
+        "acceptance": "Given report-jobs, when extraction runs, then the facts list 6 entry points (2 routes, 2 tasks, 1 schedule, 1 command) and 2 state variables, list every branch as an obligation, and report WEBHOOK_URL as an optional configuration read, with no LLM call."
       },
       {
         "id": "R4",
@@ -639,7 +634,7 @@
       },
       {
         "name": "extract",
-        "responsibility": "Turns build files, Python source and compose JSON into the build model and facts (sites and outcomes from ty, call graph, obligations, effects, state variables, entry points), with no I/O and no LLM.",
+        "responsibility": "Turns build files and Python source into the build model and facts (sites and outcomes from ty, call graph, obligations, effects, state variables, entry points), with no I/O of its own (ty reads the roots and the environment) and no LLM.",
         "calls": [
           "model"
         ]
@@ -672,7 +667,7 @@
       },
       {
         "term": "build model",
-        "meaning": "A small model of how a project is built (build units, artifacts, launches, dependencies, configuration), made first by plain readers of build files."
+        "meaning": "A small model of how a project is built (its build unit with roots, Python version, pins and environment), made first by plain readers of build files."
       },
       {
         "term": "reference site",
