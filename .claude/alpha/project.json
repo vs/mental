@@ -195,8 +195,9 @@
             "run": "! grep -nE 'agent_cli\\.rs|`local`, `agent-cli`|optionally `mental_build_status`' docs/guidelines/mentalc.md"
           }
         ],
-        "status": "pending",
-        "component": "mentalc"
+        "status": "done",
+        "component": "mentalc",
+        "branch": "alpha/p4-trim-later"
       },
       {
         "id": "p4-golden-model",
