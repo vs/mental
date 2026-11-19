@@ -139,8 +139,10 @@ A project is what Python already calls one: a directory with a `pyproject.toml`,
 
 | Record | Says | Fields |
 |---|---|---|
-| **build unit** | one project. It has source roots, a Python version, a lockfile and the environment its references resolve against | `id`; `dir`; `roots`; `python`: version and its source; `requires_python`; `lock`: path and schema version; `environment`: path |
-| **pin** | one package of a build unit at an exact version, from its lockfile | `id`; `package` (normalized name); `version`; `origin`: registry, a git commit, or a path |
+| **build unit** | one project. It has source roots, a Python version, a lockfile and the environment its references resolve against | `id`; `dir`; `roots` (a sorted set); `python`: `version` and `from`, the file it came from (`.python-version` or `pyvenv.cfg`); `requires_python`; `lock`: `path` and schema `version`; `environment`: its directory; `source` |
+| **pin** | one package of a build unit at an exact version, from its lockfile | `id`; `package` (normalized name); `version`; `origin`: `registry` with the index URL, `git` with `url` and `commit`, or `path`; `source` |
+
+A field whose input is missing is left out, and the missing input is a gap (5.3): with no `.venv`, the build unit has no `environment`. Both records have `source: extractor`; the provenance and checks of [7.1](#71-shape) come with the first stage whose records can differ in them.
 
 "Component" stays the word for a box inside a service; a part built on its own is a **build unit**. The system and its build unit take the project's name.
 
