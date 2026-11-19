@@ -70,7 +70,7 @@ Nothing here is final. A measured result overrules any sentence in this document
 | **P11** | The model and the picture are separate | Model (facts), run (one execution), view state (what is shown), skin (how it looks). Information flows only downward. |
 | **P12** | What you look at is the agent's context | The viewer and the coding agent share one **session**. |
 
-![The claim code of generate_report has four steps. Two runs of it at once give a four-by-four grid of states. The highlighted path reads twice before either writes and ends in a double claim.](images/state-grid.svg)
+![The claim code of generate_report has four steps. Two activations of it at once give a four-by-four grid of states. The highlighted path reads twice before either writes and ends in a double claim.](images/state-grid.svg)
 
 ## 3. Three tools
 
