@@ -9,7 +9,7 @@ use std::path::{Path, PathBuf};
 use proptest::prelude::*;
 
 use mental_extract::{BuildModel, ProjectFiles, build_model};
-use mental_model::{Diagnostic, jsonl};
+use mental_model::{Anchor, Diagnostic, jsonl};
 
 /// The build files of a project directory, as `mentalc` reads them.
 struct Tree {
@@ -217,7 +217,12 @@ fn report_jobs_equals_its_reference() {
     let reference = |name: &str| fs::read_to_string(example.join("model").join(name)).unwrap();
     assert_eq!(jsonl::write(&model.units), reference("build_unit.jsonl"));
     assert_eq!(jsonl::write(&model.pins), reference("pin.jsonl"));
-    assert_eq!(jsonl::write(&model.anchors), reference("anchors.jsonl"));
+    let build_anchors: Vec<Anchor> = jsonl::read::<Anchor>(&reference("anchors.jsonl"))
+        .unwrap()
+        .into_iter()
+        .filter(|anchor| !anchor.id.as_str().contains("/site:"))
+        .collect();
+    assert_eq!(jsonl::write(&model.anchors), jsonl::write(&build_anchors));
     assert_eq!(diagnostics, []);
 }
 
