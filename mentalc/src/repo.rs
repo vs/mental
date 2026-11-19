@@ -45,19 +45,34 @@ pub(crate) fn read(dir: &Path) -> anyhow::Result<Tree> {
     })
 }
 
-/// Writes each file under `.mental/`. Each one is written whole beside its
-/// place and then moved there, so a file is never left half written.
-pub(crate) fn write(dir: &Path, files: &[(&str, String)]) -> anyhow::Result<()> {
+/// Writes each file that has a text under `.mental/`, and removes each that
+/// has none. Every file is written whole beside its place before any is
+/// moved into place, so a failed write leaves the earlier model as it was.
+pub(crate) fn write(dir: &Path, files: &[(&str, Option<String>)]) -> anyhow::Result<()> {
+    let place = |path: &str| dir.join(".mental").join(path);
+    let fail = |doing: &str, path: &str| {
+        format!("cannot {doing} `.mental/{path}`; check that the project directory is writable")
+    };
     for (path, text) in files {
-        let target = dir.join(".mental").join(path);
-        let folder = target.parent().expect("every file is inside `.mental/`");
-        let fail = |doing: &str| {
-            format!("cannot {doing} `.mental/{path}`; check that the project directory is writable")
-        };
-        fs::create_dir_all(folder).with_context(|| fail("make the folder of"))?;
+        let target = place(path);
+        if let Some(text) = text {
+            let folder = target.parent().expect("every file is inside `.mental/`");
+            fs::create_dir_all(folder).with_context(|| fail("make the folder of", path))?;
+            let partial = target.with_extension("partial");
+            fs::write(partial, text).with_context(|| fail("write", path))?;
+        } else {
+            match fs::remove_file(&target) {
+                Err(error) if error.kind() != io::ErrorKind::NotFound => {
+                    return Err(error).with_context(|| fail("remove", path));
+                }
+                Ok(()) | Err(_) => {}
+            }
+        }
+    }
+    for (path, _) in files.iter().filter(|(_, text)| text.is_some()) {
+        let target = place(path);
         let partial = target.with_extension("partial");
-        fs::write(&partial, text).with_context(|| fail("write"))?;
-        fs::rename(&partial, &target).with_context(|| fail("replace"))?;
+        fs::rename(partial, &target).with_context(|| fail("replace", path))?;
     }
     Ok(())
 }

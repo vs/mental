@@ -129,6 +129,28 @@ fn a_directory_that_is_no_project_gets_no_model() {
     assert!(!dir.path().join(".mental").exists());
 }
 
+/// A model of an earlier build would read as the project's current one.
+#[test]
+fn a_build_with_no_unit_removes_the_earlier_model() {
+    let dir = report_jobs();
+    sync(&dir);
+    assert!(mentalc(&dir, &["build"]).status().unwrap().success());
+    fs::remove_file(dir.path().join("pyproject.toml")).unwrap();
+    assert_eq!(mentalc(&dir, &["build"]).status().unwrap().code(), Some(1));
+    let files = [
+        "model/format.json",
+        "model/build_unit.jsonl",
+        "model/pin.jsonl",
+        "anchors.jsonl",
+        "diagnostics.jsonl",
+    ];
+    let left: Vec<&str> = files
+        .into_iter()
+        .filter(|path| dir.path().join(".mental").join(path).exists())
+        .collect();
+    assert_eq!(left, Vec::<&str>::new());
+}
+
 #[test]
 fn a_file_that_cannot_be_read_fails_the_tool() {
     let dir = report_jobs();

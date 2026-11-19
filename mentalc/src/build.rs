@@ -7,9 +7,10 @@ use mental_model::{Diagnostic, Severity, jsonl};
 use crate::Status;
 
 pub(crate) struct Built {
-    /// Each file of `.mental/`, by its path in it. None when there is no
-    /// build unit, so that a directory that is no project gets no `.mental/`.
-    pub(crate) files: Vec<(&'static str, String)>,
+    /// Each file of `.mental/`, by its path in it, with its text. With no
+    /// build unit every text is `None`: an earlier build's file is removed,
+    /// and a directory that is no project gets no `.mental/`.
+    pub(crate) files: Vec<(&'static str, Option<String>)>,
     pub(crate) units: usize,
     pub(crate) pins: usize,
     pub(crate) diagnostics: Vec<Diagnostic>,
@@ -32,19 +33,16 @@ impl Built {
 pub(crate) fn build(files: &ProjectFiles) -> Built {
     let (model, mut diagnostics) = build_model(files);
     diagnostics.sort();
-    let files = if model.units.is_empty() {
-        Vec::new()
-    } else {
-        vec![
-            ("model/format.json", jsonl::format_json()),
-            ("model/build_unit.jsonl", jsonl::write(&model.units)),
-            ("model/pin.jsonl", jsonl::write(&model.pins)),
-            ("anchors.jsonl", jsonl::write(&model.anchors)),
-            ("diagnostics.jsonl", jsonl::write(&diagnostics)),
-        ]
-    };
+    let written = !model.units.is_empty();
+    let file = |path, text: String| (path, written.then_some(text));
     Built {
-        files,
+        files: vec![
+            file("model/format.json", jsonl::format_json()),
+            file("model/build_unit.jsonl", jsonl::write(&model.units)),
+            file("model/pin.jsonl", jsonl::write(&model.pins)),
+            file("anchors.jsonl", jsonl::write(&model.anchors)),
+            file("diagnostics.jsonl", jsonl::write(&diagnostics)),
+        ],
         units: model.units.len(),
         pins: model.pins.len(),
         diagnostics,

@@ -35,7 +35,7 @@ pub(crate) fn print_text(out: &mut dyn Write, built: &Built) -> io::Result<()> {
     for diagnostic in &built.diagnostics {
         writeln!(out, "{}", text(diagnostic))?;
     }
-    if built.files.is_empty() {
+    if built.units == 0 {
         writeln!(out, "wrote nothing: there is no build unit")
     } else {
         writeln!(

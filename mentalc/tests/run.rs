@@ -99,6 +99,39 @@ fn a_file_that_cannot_be_written_fails_the_tool() {
     );
 }
 
+/// A write that fails on a later file leaves every file of the earlier
+/// build as it was, so the model is never a mix of two builds.
+#[test]
+fn a_failed_write_keeps_the_earlier_model() {
+    let dir = project(|_| ());
+    assert_eq!(check(&dir, &mut io::sink()), "Failure");
+    let unit = dir.path().join(".mental/model/build_unit.jsonl");
+    let earlier = fs::read_to_string(&unit).unwrap();
+    fs::write(
+        dir.path().join("pyproject.toml"),
+        "[project]\nname = \"store\"\n",
+    )
+    .unwrap();
+    fs::create_dir(dir.path().join(".mental/model/pin.partial")).unwrap();
+    assert_eq!(
+        check(&dir, &mut io::sink()),
+        "cannot write `.mental/model/pin.jsonl`; check that the project directory is writable"
+    );
+    assert_eq!(fs::read_to_string(&unit).unwrap(), earlier);
+}
+
+#[test]
+fn an_earlier_model_that_cannot_be_removed_fails_the_tool() {
+    let dir = project(|dir| {
+        fs::remove_file(dir.path().join("pyproject.toml")).unwrap();
+        fs::create_dir_all(dir.path().join(".mental/model/format.json")).unwrap();
+    });
+    assert_eq!(
+        check(&dir, &mut io::sink()),
+        "cannot remove `.mental/model/format.json`; check that the project directory is writable"
+    );
+}
+
 #[test]
 fn a_file_that_cannot_be_replaced_fails_the_tool() {
     let dir = project(|dir| {
