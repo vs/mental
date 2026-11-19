@@ -12,4 +12,5 @@ serde_json.workspace = true
 workspace = true
 
 [dev-dependencies]
+insta.workspace = true
 proptest.workspace = true

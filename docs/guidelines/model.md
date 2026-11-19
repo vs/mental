@@ -42,7 +42,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 | Kind | Crates |
 |---|---|
 | normal | `serde` (with `derive`), `serde_json`, `blake3` |
-| dev | `insta`, `proptest` (without its default features, which fork a process for each case) |
+| dev | `insta` (without its default terminal colors), `proptest` (without its default features, which fork a process for each case) |
 
 `thiserror` is **not** on the list, although the README's error rule ([G9](README.md#g9-errors-by-layer)) names it for libraries. `model` has two small error types (`IdError`, `ParseError`); they implement `Display` and `std::error::Error` by hand, in about 20 lines. The owner approved this exception on 2026-11-14.
 
@@ -101,12 +101,12 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 - **Source:** [Cargo.lock emitter and sorts, `lockfile.rs` L138-L243][cg-lockfile].
 - **Enforced by:** insta golden of a small model ([M22](#m22-the-format-is-frozen-by-a-golden)); property tests `read(write(m)) == m` and `write(read(b)) == b`; unit test that `Id` order equals `str` order.
 
-#### M8. Sets are sorted vectors
+#### M8. Sets are `BTreeSet`s
 
-- **Rule:** set-like fields (`checks`, `tags`, `decides`, `evidence`) are sorted, deduplicated `Vec`s; ordered `Vec`s are used only where order has meaning (`steps`, `transitions`).
+- **Rule:** set-like fields (`roots`, `checks`, `tags`, `decides`, `evidence`) are `BTreeSet`s, which write sorted and without repeats; `Vec`s are used only where order has meaning (`steps`, `transitions`). An unsorted or repeated element in a file is then rejected as not canonical when read ([M7](#m7-canonical-jsonl)), so no checker diagnostic is needed. Chosen over sorted `Vec`s on 2026-11-19, when `roots` became the first set field.
 - **Why:** forced order on an unordered set makes output non-deterministic and diffs spurious.
 - **Source:** [Glean schema design advice][gl-design].
-- **Enforced by:** checker diagnostic `unsorted-set`; the writer sorts too.
+- **Enforced by:** the field's type; unit test that an unsorted or repeated element is rejected when read.
 
 #### M9. Unknown data is an error
 

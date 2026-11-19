@@ -10,6 +10,7 @@ A small sample system and the first target for `mentalc`. It is about 150 lines 
 | Operator tool | [`src/app/cli.py`](src/app/cli.py) | `reportctl retry` re-queues a `FAILED` report. |
 | Data | [`src/app/models.py`](src/app/models.py) | Tables `reports` (with the `status` column) and `orders`. |
 | Deployment | [`src/docker-compose.yml`](src/docker-compose.yml) | `api`, `worker` ×2, `beat`, Redis and Postgres. |
+| Reference model | [`model/`](model/) | The hand-written records a build is compared against: the build unit, its 40 pins and their anchors, as after `uv sync`. Tests only read it. |
 
 `uv sync` creates the environment in `.venv`.
 

@@ -1,0 +1,1 @@
+{"id":"reports/unit:reports","dir":".","roots":["src"],"python":{"version":"3.12","from":".python-version"},"requires_python":">=3.12","lock":{"path":"uv.lock","version":1},"environment":".venv","source":"extractor"}

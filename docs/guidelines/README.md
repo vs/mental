@@ -357,7 +357,7 @@ Ten principles carry the rules that are statements of intent; the rest stay as r
 | M5 Names say what | reviewer | parser test; extract collision fixture |
 | M6 Identity is the key | reviewer | checker fixture |
 | M7 Canonical JSONL | principle:deterministic-output | golden; round-trip properties |
-| M8 Sets are sorted vectors | reviewer | `unsorted-set` diagnostic |
+| M8 Sets are `BTreeSet`s | reviewer | read rejects unsorted or repeated elements |
 | M9 Unknown data is an error | tidy:model_records_deny_unknown_fields, model_no_json_value | unit test |
 | M10 One format version | principle:fail-rather-than-degrade | unit test |
 | M11 Identity apart from anchors and hashes | reviewer | unit test |
