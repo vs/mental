@@ -47,6 +47,8 @@ struct LockedSource {
     /// The repository URL, then `#` and the commit.
     git: Option<String>,
     url: Option<String>,
+    /// Where in the `url` archive the package is.
+    subdirectory: Option<String>,
     path: Option<String>,
     directory: Option<String>,
     editable: Option<String>,
@@ -94,7 +96,8 @@ pub(super) fn read(text: &str, unit: &Id, project: &Slug) -> (Option<Locked>, Ve
     for package in file.package {
         let Some(slug) = slugify(package.name.get_ref()) else {
             let why = format!(
-                "package `{}` has no ASCII letter in its name, so it can have no ID",
+                "package `{}` has no ASCII letter in its name, so it can have no ID; \
+                 remove the dependency on it, or depend on it under a name with a letter",
                 package.name.get_ref()
             );
             diagnostics.push(invalid(text, package.name.span(), why));
@@ -155,6 +158,14 @@ fn pin(
         );
         return Err(invalid(text, package.name.span(), why));
     };
+    if package.source.get_ref().subdirectory.is_some() {
+        let why = format!(
+            "package `{name}` comes from a subdirectory of an archive at a URL, which this \
+             build does not read yet; depend on a built archive of it, or on a local copy \
+             by its path"
+        );
+        return Err(invalid(text, package.source.span(), why));
+    }
     let Some(origin) = origin(package.source.get_ref()) else {
         let why = format!(
             "package `{name}` has a source this build does not read: it reads one of \
@@ -182,6 +193,7 @@ fn origin(source: &LockedSource) -> Option<Origin> {
         registry,
         git,
         url,
+        subdirectory: _,
         path,
         directory,
         editable,

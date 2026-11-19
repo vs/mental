@@ -105,9 +105,21 @@ fn an_unread_source_is_located() {
 fn an_unknown_source_key_does_not_read() {
     assert_eq!(
         check(&with_source(
+            r#"{ registry = "https://pypi.org/simple", mirror = "a" }"#
+        )),
+        r#"{"code":"lock-invalid","at":{"path":"uv.lock","lines":[6,6]},"message":"`uv.lock` does not read: unknown field `mirror`, expected one of `registry`, `git`, `url`, `subdirectory`, `path`, `directory`, `editable`, `virtual`; run `uv lock` to write it again"}
+"#
+    );
+}
+
+#[test]
+fn a_subdirectory_of_a_url_is_not_read_yet() {
+    assert_eq!(
+        check(&with_source(
             r#"{ url = "https://example.com/a.tar.gz", subdirectory = "a" }"#
         )),
-        r#"{"code":"lock-invalid","at":{"path":"uv.lock","lines":[6,6]},"message":"`uv.lock` does not read: unknown field `subdirectory`, expected one of `registry`, `git`, `url`, `path`, `directory`, `editable`, `virtual`; run `uv lock` to write it again"}
+        r#"lock uv.lock 1
+{"code":"lock-invalid","at":{"path":"uv.lock","lines":[6,6]},"message":"package `a` comes from a subdirectory of an archive at a URL, which this build does not read yet; depend on a built archive of it, or on a local copy by its path"}
 "#
     );
 }
@@ -164,7 +176,7 @@ fn a_package_name_with_no_letter_has_no_pin() {
                 .replace("\"a\"", "\"2048\"")
         ),
         r#"lock uv.lock 1
-{"code":"lock-invalid","at":{"path":"uv.lock","lines":[4,4]},"message":"package `2048` has no ASCII letter in its name, so it can have no ID"}
+{"code":"lock-invalid","at":{"path":"uv.lock","lines":[4,4]},"message":"package `2048` has no ASCII letter in its name, so it can have no ID; remove the dependency on it, or depend on it under a name with a letter"}
 "#
     );
 }

@@ -226,11 +226,11 @@ const LOCK: &str = include_str!("data/ok/flat/uv.lock");
 const PYVENV: &str = include_str!("data/ok/flat/.venv/pyvenv.cfg");
 
 /// `ok/flat` with these files in place of its own.
-fn flat(pyproject: &str, lock: &str, python_version: &str, pyvenv: &str) -> Tree {
+fn flat(pyproject: &str, lock: &str, python_version: Option<&str>, pyvenv: &str) -> Tree {
     Tree {
         pyproject: Some(pyproject.to_owned()),
         lock: Some(lock.to_owned()),
-        python_version: Some(python_version.to_owned()),
+        python_version: python_version.map(str::to_owned),
         pyvenv: Some(pyvenv.to_owned()),
         has_src: false,
     }
@@ -249,14 +249,22 @@ fn every_line_prefix_of_a_build_file_builds() {
         std::iter::once(String::new()).chain(lines)
     };
     for pyproject in prefixes(PYPROJECT) {
-        flat(&pyproject, LOCK, "3.12\n", PYVENV).build();
+        flat(&pyproject, LOCK, Some("3.12\n"), PYVENV).build();
     }
     for lock in prefixes(LOCK) {
-        flat(PYPROJECT, &lock, "3.12\n", PYVENV).build();
+        flat(PYPROJECT, &lock, Some("3.12\n"), PYVENV).build();
     }
-    for pyvenv in prefixes(PYVENV) {
-        flat(PYPROJECT, LOCK, "", &pyvenv).build();
-    }
+    // With no `.python-version`, the version comes from `pyvenv.cfg`.
+    let versions: BTreeSet<Option<String>> = prefixes(PYVENV)
+        .map(|pyvenv| {
+            let (model, _) = flat(PYPROJECT, LOCK, None, &pyvenv).build();
+            model.units[0]
+                .python
+                .as_ref()
+                .map(|python| python.version.clone())
+        })
+        .collect();
+    assert_eq!(versions, BTreeSet::from([None, Some("3.12.8".to_owned())]));
 }
 
 /// A real file with a stretch of it replaced by arbitrary text.
