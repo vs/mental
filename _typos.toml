@@ -43,6 +43,8 @@ lod = "lod"
 anc = "anc"
 mis = "mis"
 PN = "PN"
+# certifi, a package locked by report-jobs, named in its reference model.
+certifi = "certifi"
 # Quoted verbatim from sources, so they keep the source's spelling.
 compilability = "compilability"
 unresolveable = "unresolveable"
