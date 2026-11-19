@@ -188,10 +188,10 @@ Test code (`tests/`, `tests.rs`) may also opt out, for temp directories and fixt
 
 #### G16. Banned weight
 
-- **Rule:** no `async fn` and none of: `tokio` or any async runtime, `salsa`, `comemo`, `rmcp`, `tree-sitter*`, `ruff_python_semantic`, `jsonschema`, `reqwest`, `mockall`, `expect-test`, `serde_yaml`, `rand`, `ahash`. **One exception:** what the pinned commit of ruff's and ty's crates pulls into `extract` ([X1](extract.md#x1-ruffs-parser-and-tys-crates-pinned-to-one-commit)) is accepted there, salsa, rayon and rand included (242 crates in all at ty 0.0.105). The list holds for every other dependency path, and `model` and `mentalvm` stay free of those crates.
+- **Rule:** no `async fn` and none of: `tokio` or any async runtime, `salsa`, `comemo`, `rmcp`, `tree-sitter*`, `ruff_python_semantic`, `jsonschema`, `reqwest`, `mockall`, `expect-test`, `serde_yaml`, `rand`, `ahash`. **One exception:** what the pinned commit of ruff's and ty's crates pulls into `extract` ([X1](extract.md#x1-ruffs-parser-and-tys-crates-pinned-to-one-commit)) is accepted there, salsa, rayon and rand included (242 crates in all at ty 0.0.105). The list holds for every other dependency path, and what `model` and `mentalvm` ship stays free of those crates. The one other exception is `rand`, which proptest pulls in: proptest is a dev-dependency that [T8](testing.md#t8-property-tests-are-reproducible) requires, and nothing that ships uses it.
 - **Why:** each listed crate solves a problem Mental doesn't have at a cost it can't afford (rmcp: 61 crates and mandatory tokio for 3 tools; Salsa: 27.7k lines; jsonschema: 64 crates). ty's tree is the price of resolving references with a real type checker instead of rules of our own (spec 6.2), and it is paid in one crate.
 - **Source:** [rmcp `Cargo.toml`][rmcp-cargo]; [Salsa `Cargo.toml`][salsa-cargo]; [rust-analyzer dependency policy][ra-style-deps]; owner decision of 2026-11-18.
-- **Enforced by:** tidy tests `banned_crates` (packages in `Cargo.lock` reachable only through ruff's and ty's crates are skipped; the dependency trees of `model` and `mentalvm` must hold none of the list) and `no_async`.
+- **Enforced by:** tidy tests `banned_crates` (packages in `Cargo.lock` reachable only through ruff's and ty's crates, or only through proptest as a dev-dependency, are skipped; the normal dependency trees of `model` and `mentalvm` must hold none of the list) and `no_async`.
 
 #### G17. Size limits
 

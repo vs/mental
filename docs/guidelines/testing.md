@@ -203,7 +203,7 @@ The helper is the only place that knows the API. When the API changes, one helpe
 | `serde_derives_in_allowed_modules` | `Serialize`/`Deserialize` derives only in allowed modules | [G14](README.md#g14-serializable-types-are-contracts) |
 | `dependencies_justified` | a comment above each `[workspace.dependencies]` entry; member deps within the crate's allowlist | [G15](README.md#g15-every-dependency-justified-once) |
 | `lockfile_allowlist` | `Cargo.lock` package names equal the checked-in `deps.allow` | [G15](README.md#g15-every-dependency-justified-once) |
-| `banned_crates` | none of the banned crates in `Cargo.lock`, except packages reachable only through ruff's and ty's crates; none at all under `model` or `mentalvm` | [G16](README.md#g16-banned-weight) |
+| `banned_crates` | none of the banned crates in `Cargo.lock`, except packages reachable only through ruff's and ty's crates, or only through proptest as a dev-dependency; none in the normal dependency trees of `model` or `mentalvm` | [G16](README.md#g16-banned-weight) |
 | `no_async` | no `async fn` or `.await` | [G16](README.md#g16-banned-weight) |
 | `file_length` | non-test source files at most 400 lines | [G17](README.md#g17-size-limits) |
 | `no_non_exhaustive` | no `#[non_exhaustive]` | [G19](README.md#g19-no-non_exhaustive-inside-the-workspace) |

@@ -171,7 +171,7 @@ The summary must agree with the full graph; a check enforces it.
 
 ## How a record is known
 
-**Anchor.** The link from a record to the code that justifies it: file, line range, symbol and the quoted text. A record without an anchor cannot be shown as fact.
+**Anchor.** The link from a record to the code that justifies it: file, line range and the quoted text. A record without an anchor cannot be shown as fact.
 
 **Provenance.** How a record is known. Five values:
 
@@ -233,7 +233,7 @@ The summary must agree with the full graph; a check enforces it.
 
 **Driver and stub.** A driver is a generated actor that can send any input class to a port open to the outside. A stub is a generated stand-in that answers a required port leading outside the model with any of its declared outcomes.
 
-**Diagnostic.** One reported item from a build: a failed check, a gap, an assumption made, a finding.
+**Diagnostic.** One reported item from a build: a failed check, a gap, an assumption made, a finding. Each has a stable code, such as `environment-missing`, and the code fixes whether it is an error or a warning.
 
 **Reference model.** The hand-written records of an example system, in `examples/<system>/model/`, that a build is compared against. It is a specification, never rewritten by a tool, and it grows by milestone: each milestone writes, before its code, the records of the kinds it is the first to produce. *Example:* milestone 1 writes report-jobs' build unit, pins and sites.
 
