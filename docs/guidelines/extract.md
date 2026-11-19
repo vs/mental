@@ -175,7 +175,7 @@ The ruff crates set the minimum Rust version (1.98 at commit `4228f4c`, ty 0.0.1
 
 #### X18. Fixtures carry inline expectations
 
-- **Rule:** one `.py` file per case; multi-file cases use `# --- path: x.py ---` fragments; expectations are `# $ tag=value` comments on the line they describe (or `# ^ tag=value` under a column); known gaps are `MISSING:` and `SPURIOUS:` markers. The harness stays under ~200 lines, discovers files with `insta::glob!`, fails on any unmatched expectation or unexpected fact for a tag in use, and fails on a fixed `MISSING:` so the marker gets removed.
+- **Rule:** one `.py` file per case; multi-file cases use `# --- path: x.py ---` fragments; expectations are `# $ tag=value` comments on the line they describe (or `# ^ tag=value` under a column); for a reference site the tag is its kind and the value its ID's slug, on the line the site starts; known gaps are `MISSING:` and `SPURIOUS:` markers, added with the first known gap. The harness stays under ~200 lines, finds the fixture files by walking `tests/fixtures/`, fails on any unmatched expectation or unexpected fact for a tag in use, and fails on a fixed `MISSING:` so the marker gets removed.
 - **Why:** expectations sit next to the code they describe and known gaps stay visible.
 - **Source:** [CodeQL inline expectations][codeql-inline]; [stack-graphs test syntax][sg-test].
 - **Enforced by:** the harness; reviewer requires a fixture for each new fact kind.
