@@ -3,6 +3,8 @@ docs/local/
 .mental/
 __pycache__/
 .venv/
+# The build readers' fixture projects keep a tiny environment: a pyvenv.cfg.
+!extract/tests/data/*/*/.venv/
 
 # alpha
 .claude/alpha/state/

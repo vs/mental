@@ -28,3 +28,6 @@ Log every dependency added, with the reason.
 | serde_json | model | Reads and writes the model's canonical JSONL files | 2026-11-19 |
 | proptest | model (dev) | Property tests of the ID parser, slugs and the JSONL round trip ([T8](../guidelines/testing.md#t8-property-tests-are-reproducible)); without default features, so no process is forked per case | 2026-11-19 |
 | insta | model (dev) | Snapshots that freeze the JSONL format ([M22](../guidelines/model.md#m22-the-format-is-frozen-by-a-golden)); the owner chose insta for snapshots; without its default terminal colors | 2026-11-19 |
+| serde | extract | Derives how `pyproject.toml` and `uv.lock` read into typed structs at the boundary ([extract allowlist](../guidelines/extract.md#dependency-allowlist)) | 2026-11-19 |
+| toml | extract | Reads `pyproject.toml` and `uv.lock`, with the byte spans that anchor each record; without its default writer | 2026-11-19 |
+| proptest | extract (dev) | Property tests that damaged build files never panic the build and that every record it writes is anchored ([T8](../guidelines/testing.md#t8-property-tests-are-reproducible)) | 2026-11-19 |
