@@ -162,7 +162,7 @@ The helper is the only place that knows the API. When the API changes, one helpe
 - **Rule:** every changed line and branch is covered, measured by `cargo llvm-cov --branch` on the pinned nightly; test code (`tests/`, `tests.rs`) is outside the report.
 - **Why:** a branch no test takes is a branch nobody knows works.
 - **Source:** [cargo-llvm-cov README][llvm-cov]; alpha `exhaustive-testing`.
-- **Enforced by:** CI step (alpha `ci:diff-coverage`). See the open spike below.
+- **Enforced by:** CI step (alpha `ci:diff-coverage`). What the report counts is [measured below](#branch-coverage-of-assertions-settled).
 
 ### T18. Deterministic and hermetic
 
@@ -220,12 +220,13 @@ The helper is the only place that knows the API. When the API changes, one helpe
 
 The alpha kit's generated `tests/setup.rs` already checks that `unsafe_code = "forbid"` and clippy's pedantic group stay on.
 
-## Open spike: branch coverage of assertions
+## Branch coverage of assertions (settled)
 
-It is not verified how rustc's branch coverage counts the panic side of `assert!` and `debug_assert!`, or the error side of `?`. If they count as untaken branches, T15 (assert liberally) and T17 (100% branch coverage) conflict. Settle it with a 20-line crate on the pinned nightly before writing production code. The options, if they do count:
+Measured on 2026-11-19 with `cargo llvm-cov --branch` 0.9.1 on nightly-2026-11-10, the setup CI uses ([experiment](../research/implementation-guidelines/experiments/branch-coverage/README.md)):
 
-- run coverage with `debug_assertions` off, so `debug_assert!` disappears, and keep `assert!` for the few checks that must stay in release;
-- move invariant checks into small `#[coverage(off)]` helpers, gated by `cfg_attr(coverage_nightly, ...)`.
+- `assert!`, `debug_assert!`, `assert_eq!` and `.expect()` add no line and no branch to the report, on one line or several. T15 and T17 do not conflict: assert freely, and no `debug_assertions` switch or `#[coverage(off)]` helper is needed.
+- The error side of `?` counts only when rustfmt puts the `?` at the start of its own line, as at the end of a split method chain. That line then shows 0 hits and fails diff coverage until a test forces the error. That is the rule working: a `?` is a failure path, and the [exhaustive-testing principle](../alpha/principles.toml) wants every failure path forced by a test. When the `?` shares a line with code that ran, coverage cannot see its error side, so the reviewer checks that a test forces it.
+- A `?` whose error cannot happen is not a failure path. It is an invariant, written as `.expect("<the invariant>")`, not as a `?` with a test that cannot exist.
 
 The alpha kit's coverage step already turns `--branch` output into diff coverage through Cobertura, so no separate diff tool is needed.
 

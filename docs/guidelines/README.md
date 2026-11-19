@@ -343,7 +343,7 @@ Ten principles carry the rules that are statements of intent; the rest stay as r
 | T12 Faults through existing seams | reviewer | tidy:banned_crates; ci:diff-coverage |
 | T13 Limits at their edges | ci:mutants | reviewer |
 | T14 A fix starts with a failing test | reviewer | principle:exhaustive-testing (alpha) |
-| T15 Invariants asserted in code | reviewer | open spike |
+| T15 Invariants asserted in code | reviewer | |
 | T16 Mutation testing on the diff | ci:mutants (alpha) | tidy:mutants_skip_has_reason; alpha rule mutants-skips |
 | T17 Full coverage of every change | ci:diff-coverage (alpha) | |
 | T18 Deterministic and hermetic | clippy:disallowed-methods | determinism tests; ci: no key, no network |
