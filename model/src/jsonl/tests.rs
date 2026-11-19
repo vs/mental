@@ -129,7 +129,7 @@ fn an_unknown_code_is_named() {
             r#"{"code":"lock-lost","message":"m"}
 "#
         ),
-        "line 1, column 19: unknown variant `lock-lost`, expected one of `environment-missing`, `lock-missing`, `lock-version-unknown`, `module-missing`, `project-missing`, `python-version-unknown`, `syntax-error`"
+        "line 1, column 19: unknown variant `lock-lost`, expected one of `environment-missing`, `lock-ambiguous`, `lock-invalid`, `lock-missing`, `lock-version-unknown`, `module-missing`, `project-invalid`, `project-missing`, `python-version-unknown`, `syntax-error`"
     );
 }
 

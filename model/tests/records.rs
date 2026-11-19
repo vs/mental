@@ -65,9 +65,9 @@ fn a_record_names_its_source() {
 fn an_unknown_origin_is_rejected() {
     assert_eq!(
         check::<Pin>(
-            r#"{"id":"shop/unit:shop/pin:a","package":"a","version":"1","origin":{"url":"https://x/a.whl"},"source":"extractor"}"#
+            r#"{"id":"shop/unit:shop/pin:a","package":"a","version":"1","origin":{"svn":"https://x/a"},"source":"extractor"}"#
         ),
-        "line 1, column 72: unknown variant `url`, expected one of `registry`, `git`, `path`"
+        "line 1, column 72: unknown variant `svn`, expected one of `registry`, `git`, `url`, `path`"
     );
 }
 

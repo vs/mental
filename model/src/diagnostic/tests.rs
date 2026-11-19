@@ -29,9 +29,12 @@ fn every_code_has_a_stable_name_and_a_severity() {
     assert_eq!(
         lines.join("\n"),
         r#"Error {"code":"environment-missing","message":"m"}
+Error {"code":"lock-ambiguous","message":"m"}
+Error {"code":"lock-invalid","message":"m"}
 Error {"code":"lock-missing","message":"m"}
 Error {"code":"lock-version-unknown","message":"m"}
 Error {"code":"module-missing","message":"m"}
+Error {"code":"project-invalid","message":"m"}
 Error {"code":"project-missing","message":"m"}
 Error {"code":"python-version-unknown","message":"m"}
 Warning {"code":"syntax-error","message":"m"}"#

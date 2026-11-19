@@ -66,6 +66,10 @@ fn pins() -> Vec<Pin> {
             },
         ),
         pin("tools", Origin::Path("../tools".to_owned())),
+        pin(
+            "wheel",
+            Origin::Url("https://example.com/wheel-1.0.0-py3-none-any.whl".to_owned()),
+        ),
     ]
 }
 
@@ -91,11 +95,12 @@ fn build_units() {
 #[test]
 fn pins_with_every_origin() {
     let text = jsonl::write(&pins());
-    assert_eq!(jsonl::read::<Pin>(&text).unwrap().len(), 3);
+    assert_eq!(jsonl::read::<Pin>(&text).unwrap().len(), 4);
     insta::assert_snapshot!(text, @r#"
     {"id":"shop/unit:shop/pin:flask","package":"flask","version":"1.0.0","origin":{"git":{"url":"https://github.com/pallets/flask","commit":"2f0c62f5e6e290843f03c1fa70817c7a3c7fd661"}},"source":"extractor"}
     {"id":"shop/unit:shop/pin:requests","package":"requests","version":"1.0.0","origin":{"registry":"https://pypi.org/simple"},"source":"extractor"}
     {"id":"shop/unit:shop/pin:tools","package":"tools","version":"1.0.0","origin":{"path":"../tools"},"source":"extractor"}
+    {"id":"shop/unit:shop/pin:wheel","package":"wheel","version":"1.0.0","origin":{"url":"https://example.com/wheel-1.0.0-py3-none-any.whl"},"source":"extractor"}
     "#);
 }
 
