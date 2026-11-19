@@ -173,8 +173,8 @@ The helper is the only place that knows the API. When the API changes, one helpe
 
 ### T19. A speed budget
 
-- **Rule:** the workspace `cargo test` on a debug build stays under about 15 s (fuzzing excluded), no single test takes over 1 s, the acceptance tests stay under 5 s, and heavy tests run locally only when `RUN_SLOW_TESTS` is set (always in CI). Proptest dependencies build with `opt-level = 3` in the test profile.
-- **Why:** mutation cost is the number of mutants times the suite time.
+- **Rule:** the workspace `cargo test` on a debug build stays under about 15 s (fuzzing excluded), no single test takes over 1 s, the acceptance tests stay under 5 s, and heavy tests run locally only when `RUN_SLOW_TESTS` is set (always in CI). Every dependency, proptest and ty's crates included, builds with `opt-level = 3` in the dev profile (`[profile.dev.package."*"]`, which the test profile inherits); the workspace's own crates stay unoptimized, with their assertions on.
+- **Why:** mutation cost is the number of mutants times the suite time. In the [step 0 spike](../plans/milestone-1-build-model.md#9-the-ty-spike), ty answered every call of report-jobs in 9.6 s on a plain debug build and in 0.9 s with optimized dependencies; the cost is a clean build of `extract` in 138 s instead of 45 s, once per cache, while a rebuild after a change stays at about 1 s.
 - **Source:** [cargo-mutants performance][cm-perf]; [rust-analyzer slow-test gate][ra-tu]; [proptest tips][pt-tips].
 - **Enforced by:** CI step with per-test timeouts (nextest `ci` profile with `slow-timeout` and `terminate-after`); numbers to calibrate once the crates exist.
 

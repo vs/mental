@@ -35,10 +35,10 @@ A second language later is a sibling of `python/` that emits the same `model` fa
 | Kind | Crates |
 |---|---|
 | workspace | `model` |
-| normal | `ruff_python_parser`, `ruff_python_ast`, `ruff_text_size`, `ruff_source_file` and ty's crates (`ty_python_semantic`, `ty_project` and what they need), all from one pinned commit of the ruff repository and bumped together; `serde`, `serde_json` (pack rows); `toml` (`pyproject.toml`, `uv.lock`, pack files); `thiserror` |
+| normal | `ruff_python_parser`, `ruff_python_ast`, `ruff_text_size`, `ruff_source_file`, ty's crates (`ty_project`, `ty_ide`, `ty_python_core` and what they need) and the ruff crates ty's API takes (`ruff_db`, `ruff_ranged_value`, `ruff_notebook`), all from one pinned commit of the ruff repository and bumped together; `serde`, `serde_json` (pack rows); `toml` (`pyproject.toml`, `uv.lock`, pack files); `thiserror` |
 | dev | `insta` (with `glob`, `json`), `proptest`; `model` with the `testkit` feature |
 
-The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace toolchain follows ruff's.
+The ruff crates set the minimum Rust version (1.98 at commit `4228f4c`, ty 0.0.105), so the workspace toolchain follows ruff's.
 
 ## Rules
 
@@ -76,10 +76,10 @@ The ruff crates set the minimum Rust version (1.97 at 0.0.22), so the workspace 
 
 #### X5. Pure stages, one module each
 
-- **Rule:** each stage in the layout is one module with a pure function and its own `tests.rs`; `extract` has no I/O edge of its own. The only reads are ty's, of the roots and the environment, read-only, inside `python/resolve.rs`.
-- **Why:** each stage can be snapshotted on its own; PyCG's five shared mutable managers are the counterexample.
-- **Source:** [ruff `build_cfg(&[Stmt])`][ruff-cfg]; [PyCG `pycg.py` L161][pycg-main].
-- **Enforced by:** clippy `disallowed-methods` with no `#[expect]` allowed in `extract` (tidy test `edges_are_listed`).
+- **Rule:** each stage in the layout is one module with a pure function and its own `tests.rs`; `extract` has no I/O edge of its own. The only reads are ty's, of the roots and the environment, read-only, inside `python/resolve.rs`. ty gets them through a `System` of ours that wraps ruff's `OsSystem`: it passes file reads through and answers "none" to environment variables, `which`, commands, the user configuration directory, the cache directory and writes. Every setting ty needs (roots, environment, Python version) is passed as an explicit option.
+- **Why:** each stage can be snapshotted on its own; PyCG's five shared mutable managers are the counterexample. ty's `OsSystem` reads `PYTHONPATH`, `VIRTUAL_ENV` and `CONDA_PREFIX`, finds and runs `uv`, and reads a user `ty.toml`. In the [step 0 spike](../plans/milestone-1-build-model.md#9-the-ty-spike), a `greet` package on `PYTHONPATH` changed where `hello()` resolved, even with the environment given explicitly; behind the wrapper it changed nothing.
+- **Source:** [ruff `build_cfg(&[Stmt])`][ruff-cfg]; [PyCG `pycg.py` L161][pycg-main]; ruff `ruff_db/src/system.rs` and `ty_project/src/metadata/options.rs` at the pinned commit.
+- **Enforced by:** clippy `disallowed-methods` with no `#[expect]` allowed in `extract` (tidy test `edges_are_listed`); a resolver test run in a child process with `PYTHONPATH`, `VIRTUAL_ENV`, `CONDA_PREFIX` and `XDG_CONFIG_HOME` pointing at decoys, which must give the same outcomes.
 
 #### X6. Per-file stages see one file
 

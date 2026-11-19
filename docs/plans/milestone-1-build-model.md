@@ -86,7 +86,7 @@ Each step is one pull request that leaves every gate green, with its tests in th
 
 | # | Step | Ends with |
 |---|---|---|
-| 0 | Two spikes, before any production code. Coverage, done: assertions add no line or branch to the report, and a `?` counts only when it starts its own line ([testing playbook](../guidelines/testing.md#branch-coverage-of-assertions-settled)). ty in the workspace: add the pinned crates to `extract`, move the [experiment's harness](../research/type-checkers-as-libraries/experiments/tyharness/) setup behind one function, and run every gate (lockfile allowlist, vulnerability scan, build time) | both answers written into the guidelines; a go or no-go on ty in process |
+| 0 | Done: two spikes, before any production code. Coverage: assertions add no line or branch to the report, and a `?` counts only when it starts its own line ([testing playbook](../guidelines/testing.md#branch-coverage-of-assertions-settled)). ty in the workspace: go, see [section 9](#9-the-ty-spike) | both answers written into the guidelines; a go on ty in process |
 | 1 | Done: report-jobs is a standard uv project. `pyproject.toml` names it `reports`, with Python 3.12 or later and its 11 dependencies as lower bounds (SQLAlchemy kept below 2.1, whose default PostgreSQL driver is psycopg 3, not the psycopg2 the example uses); `uv.lock` (41 packages) replaces `requirements.lock`; `.python-version` says 3.12. No Python file changed | `uv sync` works, every module of the example imports, and the lock has no known vulnerability |
 | 2 | `model`: `id`, `diagnostic`, `jsonl`, `anchor` | ID tables, round-trip properties |
 | 3 | `model::record`: `build_unit`, `pin`; the reference for them written by hand | the format snapshot |
@@ -99,9 +99,32 @@ Each step is one pull request that leaves every gate green, with its tests in th
 
 ## 8. Risks
 
-- **ty's API is unstable and partly private.** The experiment already works around it. Step 0 decides before anything is built on it; the fallback is Pyrefly's export.
-- **ty's dependency tree** (242 crates) meets the lockfile allowlist and the vulnerability scan for the first time in step 0.
+- **ty's API is unstable.** The spike used only public items, but a ruff bump can move them; [X3](../guidelines/extract.md#x3-bump-ruff-on-purpose) makes each bump its own change. The fallback is still Pyrefly's export.
 - **Escapes and handler types are unmeasured.** The experiment covered the other five kinds; how well ty answers these two is first seen in step 7.
 - **The site reference is large.** The experiment counted about 190 sites in report-jobs for five kinds. Writing each by hand, with its outcome, before the code is the biggest single piece of step 6, and its outcomes are a prediction of what ty answers.
 - **Counters shift.** Inserting an identical reference earlier in a function renumbers the later ones. Step 6 counts how many sites need a counter.
 - **report-jobs fails its own build until `uv sync` is run.** That is goal 1, by design.
+
+## 9. The ty spike
+
+Done on 2026-11-19. The pinned crates were added to `extract`, and one function opened a ty database for a project and resolved every call of a file with ty's "go to definition". The code is on the local branch `spike/ty-in-process`, for step 7 to start from; it is not merged.
+
+| Gate | Result |
+|---|---|
+| Builds on the workspace toolchain | yes, on the pinned Rust 1.99.1 and on 1.100.0; ruff needs 1.98 at commit `4228f4c` |
+| Coverage on nightly-2026-11-10 | yes; the report holds only `extract`'s own files |
+| `Cargo.lock` | 244 packages; of the banned list, only `salsa` and `rand`, both through ty ([G16](../guidelines/README.md#g16-banned-weight)) |
+| Vulnerability scan | no known vulnerability; the ruff crates themselves come from git, which the scanner cannot match |
+| `cargo machete`, clippy pedantic | clean |
+| Clean build of `extract` | debug 45 s, release 81 s, debug with optimized dependencies 138 s; a rebuild after a change about 1 s |
+| Speed of a resolver test | fixture project: 241 ms on debug, 49 ms with optimized dependencies |
+| Speed on report-jobs, every call of the five files | debug 9.6 s, optimized dependencies 0.9 s, release 0.75 s |
+| Ambient input | ty's own system reads `PYTHONPATH`, `VIRTUAL_ENV`, `CONDA_PREFIX` and a user `ty.toml`, and can run `uv`; a wrapper of about 70 lines shuts all of it off ([X5](../guidelines/extract.md#x5-pure-stages-one-module-each)) |
+
+What step 7 inherits:
+
+- **Optimized dependencies in tests** ([T19](../guidelines/testing.md#t19-a-speed-budget)): without them, one resolver test on report-jobs breaks the 1 s budget.
+- **Several targets for one site.** "Go to definition" returns every overload: `print(...)` and `"a".upper()` each gave two definitions in `builtins.pyi`. An outcome in the specification names one definition or one access path, so step 7 decides how several targets become one outcome: for example the first one, or `unresolved` with the reason `ambiguous`.
+- **Options are a TOML string.** ty takes its settings as a `ty.toml` text (`Options::from_toml_str`); the paths in it are quoted, so a path with a quote in it must be escaped or rejected.
+- **`OsSystem::new` asserts an absolute path.** `mentalc` passes an absolute project directory, or the build panics.
+- **A fixture environment needs no Python.** ty accepted a `pyvenv.cfg` whose `home` does not exist, so the tiny environments of D9 are plain files.
