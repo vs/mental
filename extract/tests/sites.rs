@@ -304,3 +304,36 @@ fn report_jobs_lists_its_reference_sites() {
         "the order of files changes nothing"
     );
 }
+
+#[test]
+fn a_group_spans_the_files_of_the_unit_in_file_order() {
+    let package = (
+        "app/__init__.py".to_owned(),
+        "def tasks():\n    f()\n".to_owned(),
+    );
+    let module = ("app/tasks.py".to_owned(), "f()\n".to_owned());
+    let ids = |files: &[(String, String)]| -> Vec<(String, String)> {
+        let (sites, _) = list(&unit("fx", "."), files);
+        sites
+            .sites
+            .iter()
+            .zip(&sites.anchors)
+            .map(|(site, anchor)| (anchor.path.clone(), site.id.to_string()))
+            .collect()
+    };
+    let listed = ids(&[package.clone(), module.clone()]);
+    assert_eq!(
+        listed,
+        [
+            (
+                "app/__init__.py".to_owned(),
+                "fx/unit:fx/site:app-tasks-callee-f-0".to_owned()
+            ),
+            (
+                "app/tasks.py".to_owned(),
+                "fx/unit:fx/site:app-tasks-callee-f-1".to_owned()
+            ),
+        ]
+    );
+    assert_eq!(ids(&[module, package]), listed);
+}
