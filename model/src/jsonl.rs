@@ -7,6 +7,16 @@ use std::fmt;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
+/// The one format version of the whole model. A model in another version
+/// is not read: it is built again.
+pub const FORMAT_VERSION: u32 = 1;
+
+/// The text of `model/format.json`, which names [`FORMAT_VERSION`].
+#[must_use]
+pub fn format_json() -> String {
+    format!("{{\"version\":{FORMAT_VERSION}}}\n")
+}
+
 /// The file of `records`, sorted.
 pub fn write<T: Serialize + Ord>(records: &[T]) -> String {
     let mut sorted: Vec<&T> = records.iter().collect();
