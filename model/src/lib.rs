@@ -12,4 +12,4 @@ mod record;
 pub use anchor::{Anchor, Lines};
 pub use diagnostic::{Code, Diagnostic, Location, Severity};
 pub use id::{Id, IdError, IdReason, Kind, Slug, slugify};
-pub use record::{BuildUnit, Lock, Origin, Pin, Python, PythonFrom, Source};
+pub use record::{BuildUnit, Lock, Origin, Pin, Python, PythonFrom, Site, SiteKind, Source};

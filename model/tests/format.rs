@@ -4,7 +4,8 @@
 use std::collections::BTreeSet;
 
 use mental_model::{
-    Anchor, BuildUnit, Id, Lines, Lock, Origin, Pin, Python, PythonFrom, Source, jsonl,
+    Anchor, BuildUnit, Id, Lines, Lock, Origin, Pin, Python, PythonFrom, Site, SiteKind, Source,
+    jsonl,
 };
 
 fn id(text: &str) -> Id {
@@ -73,6 +74,28 @@ fn pins() -> Vec<Pin> {
     ]
 }
 
+fn sites() -> Vec<Site> {
+    let site = |slug: &str, kind| Site {
+        id: id(&format!("shop/unit:shop/site:{slug}")),
+        kind,
+        source: Source::Extractor,
+    };
+    vec![
+        site("shop-import-shop-db-session", SiteKind::Import),
+        site("shop-api-create-decorator-app-post", SiteKind::Decorator),
+        site("shop-api-create-callee-s-commit-0", SiteKind::Callee),
+        site("shop-models-order-base-class-base", SiteKind::BaseClass),
+        site(
+            "shop-api-create-write-receiver-order-status",
+            SiteKind::WriteReceiver,
+        ),
+        site(
+            "shop-api-create-handler-type-timeout",
+            SiteKind::HandlerType,
+        ),
+    ]
+}
+
 fn anchors() -> Vec<Anchor> {
     vec![Anchor {
         id: id("shop/unit:shop/pin:requests"),
@@ -101,6 +124,20 @@ fn pins_with_every_origin() {
     {"id":"shop/unit:shop/pin:requests","package":"requests","version":"1.0.0","origin":{"registry":"https://pypi.org/simple"},"source":"extractor"}
     {"id":"shop/unit:shop/pin:tools","package":"tools","version":"1.0.0","origin":{"path":"../tools"},"source":"extractor"}
     {"id":"shop/unit:shop/pin:wheel","package":"wheel","version":"1.0.0","origin":{"url":"https://example.com/wheel-1.0.0-py3-none-any.whl"},"source":"extractor"}
+    "#);
+}
+
+#[test]
+fn sites_of_every_kind() {
+    let text = jsonl::write(&sites());
+    assert_eq!(jsonl::read::<Site>(&text).unwrap().len(), 6);
+    insta::assert_snapshot!(text, @r#"
+    {"id":"shop/unit:shop/site:shop-api-create-callee-s-commit-0","kind":"callee","source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-api-create-decorator-app-post","kind":"decorator","source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-api-create-handler-type-timeout","kind":"handler-type","source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-api-create-write-receiver-order-status","kind":"write-receiver","source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-import-shop-db-session","kind":"import","source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-models-order-base-class-base","kind":"base-class","source":"extractor"}
     "#);
 }
 

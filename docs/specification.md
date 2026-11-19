@@ -225,7 +225,7 @@ Every site gets exactly one outcome, whichever tool produced it, and the record 
 
 Reasons form a short closed list: `missing_module`, `no_type` (an unannotated parameter, an untyped container element), `not_found`, `ambiguous`, `dynamic` (`getattr`, `eval`, a wildcard import), `unreachable` (the checker answered `Never`). An unresolved site whose only problem is an earlier one names it as its cause, and reports count root causes, not sites.
 
-A `site` record has an `id`, a `kind`, an `outcome` and the `checker` (name and version) that answered. The outcome is `resolved` with a definition (module and qualified name), `external` with a package and an access path, or `unresolved` with a reason and, when another site is its cause, that site.
+A `site` record has an `id`, a `kind` (`import`, `decorator`, `callee`, `base-class`, `write-receiver`, `escape` or `handler-type`), an `outcome` and the `checker` (name and version) that answered. The outcome is `resolved` with a definition (module and qualified name), `external` with a package and an access path, or `unresolved` with a reason and, when another site is its cause, that site.
 
 Candidates found by name are never edges: name matching links unrelated definitions (F-U6).
 
