@@ -20,8 +20,8 @@ CI uses the same toolchain and cargo-llvm-cov 0.9.1. diff-cover reads `coverage.
 |---|---|---|
 | `assert!`, `debug_assert!`, `assert_eq!`, one line or several | none; the message lines are not counted as lines | none |
 | `.expect("…")` | none | none |
-| `?` on a line with other code that ran | none | none |
-| `?` alone on a line after rustfmt splits a method chain (`.sum::<Result<u16, _>>()?;`) | that line | none |
+| `?` after other code on its line that ran (`let n: u32 = s.parse()?;`) | none | none |
+| `?` that starts the first code region of its line, as after rustfmt splits a method chain (`.sum::<Result<u16, _>>()?;`) | that line | none |
 | `if` / `else` on one line, only one side taken | none | 1 of 2 taken, which fails diff coverage |
 
 Assertions are free: neither side of one shows up in the report. The error side of `?` shows up only when the `?` starts the first code region of its line.
