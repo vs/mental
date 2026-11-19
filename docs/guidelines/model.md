@@ -42,7 +42,7 @@ Each module's unit tests sit in a `tests.rs` beside it (`id/tests.rs`, `guard/te
 | Kind | Crates |
 |---|---|
 | normal | `serde` (with `derive`), `serde_json`, `blake3` |
-| dev | `insta`, `proptest` |
+| dev | `insta`, `proptest` (without its default features, which fork a process for each case) |
 
 `thiserror` is **not** on the list, although the README's error rule ([G9](README.md#g9-errors-by-layer)) names it for libraries. `model` has two small error types (`IdError`, `ParseError`); they implement `Display` and `std::error::Error` by hand, in about 20 lines. The owner approved this exception on 2026-11-14.
 

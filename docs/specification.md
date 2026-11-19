@@ -302,14 +302,14 @@ The model is a flat set of **records** that refer to each other by ID. Every rec
 Rules:
 
 - The root slug is the system's name: the project's name in `pyproject.toml`.
-- Slugs are ASCII `[a-z0-9]+(-[a-z0-9]+)*`, made from a code name by one function. No counters and no positions; a collision is resolved by adding another code name. The one exception is reference sites, which are counted within a group ([6.1](#61-parse-and-list-sites)).
+- Slugs are ASCII `[a-z0-9]+(-[a-z0-9]+)*` with at least one letter, made from a code name by one function: ASCII letters lowercased, digits kept, and each run of other characters made one hyphen, with none at either end, so `app.tasks.generate_report` becomes `app-tasks-generate-report` and `SQLAlchemy` becomes `sqlalchemy`. A name with no ASCII letter has no slug. No counters and no positions; a collision is resolved by adding another code name. The one exception is reference sites, which are counted within a group ([6.1](#61-parse-and-list-sites)).
 - An ID has one canonical text form; a non-canonical ID is rejected, never normalized. Stored references are always full IDs.
 - Every ID is unique across the model.
 - **A move is identified** by its function and the order of its closing site in that function, never by a line number (F-L9).
 
 ### 7.3 Anchors
 
-Anchors live apart from the records, in `anchors.jsonl`, so moving code without changing it touches only that file (F-S9). An anchor has a path, lines, a quote and a status: `exact`, `moved` or `broken`. A record with a broken anchor fails the anchor check.
+Anchors live apart from the records, in `anchors.jsonl`, so moving code without changing it touches only that file (F-S9). An anchor has the record's `id`, a `path` relative to the project directory, the `lines` as `[first, last]` counted from 1, and the `quote` the record rests on. Its status, `exact`, `moved` or `broken`, is not stored: the anchor check works it out against the files as they are. A record with a broken anchor fails the anchor check.
 
 ### 7.4 Record kinds
 
@@ -339,7 +339,8 @@ The fields of each kind are fixed in the implementation plan of the milestone th
 ```
 
 - **Text is the stored form.** One record per line, sorted by ID in byte order, fields in a fixed order, absent and empty fields omitted, sets sorted. Two models can be compared with ordinary text tools.
-- **Strict reading.** An unknown field, an unknown kind or a missing required field is an error.
+- **Strict reading.** An unknown field, an unknown kind or a missing required field is an error, and so is a line that differs in any byte from how the record would be written, so a file that reads is written back to the same bytes.
+- **Diagnostics** are written one per line too, sorted by the record they are about, then by code: an `id` when one record is the subject, a `code` such as `environment-missing`, `at` (a path and lines) for a place no record stands for, such as a syntax error, and a `message` that says what is wrong and how to fix it. The code fixes the severity: an `error` fails the command, a `warning` does not.
 - **One format version, no migrations.** A model in another format says "rebuild".
 - **The model is derived.** It is never edited by hand and never merged; after a merge the merged code is compiled again.
 - **`mentalc` reads the working tree,** the files as they are on disk. Reading a commit's objects without a checkout is Later ([source access](research/source-access/report.md)).

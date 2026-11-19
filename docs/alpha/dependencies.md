@@ -24,3 +24,6 @@ Log every dependency added, with the reason.
 | clippy | mentalc | Linting, with the pedantic group (a toolchain component) | 2026-11-18 |
 | cargo-llvm-cov | mentalc | Coverage of the lines and branches a pull request changes, run on the dated nightly the kit pins (a kit release moves the date, and `alpha update` brings it in) | 2026-11-18 |
 | cargo-machete | mentalc | Unused dependencies | 2026-11-18 |
+| serde | model | Derives the JSON form of the model's records and diagnostics ([model allowlist](../guidelines/model.md#dependency-allowlist)) | 2026-11-19 |
+| serde_json | model | Reads and writes the model's canonical JSONL files | 2026-11-19 |
+| proptest | model (dev) | Property tests of the ID parser, slugs and the JSONL round trip ([T8](../guidelines/testing.md#t8-property-tests-are-reproducible)); without default features, so no process is forked per case | 2026-11-19 |

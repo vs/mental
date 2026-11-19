@@ -88,7 +88,7 @@ Each step is one pull request that leaves every gate green, with its tests in th
 |---|---|---|
 | 0 | Done: two spikes, before any production code. Coverage: assertions add no line or branch to the report, and the error side of a `?` counts only when it starts the first code region of its line ([testing playbook](../guidelines/testing.md#branch-coverage-of-assertions-settled)). ty in the workspace: go, see [section 9](#9-the-ty-spike) | both answers written into the guidelines; a go on ty in process |
 | 1 | Done: report-jobs is a standard uv project. `pyproject.toml` names it `reports`, with Python 3.12 or later and its 11 dependencies as lower bounds (SQLAlchemy kept below 2.1, whose default PostgreSQL driver is psycopg 3, not the psycopg2 the example uses); `uv.lock` (41 packages) replaces `requirements.lock`; `.python-version` says 3.12. No Python file changed | `uv sync` works, every module of the example imports, and the lock has no known vulnerability |
-| 2 | `model`: `id`, `diagnostic`, `jsonl`, `anchor` | ID tables, round-trip properties |
+| 2 | Done: `model`: `id`, `diagnostic`, `jsonl`, `anchor`. IDs take only the kinds `unit`, `pin` and `site` so far; a diagnostic has `id`, `code`, `at` and `message`, and the `field` and `related` of [M13](../guidelines/model.md#m13-diagnostic-codes-are-closed-and-complete) come with the checker; the format version comes with the model files in step 3 | ID tables, round-trip properties |
 | 3 | `model::record`: `build_unit`, `pin`; the reference for them written by hand | the format snapshot |
 | 4 | `extract::build`: the readers and the function that assembles a unit | fixtures per file and per error code |
 | 5 | `mentalc`: `repo`, `build`, `--json`, exit codes | goal 1 |
