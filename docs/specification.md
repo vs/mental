@@ -140,7 +140,7 @@ A project is what Python already calls one: a directory with a `pyproject.toml`,
 | Record | Says | Fields |
 |---|---|---|
 | **build unit** | one project. It has source roots, a Python version, a lockfile and the environment its references resolve against | `id`; `dir`; `roots` (a sorted set); `python`: `version` and `from`, the file it came from (`.python-version` or `pyvenv.cfg`); `requires_python`; `lock`: `path` and schema `version`; `environment`: its directory; `source` |
-| **pin** | one package of a build unit at an exact version, from its lockfile | `id`; `package` (normalized name); `version`; `origin`: `registry` with the index URL, `git` with `url` and `commit`, or `path`; `source` |
+| **pin** | one package of a build unit at an exact version, from its lockfile | `id`; `package` (normalized name); `version`; `origin`: `registry` with the index URL, `git` with `url` and `commit`, `url` with an archive's URL, or `path`; `source` |
 
 A field whose input is missing is left out, and the missing input is a gap (5.3): with no `.venv`, the build unit has no `environment`. Both records have `source: extractor`; the provenance and checks of [7.1](#71-shape) come with the first stage whose records can differ in them.
 
@@ -166,7 +166,8 @@ Small readers, one per file. There is no model of the build tool itself, and `me
 
 - **Every record is anchored** to the file and line it comes from.
 - **Gaps are reported here, before anything else runs.** A directory with no `pyproject.toml`, and a project with no `uv.lock`, no Python version or no environment, are diagnostics with their fix. The fix for a missing environment is a command (`uv sync`) that `mentalc` prints and does not run (P10).
-- **A missing input fails the build,** because nothing after it can be trusted.
+- **A missing input fails the build,** because nothing after it can be trusted. So does an input that does not read: a `pyproject.toml` with no `[project]` name, a `uv.lock` that is not uv's lockfile, a Python version that is not two or three numbers, as `3.12` and `3.12.1` are.
+- **A pin has one version.** A package that `uv.lock` locks more than once, such as at one version per platform, is the gap `lock-ambiguous`; a package with no fixed version, as a local package with a dynamic version has, is `lock-invalid`. Neither gets a pin.
 
 *In report-jobs before `uv sync` is run:* one gap: there is no environment.
 

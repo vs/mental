@@ -78,6 +78,8 @@ pub enum Origin {
     Registry(String),
     /// A commit of a git repository.
     Git { url: String, commit: String },
+    /// An archive at a URL, such as a wheel.
+    Url(String),
     /// A directory or archive, relative to the project directory.
     Path(String),
 }

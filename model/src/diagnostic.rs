@@ -12,12 +12,21 @@ use crate::{Id, Lines};
 pub enum Code {
     /// The project has no `.venv`.
     EnvironmentMissing,
+    /// The `uv.lock` locks one package more than once, such as at one
+    /// version per platform; a pin has one version.
+    LockAmbiguous,
+    /// The `uv.lock` does not read as a lockfile, or holds a package with no
+    /// fixed version or with a source this build does not read.
+    LockInvalid,
     /// The project has no `uv.lock`.
     LockMissing,
     /// The `uv.lock` has a schema version this build does not read.
     LockVersionUnknown,
     /// An import names a module found neither under a root nor in the environment.
     ModuleMissing,
+    /// The `pyproject.toml` does not read, has no `[project]` name, or its
+    /// name has no ASCII letter to name the system with.
+    ProjectInvalid,
     /// The directory has no `pyproject.toml`.
     ProjectMissing,
     /// Neither `.python-version` nor the environment states a Python version.
@@ -34,11 +43,14 @@ pub enum Severity {
 }
 
 impl Code {
-    pub const ALL: [Code; 7] = [
+    pub const ALL: [Code; 10] = [
         Code::EnvironmentMissing,
+        Code::LockAmbiguous,
+        Code::LockInvalid,
         Code::LockMissing,
         Code::LockVersionUnknown,
         Code::ModuleMissing,
+        Code::ProjectInvalid,
         Code::ProjectMissing,
         Code::PythonVersionUnknown,
         Code::SyntaxError,
@@ -48,9 +60,12 @@ impl Code {
     pub fn severity(self) -> Severity {
         match self {
             Code::EnvironmentMissing
+            | Code::LockAmbiguous
+            | Code::LockInvalid
             | Code::LockMissing
             | Code::LockVersionUnknown
             | Code::ModuleMissing
+            | Code::ProjectInvalid
             | Code::ProjectMissing
             | Code::PythonVersionUnknown => Severity::Error,
             Code::SyntaxError => Severity::Warning,

@@ -56,7 +56,10 @@ Every record has an anchor (file, lines, quote) in `anchors.jsonl`, and a `sourc
 | Code | Severity | Means | Fix text |
 |---|---|---|---|
 | `project-missing` | error | the directory has no `pyproject.toml` | add one, for example with `uv init` |
+| `project-invalid` | error | the `pyproject.toml` does not read, has no `[project]` name, or its name has no ASCII letter | a `[project]` table with a `name`, as `uv init` writes it |
 | `lock-missing` | error | the project has no `uv.lock` | `uv lock` |
+| `lock-invalid` | error | the `uv.lock` does not read, or holds a package it cannot pin: one with no fixed version, a name with no ASCII letter, a subdirectory of a `url` archive, or a source of another form than `registry`, `git` with a commit, `url`, `path`, `directory`, `editable` or `virtual` | `uv lock`; for a dynamic version, a static one; for a name with no letter, another name; for a subdirectory, a built archive or a local path |
+| `lock-ambiguous` | error | the `uv.lock` locks one package more than once, such as at one version per platform | one version for every platform: a tighter bound, or `environments` under `[tool.uv]` |
 | `lock-version-unknown` | error | a `uv.lock` schema version this build does not read | the versions it does read |
 | `python-version-unknown` | error | no source of D3 states a version | add a `.python-version` file |
 | `environment-missing` | error | the project has no `.venv` | `uv sync`; `mentalc` does not run it |
@@ -90,7 +93,7 @@ Each step is one pull request that leaves every gate green, with its tests in th
 | 1 | Done: report-jobs is a standard uv project. `pyproject.toml` names it `reports`, with Python 3.12 or later and its 11 dependencies as lower bounds (SQLAlchemy kept below 2.1, whose default PostgreSQL driver is psycopg 3, not the psycopg2 the example uses); `uv.lock` (41 packages) replaces `requirements.lock`; `.python-version` says 3.12. No Python file changed | `uv sync` works, every module of the example imports, and the lock has no known vulnerability |
 | 2 | Done: `model`: `id`, `diagnostic`, `jsonl`, `anchor`. IDs take only the kinds `unit`, `pin` and `site` so far; a diagnostic has `id`, `code`, `at` and `message`, and the `field` and `related` of [M13](../guidelines/model.md#m13-diagnostic-codes-are-closed-and-complete) come with the checker | ID tables, round-trip properties |
 | 3 | Done: `model::record`: `build_unit`, `pin`; the reference for them written by hand, in `examples/report-jobs/model/` as `build_unit.jsonl`, `pin.jsonl` and `anchors.jsonl`. The reference is the build after `uv sync` ([goal 1](#1-goal) compares without `environment`). The format version and `format.json` come with `mentalc` writing `.mental/` in step 5 | the format snapshot |
-| 4 | `extract::build`: the readers and the function that assembles a unit | fixtures per file and per error code |
+| 4 | Done: `extract::build`: one reader each for `pyproject.toml`, `uv.lock` and the Python version, and `build_model`, which assembles the unit from the files' contents. Three gaps were added ([section 5](#5-diagnostics)): `project-invalid`, `lock-invalid` and `lock-ambiguous`, and the origin `url` for an archive at a URL. `path`, `directory`, `editable` and `virtual` sources are all the origin `path`. A package from a subdirectory of a `url` archive gets no pin yet (`lock-invalid`) | fixtures per file and per error code (`extract/tests/data/err/<code>/`); report-jobs equals its reference |
 | 5 | `mentalc`: `repo`, `build`, `--json`, exit codes | goal 1 |
 | 6 | The `site` record; the site reference of report-jobs written by hand; `extract::python`: `parse` and `sites` | every call, decorator and import of the syntax tree appears exactly once, on every fixture and on report-jobs |
 | 7 | `extract::python::resolve` | every outcome and every reason reached by a fixture; outcomes equal the reference |
@@ -102,7 +105,7 @@ Each step is one pull request that leaves every gate green, with its tests in th
 - **ty's API is unstable.** The spike used only public items, but a ruff bump can move them; [X3](../guidelines/extract.md#x3-bump-ruff-on-purpose) makes each bump its own change. The fallback is still Pyrefly's export.
 - **Escapes and handler types are unmeasured.** The experiment covered the other five kinds; how well ty answers these two is first seen in step 7.
 - **The site reference is large.** The experiment counted about 190 sites in report-jobs for five kinds. Writing each by hand, with its outcome, before the code is the biggest single piece of step 6, and its outcomes are a prediction of what ty answers.
-- **One package locked twice.** `uv.lock` can hold one package at two versions, one per platform marker; their pins would get the same ID, and a version may not go into an ID. report-jobs has none; step 4 decides, for example one pin with both versions or a `lock-ambiguous` gap.
+- **One package locked twice.** `uv.lock` can hold one package at two versions, one per platform marker; their pins would get the same ID, and a version may not go into an ID. Step 4 made it the gap `lock-ambiguous`, which fails the build: a project whose lock forks by platform cannot be built until a later milestone gives a pin more than one version.
 - **Counters shift.** Inserting an identical reference earlier in a function renumbers the later ones. Step 6 counts how many sites need a counter.
 - **report-jobs fails its own build until `uv sync` is run.** That is goal 1, by design.
 
