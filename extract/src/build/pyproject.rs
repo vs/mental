@@ -46,7 +46,7 @@ pub(super) fn read(text: &str) -> Result<Project, Diagnostic> {
         return Err(Diagnostic {
             id: None,
             code: Code::ProjectInvalid,
-            at: Some(super::location(PATH, text, name.span())),
+            at: Some(crate::anchor::location(PATH, text, name.span())),
             message: format!(
                 "the project name `{}` has no ASCII letter, and the system is named after the \
                  project; give the project a name with one",
