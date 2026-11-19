@@ -195,7 +195,18 @@ The walk lists every **reference site**:
 
 Escapes are the complete list of ways outside code can call into the repository (F-U7).
 
-A site is identified by names: the qualified name of its enclosing scope (a function, a class body, or the module for code at the top of a file), its kind and the name it refers to, as written. Sites are grouped by scope, kind and the slug of the name with any trailing segments made only of digits removed, so `s.commit()` and `s.commit_0()` fall in one group; every site in a group of two or more gets its order in the group, counted from 0, appended to its own slug. `generate_report` in report-jobs calls `s.commit()` three times, and those sites end in `-0`, `-1` and `-2`. Grouping this way keeps a counter from ever matching a name that already ends in digits. A line number is never part of the ID: a change outside the scope changes no ID, and neither does moving a line inside it, unless the line holds one of a group of two or more sites.
+The walk finds six kinds in each file's syntax tree:
+
+- **import**: one site per name an import binds: `from fastapi import FastAPI, Header` is two.
+- **decorator**: one site per decorator. A decorator that is a call, such as `@app.post("/reports")`, is this one site, not also a callee.
+- **callee**: every other call.
+- **base class**: each positional base of a class; a keyword such as `metaclass=` is not a base.
+- **write receiver**: every attribute that is assigned to: by `=`, an augmented or annotated assignment, a `for` or `with … as` target, or unpacking. An item assignment (`d[k] = v`) and `del` are not write sites.
+- **handler type**: each type an `except` or `except*` clause names, one per element of a tuple; a bare `except:` names none.
+
+An escape needs resolution to be told apart, so resolution finds it: a name or attribute handed to a call is an escape when it resolves to a repository function or class, or stays unresolved, and the callee is not a repository function.
+
+A site is identified by names: the qualified name of its enclosing scope, its kind and the name it refers to, as written. The scope is a function, a class body, or the module for code at the top of a file; a site in the header of a `def` or `class` (a decorator, a base, a default, an annotation) belongs to that def or class, and a lambda or comprehension is not a scope of its own. The name is written with names and attributes as they are, a call as `()` and a subscript as `[]` after what they apply to, and nothing for any other expression: `s.query(Order).filter(…)` names `s.query().filter`, and `", ".join(rows)` names `.join`. The site's slug is made from the three together. Sites are grouped by that slug with any trailing segments made only of digits removed, across the whole build unit, so `s.commit()` and `s.commit_0()` fall in one group, and so do two sites whose scope, kind and name happen to run together into one slug; every site in a group of two or more gets its order in the group, by file and then by position, counted from 0, appended to its own slug. `generate_report` in report-jobs calls `s.commit()` three times, and those sites end in `-0`, `-1` and `-2`. Grouping this way keeps a counter from ever matching a name that already ends in digits. A line number is never part of the ID: a change outside the scope changes no ID, unless it adds or removes a site whose slug, without its trailing digit segments, equals that of a site in the scope; and moving a line inside the scope changes no ID, unless the line holds one of a group of two or more sites.
 
 ### 6.2 Resolve with a type checker
 
@@ -225,7 +236,7 @@ Every site gets exactly one outcome, whichever tool produced it, and the record 
 
 Reasons form a short closed list: `missing_module`, `no_type` (an unannotated parameter, an untyped container element), `not_found`, `ambiguous`, `dynamic` (`getattr`, `eval`, a wildcard import), `unreachable` (the checker answered `Never`). An unresolved site whose only problem is an earlier one names it as its cause, and reports count root causes, not sites.
 
-A `site` record has an `id`, a `kind`, an `outcome` and the `checker` (name and version) that answered. The outcome is `resolved` with a definition (module and qualified name), `external` with a package and an access path, or `unresolved` with a reason and, when another site is its cause, that site.
+A `site` record has an `id`, a `kind` (`import`, `decorator`, `callee`, `base-class`, `write-receiver`, `escape` or `handler-type`), an `outcome` and the `checker` (name and version) that answered. The outcome is `resolved` with a definition (module and qualified name), `external` with a package and an access path, or `unresolved` with a reason and, when another site is its cause, that site.
 
 Candidates found by name are never edges: name matching links unrelated definitions (F-U6).
 

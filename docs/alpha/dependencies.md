@@ -31,3 +31,6 @@ Log every dependency added, with the reason.
 | serde | extract | Derives how `pyproject.toml` and `uv.lock` read into typed structs at the boundary ([extract allowlist](../guidelines/extract.md#dependency-allowlist)) | 2026-11-19 |
 | toml | extract | Reads `pyproject.toml` and `uv.lock`, with the byte spans that anchor each record; without its default writer | 2026-11-19 |
 | proptest | extract (dev) | Property tests that damaged build files never panic the build and that every record it writes is anchored ([T8](../guidelines/testing.md#t8-property-tests-are-reproducible)) | 2026-11-19 |
+| ruff_python_parser | extract | Parses each Python file into ruff's typed, CPython-shaped syntax tree, recovering from syntax errors ([X1](../guidelines/extract.md#x1-ruffs-parser-and-tys-crates-pinned-to-one-commit), [X4](../guidelines/extract.md#x4-always-parse_unchecked)); from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-19 |
+| ruff_python_ast | extract | The syntax tree and its visitor, which the site walk runs on; same commit | 2026-11-19 |
+| ruff_text_size | extract | The byte ranges of syntax nodes, which anchor each site; same commit | 2026-11-19 |

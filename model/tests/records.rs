@@ -1,6 +1,6 @@
 //! What the record types accept when read.
 
-use mental_model::{BuildUnit, Pin, jsonl};
+use mental_model::{BuildUnit, Pin, Site, jsonl};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
@@ -78,5 +78,15 @@ fn a_git_origin_names_its_commit() {
             r#"{"id":"shop/unit:shop/pin:a","package":"a","version":"1","origin":{"git":{"url":"https://x/a"}},"source":"extractor"}"#
         ),
         "line 1, column 94: missing field `commit`"
+    );
+}
+
+#[test]
+fn an_unknown_site_kind_is_rejected() {
+    assert_eq!(
+        check::<Site>(
+            r#"{"id":"shop/unit:shop/site:shop-escape-f","kind":"escape","source":"extractor"}"#
+        ),
+        "line 1, column 57: unknown variant `escape`, expected one of `import`, `decorator`, `callee`, `base-class`, `write-receiver`, `handler-type`"
     );
 }
