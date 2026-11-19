@@ -340,7 +340,7 @@ The fields of each kind are fixed in the implementation plan of the milestone th
 
 - **Text is the stored form.** One record per line, sorted by ID in byte order, fields in a fixed order, absent and empty fields omitted, sets sorted. Two models can be compared with ordinary text tools.
 - **Strict reading.** An unknown field, an unknown kind or a missing required field is an error, and so is a line that differs in any byte from how the record would be written, so a file that reads is written back to the same bytes.
-- **Diagnostics** are written one per line too, sorted by the record they are about, then by code: an `id` when one record is the subject, a `code` such as `environment-missing`, `at` (a path and lines) for a place no record stands for, such as a syntax error, and a `message` that says what is wrong and how to fix it. The code fixes the severity: an `error` fails the command, a `warning` does not.
+- **Diagnostics** are written one per line too, sorted by the record they are about, those about no record first, then by code name: an `id` when one record is the subject, a `code` such as `environment-missing`, `at` (a path and lines) for a place no record stands for, such as a syntax error, and a `message` that says what is wrong and how to fix it. The code fixes the severity: an `error` fails the command, a `warning` does not.
 - **One format version, no migrations.** A model in another format says "rebuild".
 - **The model is derived.** It is never edited by hand and never merged; after a merge the merged code is compiled again.
 - **`mentalc` reads the working tree,** the files as they are on disk. Reading a commit's objects without a checkout is Later ([source access](research/source-access/report.md)).

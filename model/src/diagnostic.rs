@@ -5,22 +5,23 @@ use serde::{Deserialize, Serialize};
 use crate::{Id, Lines};
 
 /// What a diagnostic reports. Written as its kebab-case name, which never
-/// changes: agents, tests and CI filter on it.
+/// changes: agents, tests and CI filter on it. Declared in the byte order of
+/// those names, so diagnostics sort by code name.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum Code {
-    /// The directory has no `pyproject.toml`.
-    ProjectMissing,
+    /// The project has no `.venv`.
+    EnvironmentMissing,
     /// The project has no `uv.lock`.
     LockMissing,
     /// The `uv.lock` has a schema version this build does not read.
     LockVersionUnknown,
-    /// Neither `.python-version` nor the environment states a Python version.
-    PythonVersionUnknown,
-    /// The project has no `.venv`.
-    EnvironmentMissing,
     /// An import names a module found neither under a root nor in the environment.
     ModuleMissing,
+    /// The directory has no `pyproject.toml`.
+    ProjectMissing,
+    /// Neither `.python-version` nor the environment states a Python version.
+    PythonVersionUnknown,
     /// A file does not parse; the recovered tree is used.
     SyntaxError,
 }
@@ -34,24 +35,24 @@ pub enum Severity {
 
 impl Code {
     pub const ALL: [Code; 7] = [
-        Code::ProjectMissing,
+        Code::EnvironmentMissing,
         Code::LockMissing,
         Code::LockVersionUnknown,
-        Code::PythonVersionUnknown,
-        Code::EnvironmentMissing,
         Code::ModuleMissing,
+        Code::ProjectMissing,
+        Code::PythonVersionUnknown,
         Code::SyntaxError,
     ];
 
     #[must_use]
     pub fn severity(self) -> Severity {
         match self {
-            Code::ProjectMissing
+            Code::EnvironmentMissing
             | Code::LockMissing
             | Code::LockVersionUnknown
-            | Code::PythonVersionUnknown
-            | Code::EnvironmentMissing
-            | Code::ModuleMissing => Severity::Error,
+            | Code::ModuleMissing
+            | Code::ProjectMissing
+            | Code::PythonVersionUnknown => Severity::Error,
             Code::SyntaxError => Severity::Warning,
         }
     }

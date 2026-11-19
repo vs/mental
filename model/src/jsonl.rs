@@ -45,8 +45,14 @@ pub fn read<T: DeserializeOwned + Serialize + Ord>(text: &str) -> Result<Vec<T>,
             reason,
         };
         let record: T = serde_json::from_str(text_line).map_err(|error| fail(invalid(&error)))?;
-        if line(&record) != text_line {
-            return Err(fail(ReadReason::NotCanonical));
+        let canonical = line(&record);
+        if canonical != text_line {
+            let differs_at = text_line
+                .bytes()
+                .zip(canonical.bytes())
+                .position(|(a, b)| a != b);
+            let column = differs_at.unwrap_or(canonical.len().min(text_line.len())) + 1;
+            return Err(fail(ReadReason::NotCanonical { column }));
         }
         if records.last().is_some_and(|previous| *previous > record) {
             return Err(fail(ReadReason::Unsorted));
@@ -88,7 +94,11 @@ pub enum ReadReason {
         column: usize,
         message: String,
     },
-    NotCanonical,
+    /// A record, but not written the way [`write`] writes it; `column` is
+    /// the first byte that differs, counted from 1.
+    NotCanonical {
+        column: usize,
+    },
     Unsorted,
 }
 
@@ -102,9 +112,9 @@ impl fmt::Display for ReadError {
             ReadReason::Invalid { column, message } => {
                 write!(f, "line {line}, column {column}: {message}")
             }
-            ReadReason::NotCanonical => write!(
+            ReadReason::NotCanonical { column } => write!(
                 f,
-                "line {line}: not in canonical form: fields out of order, extra spaces, or an empty field written out"
+                "line {line}, column {column}: the line differs here from how the record is written"
             ),
             ReadReason::Unsorted => {
                 write!(f, "line {line}: the record sorts before the one above it")

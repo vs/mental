@@ -77,7 +77,7 @@ fn an_unsorted_file_is_rejected() {
 fn spaces_are_not_canonical() {
     assert_eq!(
         check::<Anchor>(&format!("{}\n", UNIT.replace(',', ", "))),
-        "line 1: not in canonical form: fields out of order, extra spaces, or an empty field written out"
+        "line 1, column 30: the line differs here from how the record is written"
     );
 }
 
@@ -85,7 +85,7 @@ fn spaces_are_not_canonical() {
 fn a_carriage_return_is_not_canonical() {
     assert_eq!(
         check::<Anchor>(&format!("{UNIT}\r\n")),
-        "line 1: not in canonical form: fields out of order, extra spaces, or an empty field written out"
+        "line 1, column 88: the line differs here from how the record is written"
     );
 }
 
@@ -96,7 +96,7 @@ fn fields_out_of_order_are_not_canonical() {
             r#"{"path":"pyproject.toml","id":"reports/unit:reports","lines":[1,1],"quote":"[project]"}
 "#
         ),
-        "line 1: not in canonical form: fields out of order, extra spaces, or an empty field written out"
+        "line 1, column 3: the line differs here from how the record is written"
     );
 }
 
@@ -107,7 +107,7 @@ fn an_empty_field_written_out_is_not_canonical() {
             r#"{"id":null,"code":"lock-missing","message":"m"}
 "#
         ),
-        "line 1: not in canonical form: fields out of order, extra spaces, or an empty field written out"
+        "line 1, column 3: the line differs here from how the record is written"
     );
 }
 
@@ -129,7 +129,7 @@ fn an_unknown_code_is_named() {
             r#"{"code":"lock-lost","message":"m"}
 "#
         ),
-        "line 1, column 19: unknown variant `lock-lost`, expected one of `project-missing`, `lock-missing`, `lock-version-unknown`, `python-version-unknown`, `environment-missing`, `module-missing`, `syntax-error`"
+        "line 1, column 19: unknown variant `lock-lost`, expected one of `environment-missing`, `lock-missing`, `lock-version-unknown`, `module-missing`, `project-missing`, `python-version-unknown`, `syntax-error`"
     );
 }
 
@@ -141,5 +141,13 @@ fn a_bad_id_gives_the_id_parser_message() {
             PIN.replace("sqlalchemy\"", "SQLAlchemy\"")
         )),
         "line 2, column 43: invalid ID `reports/unit:reports/pin:SQLAlchemy` at byte 25: `S` is not allowed in a slug, which has only a-z, 0-9 and single hyphens"
+    );
+}
+
+#[test]
+fn an_escape_serde_would_not_write_is_not_canonical() {
+    assert_eq!(
+        check::<Anchor>(&format!("{}\n", UNIT.replace("[project]", "\\u00e9"))),
+        "line 1, column 77: the line differs here from how the record is written"
     );
 }

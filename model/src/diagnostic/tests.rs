@@ -28,12 +28,12 @@ fn every_code_has_a_stable_name_and_a_severity() {
         .collect();
     assert_eq!(
         lines.join("\n"),
-        r#"Error {"code":"project-missing","message":"m"}
+        r#"Error {"code":"environment-missing","message":"m"}
 Error {"code":"lock-missing","message":"m"}
 Error {"code":"lock-version-unknown","message":"m"}
-Error {"code":"python-version-unknown","message":"m"}
-Error {"code":"environment-missing","message":"m"}
 Error {"code":"module-missing","message":"m"}
+Error {"code":"project-missing","message":"m"}
+Error {"code":"python-version-unknown","message":"m"}
 Warning {"code":"syntax-error","message":"m"}"#
     );
 }
@@ -51,5 +51,18 @@ fn a_diagnostic_names_its_record_and_place() {
     assert_eq!(
         check(&diagnostic),
         r#"Error {"id":"reports/unit:reports","code":"lock-version-unknown","at":{"path":"uv.lock","lines":[1,1]},"message":"m"}"#
+    );
+}
+
+#[test]
+fn codes_sort_by_name() {
+    let names = Code::ALL.map(|code| serde_json::to_string(&code).unwrap());
+    assert!(
+        Code::ALL.is_sorted_by(|a, b| a < b),
+        "ALL lists every code in declared order"
+    );
+    assert!(
+        names.is_sorted_by(|a, b| a < b),
+        "codes are declared in name order: {names:?}"
     );
 }
