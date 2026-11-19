@@ -14,8 +14,9 @@ publish = false
 [workspace.dependencies]
 # The model's records and diagnostics derive their JSON form (model); the
 # build readers derive how `pyproject.toml` and `uv.lock` read (extract).
-serde ={ version = "1.0.229", features = ["derive"] }
-# Reads and writes the model's JSONL files (model).
+serde = { version = "1.0.229", features = ["derive"] }
+# Reads and writes the model's JSONL files (model); names a diagnostic's code
+# in the text `mentalc` prints (mentalc).
 serde_json = "1.0.154"
 # Property tests of the parsers, the build readers and the JSONL round trip;
 # without its default features, which fork a process per case (model and
@@ -24,6 +25,16 @@ proptest = { version = "1.12.0", default-features = false, features = ["std"] }
 # Snapshots of written output, such as the frozen JSONL format; without its
 # default terminal colors (model, dev).
 insta = { version = "1.49.0", default-features = false }
+# The command line, derived from typed structs; without its default terminal
+# colors (mentalc).
+clap = { version = "4.6.8", default-features = false, features = ["std", "derive", "help", "usage", "error-context", "suggestions"] }
+# Adds what failed and how to fix it to each error the binary reports (mentalc).
+anyhow = "1.0.104"
+# Runs the built `mentalc` and snapshots its exit code, stdout and stderr
+# (mentalc, dev).
+insta-cmd = "0.7.0"
+# Temporary project directories for the CLI and file-system tests (mentalc, dev).
+tempfile = "3.27.0"
 # Reads `pyproject.toml` and `uv.lock`, with the byte spans that anchor each
 # record; without its default writer, which nothing here uses (extract).
 toml = { version = "1.2.1", default-features = false, features = ["std", "serde", "parse"] }

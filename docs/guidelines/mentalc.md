@@ -22,7 +22,7 @@
 mentalc/
   src/
     main.rs           thin: parse args, call run, report the error chain           [edge: stdio, exit]
-    lib.rs            pub fn run(cli: Cli) -> anyhow::Result<ExitStatus>
+    lib.rs            pub fn run(cli: &Cli, dir: &Path, out: &mut dyn Write) -> anyhow::Result<Status>
     cli.rs            clap derive; human and JSON rendering                         [edge: stdout]
     config.rs         mentalc.toml -> Config (role -> backend and LLM, repair cap)
     repo.rs           RepoSnapshot: reads files, writes `.mental/`                  [edge: fs]

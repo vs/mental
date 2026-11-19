@@ -31,3 +31,8 @@ Log every dependency added, with the reason.
 | serde | extract | Derives how `pyproject.toml` and `uv.lock` read into typed structs at the boundary ([extract allowlist](../guidelines/extract.md#dependency-allowlist)) | 2026-11-19 |
 | toml | extract | Reads `pyproject.toml` and `uv.lock`, with the byte spans that anchor each record; without its default writer | 2026-11-19 |
 | proptest | extract (dev) | Property tests that damaged build files never panic the build and that every record it writes is anchored ([T8](../guidelines/testing.md#t8-property-tests-are-reproducible)) | 2026-11-19 |
+| clap | mentalc | The command line, derived from typed structs ([C18](../guidelines/mentalc.md#c18-a-typed-cli-with-two-renderers)); without its default terminal colors | 2026-11-19 |
+| anyhow | mentalc | Adds what failed and how to fix it to each error the binary reports ([G9](../guidelines/README.md#g9-errors-by-layer)) | 2026-11-19 |
+| serde_json | mentalc | Names a diagnostic's code in the text `mentalc` prints | 2026-11-19 |
+| insta-cmd | mentalc (dev) | Runs the built `mentalc` and snapshots its exit code, stdout and stderr ([C22](../guidelines/mentalc.md#c22-cli-snapshots-are-few-and-filtered)) | 2026-11-19 |
+| tempfile | mentalc (dev) | Temporary project directories for the CLI and file-system fault tests ([T12](../guidelines/testing.md#t12-inject-faults-through-seams-that-already-exist)) | 2026-11-19 |
