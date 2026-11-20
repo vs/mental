@@ -1,13 +1,19 @@
-//! Stage 2 for Python: parse each file, list its reference sites, and give
-//! each site its ID within the build unit.
+//! Stage 2 for Python: parse each file, list its reference sites, resolve
+//! each with the type checker, and give each its ID within the build unit.
 
 mod parse;
+mod resolve;
 mod sites;
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use mental_model::{Anchor, BuildUnit, Diagnostic, Kind, Site, SiteKind, Slug, Source, slugify};
+use mental_model::{
+    Anchor, BuildUnit, Checker, Code, Diagnostic, Kind, Outcome, Pin, Reason, Site, SiteKind, Slug,
+    Source, slugify,
+};
 use ruff_text_size::{TextRange, TextSize};
+
+pub use resolve::ResolveError;
 
 /// One Python file of a build unit, as read from the project directory.
 #[derive(Clone, Copy, Debug)]
@@ -18,6 +24,26 @@ pub struct PythonFile<'a> {
     pub text: &'a str,
 }
 
+/// What the type checker needs beside the build unit: where the project is
+/// and which files each installed distribution holds. The environment's
+/// directory and the Python version come from the build unit.
+#[derive(Clone, Copy, Debug)]
+pub struct Environment<'a> {
+    /// The project directory: absolute, with no `..` segment, which ty would
+    /// not match against the roots.
+    pub project_dir: &'a str,
+    /// The `RECORD` of each installed distribution.
+    pub records: &'a [DistRecord<'a>],
+}
+
+/// The `RECORD` file of one installed distribution: the files it installed.
+#[derive(Clone, Copy, Debug)]
+pub struct DistRecord<'a> {
+    /// The name of its folder in `site-packages`: `<name>-<version>.dist-info`.
+    pub dist_info: &'a str,
+    pub text: &'a str,
+}
+
 /// The reference sites of a build unit, with the anchor of each.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Sites {
@@ -25,31 +51,51 @@ pub struct Sites {
     pub anchors: Vec<Anchor>,
 }
 
-/// Lists every reference site of the unit's files. A file that does not
-/// parse gives a `syntax-error` per error, and the sites of the tree the
-/// parser recovered.
+/// Lists every reference site of the unit's files and resolves it with ty.
+/// A file that does not parse gives a `syntax-error` per error, and the
+/// sites of the tree the parser recovered; an import of a module that is
+/// nowhere gives a `module-missing`.
+///
+/// # Errors
+///
+/// When the project directory is relative or has a `..` segment, the build
+/// unit records no environment or Python version, or ty cannot check that
+/// version, open the project, or find one of `files`.
 ///
 /// # Panics
 ///
 /// When a file is not a `.py` file under one of the unit's roots: `mentalc`
 /// passes only those.
-#[must_use]
-pub fn list_sites(unit: &BuildUnit, files: &[PythonFile]) -> (Sites, Vec<Diagnostic>) {
+pub fn extract_sites(
+    unit: &BuildUnit,
+    pins: &[Pin],
+    environment: &Environment,
+    files: &[PythonFile],
+) -> Result<(Sites, Vec<Diagnostic>), ResolveError> {
+    let resolver = resolve::Resolver::new(unit, pins, environment, files)?;
     let mut diagnostics = Vec::new();
     let mut found = Vec::new();
     for file in files {
         let (module, problems) = parse::parse(file.path, file.text);
         diagnostics.extend(problems);
-        let name = module_name(file.path, &unit.roots);
-        found.extend(sites::sites(&name, &module.body).into_iter().map(|site| {
+        let listed = sites::sites(&module_name(file.path, &unit.roots), &module.body);
+        let checked = resolver.check(file, &listed)?;
+        for (site, check) in listed.iter().zip(&checked) {
+            if let Some(call) = site.call
+                && !escapes(check, &checked[call])
+            {
+                continue;
+            }
             let words = format!("{} {} {}", site.scope, site.kind.as_str(), site.name);
-            Found {
+            found.push(Found {
                 file,
                 range: site.range,
                 kind: site.kind,
+                written: site.name.clone(),
                 slug: slugify(&words).expect("a site's words hold its kind's name"),
-            }
-        }));
+                outcome: check.outcome.clone(),
+            });
+        }
     }
     found.sort_by(|a, b| a.position().cmp(&b.position()));
     let mut group_sizes: BTreeMap<String, usize> = BTreeMap::new();
@@ -73,6 +119,22 @@ pub fn list_sites(unit: &BuildUnit, files: &[PythonFile]) -> (Sites, Vec<Diagnos
             site.slug
         };
         let id = unit.id.child(Kind::Site, &slug);
+        if site.outcome
+            == (Outcome::Unresolved {
+                reason: Reason::MissingModule,
+            })
+        {
+            diagnostics.push(Diagnostic {
+                id: Some(id.clone()),
+                code: Code::ModuleMissing,
+                at: None,
+                message: format!(
+                    "the import `{}` names a module that is neither under a root nor in the \
+                     environment; run `uv sync`, or add the package that provides it with `uv add`",
+                    site.written
+                ),
+            });
+        }
         let (path, text) = (site.file.path, site.file.text);
         sites.anchors.push(crate::anchor::anchor(
             id.clone(),
@@ -83,10 +145,28 @@ pub fn list_sites(unit: &BuildUnit, files: &[PythonFile]) -> (Sites, Vec<Diagnos
         sites.sites.push(Site {
             id,
             kind: site.kind,
+            outcome: site.outcome,
+            checker: Checker {
+                name: "ty".to_owned(),
+                version: resolve::TY_VERSION.to_owned(),
+            },
             source: Source::Extractor,
         });
     }
-    (sites, diagnostics)
+    Ok((sites, diagnostics))
+}
+
+/// Whether a name handed to a call escapes: it is a repository `def` or
+/// `class`, or the checker cannot say what it is, and the callee is not
+/// in the repository, so outside code may call it.
+fn escapes(argument: &resolve::Checked, call: &resolve::Checked) -> bool {
+    let outside = !matches!(call.outcome, Outcome::Resolved { .. });
+    let callable = match argument.outcome {
+        Outcome::Resolved { .. } => argument.definition,
+        Outcome::External { .. } => false,
+        Outcome::Unresolved { .. } => true,
+    };
+    outside && callable
 }
 
 /// A site with the slug of its words, before its group gives it a counter.
@@ -94,7 +174,9 @@ struct Found<'a> {
     file: &'a PythonFile<'a>,
     range: TextRange,
     kind: SiteKind,
+    written: String,
     slug: Slug,
+    outcome: Outcome,
 }
 
 impl Found<'_> {

@@ -6,7 +6,7 @@ mod build;
 mod site;
 
 pub use build::{BuildUnit, Lock, Origin, Pin, Python, PythonFrom};
-pub use site::{Site, SiteKind};
+pub use site::{Checker, Outcome, Package, Reason, Site, SiteKind};
 
 use serde::{Deserialize, Serialize};
 

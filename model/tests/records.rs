@@ -85,8 +85,28 @@ fn a_git_origin_names_its_commit() {
 fn an_unknown_site_kind_is_rejected() {
     assert_eq!(
         check::<Site>(
-            r#"{"id":"shop/unit:shop/site:shop-escape-f","kind":"escape","source":"extractor"}"#
+            r#"{"id":"shop/unit:shop/site:shop-callee-f","kind":"call","outcome":{"unresolved":{"reason":"not_found"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}"#
         ),
-        "line 1, column 57: unknown variant `escape`, expected one of `import`, `decorator`, `callee`, `base-class`, `write-receiver`, `handler-type`"
+        "line 1, column 55: unknown variant `call`, expected one of `import`, `decorator`, `callee`, `base-class`, `write-receiver`, `escape`, `handler-type`"
+    );
+}
+
+#[test]
+fn an_unknown_reason_is_rejected() {
+    assert_eq!(
+        check::<Site>(
+            r#"{"id":"shop/unit:shop/site:shop-callee-f","kind":"callee","outcome":{"unresolved":{"reason":"unknown"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}"#
+        ),
+        "line 1, column 101: unknown variant `unknown`, expected one of `missing_module`, `no_type`, `not_found`, `ambiguous`, `dynamic`, `unreachable`"
+    );
+}
+
+#[test]
+fn a_site_names_its_checker() {
+    assert_eq!(
+        check::<Site>(
+            r#"{"id":"shop/unit:shop/site:shop-callee-f","kind":"callee","outcome":{"unresolved":{"reason":"not_found"}},"source":"extractor"}"#
+        ),
+        "line 1, column 127: missing field `checker`"
     );
 }

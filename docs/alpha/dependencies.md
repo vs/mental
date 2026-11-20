@@ -34,3 +34,11 @@ Log every dependency added, with the reason.
 | ruff_python_parser | extract | Parses each Python file into ruff's typed, CPython-shaped syntax tree, recovering from syntax errors ([X1](../guidelines/extract.md#x1-ruffs-parser-and-tys-crates-pinned-to-one-commit), [X4](../guidelines/extract.md#x4-always-parse_unchecked)); from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-19 |
 | ruff_python_ast | extract | The syntax tree and its visitor, which the site walk runs on; same commit | 2026-11-19 |
 | ruff_text_size | extract | The byte ranges of syntax nodes, which anchor each site; same commit | 2026-11-19 |
+| ruff_db | extract | The file system, files and parsed modules ty's API works on, with the `os` feature; through it ty reads the environment read-only ([X5](../guidelines/extract.md#x5-pure-stages-one-module-each)); from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-20 |
+| ruff_notebook | extract | Named by the `System` trait that the read-only wrapper implements; from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-20 |
+| ruff_ranged_value | extract | Wraps the options passed to ty (roots, environment, Python version) as ty's command line does; from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-20 |
+| ty_project | extract | ty's project database, set up with explicit options for one build unit ([X1](../guidelines/extract.md#x1-ruffs-parser-and-tys-crates-pinned-to-one-commit)); from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-20 |
+| ty_ide | extract | "Go to definition", "go to declaration" and "go to type definition", which answer what a site names; from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-20 |
+| ty_python_semantic | extract | The semantic model: a receiver's type, which says why a site has no answer, and the signatures a call matches, which say what runs; from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-20 |
+| ty_python_core | extract | The program file a semantic model is built for; from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-20 |
+| ty_module_resolver | extract | Which module a definition's file is and whether it lies in a root, the standard library or `site-packages`; from git at ruff commit `4228f4c`, the commit of ty 0.0.105 | 2026-11-20 |

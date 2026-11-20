@@ -204,7 +204,7 @@ The walk finds six kinds in each file's syntax tree:
 - **write receiver**: every attribute that is assigned to: by `=`, an augmented or annotated assignment, a `for` or `with … as` target, or unpacking. An item assignment (`d[k] = v`) and `del` are not write sites.
 - **handler type**: each type an `except` or `except*` clause names, one per element of a tuple; a bare `except:` names none.
 
-An escape needs resolution to be told apart, so resolution finds it: a name or attribute handed to a call is an escape when it resolves to a repository function or class, or stays unresolved, and the callee is not a repository function.
+An escape needs resolution to be told apart, so resolution finds it: a name or attribute handed to a call, as a positional or keyword argument, is an escape when the checker's declaration of it is a repository `def` or `class`, or it has none, and the callee does not resolve into the repository. In report-jobs, `s.query(Report)` and `Enum(ReportStatus)` are escapes. A lambda handed to a call is not found yet.
 
 A site is identified by names: the qualified name of its enclosing scope, its kind and the name it refers to, as written. The scope is a function, a class body, or the module for code at the top of a file; a site in the header of a `def` or `class` (a decorator, a base, a default, an annotation) belongs to that def or class, and a lambda or comprehension is not a scope of its own. The name is written with names and attributes as they are, a call as `()` and a subscript as `[]` after what they apply to, and nothing for any other expression: `s.query(Order).filter(…)` names `s.query().filter`, and `", ".join(rows)` names `.join`. The site's slug is made from the three together. Sites are grouped by that slug with any trailing segments made only of digits removed, across the whole build unit, so `s.commit()` and `s.commit_0()` fall in one group, and so do two sites whose scope, kind and name happen to run together into one slug; every site in a group of two or more gets its order in the group, by file and then by position, counted from 0, appended to its own slug. `generate_report` in report-jobs calls `s.commit()` three times, and those sites end in `-0`, `-1` and `-2`. Grouping this way keeps a counter from ever matching a name that already ends in digits. A line number is never part of the ID: a change outside the scope changes no ID, unless it adds or removes a site whose slug, without its trailing digit segments, equals that of a site in the scope; and moving a line inside the scope changes no ID, unless the line holds one of a group of two or more sites.
 
@@ -224,6 +224,16 @@ Mental does not write its own resolver. Measured on five projects, two existing 
 
 The checker is set up from the build model, never from its own guesses: explicit roots, Python version and environment per build unit. A repository with several build units gets one checker run per unit.
 
+What ty is asked depends on the site's kind:
+
+| Kind | Asked | `generate_report` in report-jobs |
+|---|---|---|
+| callee, and a decorator that is a call | what runs: the definition of each signature ty matches the call with, so a call through a variable names the `__call__` it runs; when the callee is a class, the class itself, not its `__init__`; when ty declares the callee but gives it no type, or `Never`, the site is `no_type` or `unreachable`. A call with no matched definition falls back to the declaration | `Session()` → `sqlalchemy.orm.session.sessionmaker.__call__`; `s.commit()` → `sqlalchemy.orm.session.Session.commit` |
+| import, base class, handler type, escape, a decorator that is not a call | the declaration of the last name written | `except ClientError` → `botocore.exceptions.ClientError` |
+| write receiver | the class of the object written to; an object with no type is `no_type` | `report.status = …` → `app.models.Report` |
+
+A definition is named by its module and its qualified name in the module, both as ty finds them; ty also says whether the module lies in a root, the standard library or `site-packages`. The package of a definition in `site-packages` is the pin whose installed `RECORD` lists its file. A path dependency installed editable lies on none of the three, so its targets are `not_found` until a later milestone maps it to its pin. Targets with the same module and name are one target, as the overloads of one function are; different targets make the site `ambiguous`. The repository's own files reach ty as `mentalc` read them, so the walk and the checker see the same text.
+
 ### 6.3 Outcomes
 
 Every site gets exactly one outcome, whichever tool produced it, and the record says which tool and version answered.
@@ -231,12 +241,12 @@ Every site gets exactly one outcome, whichever tool produced it, and the record 
 | Outcome | Means |
 |---|---|
 | `Resolved(id)` | the target is a definition in the repository |
-| `External(symbol)` | the target is outside the repository and has an identity: a package and an access path from the import, such as `sqlalchemy.orm.Session.commit` (F-U4). Whether Mental knows what it *does* is a separate question, answered by packs |
+| `External(symbol)` | the target is outside the repository and has an identity: the package, a pin or the standard library, and the module and qualified name where the checker found the definition, such as `sqlalchemy.orm.session` and `Session.commit` in the pin `sqlalchemy` (owner choice, 2026-11-20). Whether Mental knows what it *does* is a separate question, answered by packs |
 | `Unresolved(reason)` | the tool cannot say. `Unknown`, `Any` and `Never` from the checker are unresolved, never dropped |
 
-Reasons form a short closed list: `missing_module`, `no_type` (an unannotated parameter, an untyped container element), `not_found`, `ambiguous`, `dynamic` (`getattr`, `eval`, a wildcard import), `unreachable` (the checker answered `Never`). An unresolved site whose only problem is an earlier one names it as its cause, and reports count root causes, not sites.
+Reasons form a short closed list: `missing_module` (an import's module is neither under a root nor in the environment), `no_type` (an unannotated parameter, an untyped container element: ty's `Unknown` or `Any`), `not_found` (nothing defines the name, or its definition lies in no root, the standard library or a pinned package), `ambiguous`, `dynamic` (a wildcard import, a callee with no name such as `handlers[0]()`), `unreachable` (the checker answered `Never`). An unresolved site whose only problem is an earlier one will name it as its cause, and reports count root causes, not sites; milestone 1 does not fill the cause in yet, since finding it means tracing values.
 
-A `site` record has an `id`, a `kind` (`import`, `decorator`, `callee`, `base-class`, `write-receiver`, `escape` or `handler-type`), an `outcome` and the `checker` (name and version) that answered. The outcome is `resolved` with a definition (module and qualified name), `external` with a package and an access path, or `unresolved` with a reason and, when another site is its cause, that site.
+A `site` record has an `id`, a `kind` (`import`, `decorator`, `callee`, `base-class`, `write-receiver`, `escape` or `handler-type`), an `outcome` and the `checker` (name and version) that answered. The outcome is `resolved` with a definition (module and qualified name, the name left out for a whole module), `external` with a package (`{"pin": <pin ID>}` or `"stdlib"`), module and qualified name, or `unresolved` with a reason. The checker is `{"name": "ty", "version": "0.0.105"}`.
 
 Candidates found by name are never edges: name matching links unrelated definitions (F-U6).
 
