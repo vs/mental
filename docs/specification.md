@@ -366,6 +366,7 @@ The fields of each kind are fixed in the implementation plan of the milestone th
 - **Strict reading.** An unknown field, an unknown kind or a missing required field is an error, and so is a line that differs in any byte from how the record would be written, so a file that reads is written back to the same bytes.
 - **Diagnostics** are written one per line too, sorted by the record they are about, those about no record first, then by code name: an `id` when one record is the subject, a `code` such as `environment-missing`, `at` (a path and lines) for a place no record stands for, such as a syntax error, and a `message` that says what is wrong and how to fix it. The code fixes the severity: an `error` fails the command, a `warning` does not.
 - **One format version, no migrations.** A model in another format says "rebuild".
+- **Written whole or not at all.** `mentalc build` writes every file of `.mental/` beside its place before it moves any into place, so a build that fails to write keeps the earlier model. A build that finds no build unit (no `pyproject.toml`, or one that does not read) writes no `.mental/`, and removes a model an earlier build left there.
 - **The model is derived.** It is never edited by hand and never merged; after a merge the merged code is compiled again.
 - **`mentalc` reads the working tree,** the files as they are on disk. Reading a commit's objects without a checkout is Later ([source access](research/source-access/report.md)).
 
