@@ -51,3 +51,9 @@ todo = "warn"
 # A suppression is `#[expect(lint, reason = "…")]`, which fails once it's stale.
 allow_attributes = "warn"
 allow_attributes_without_reason = "warn"
+
+# Every dependency, ty's crates and proptest included, is built optimized in
+# the dev and test profiles, so a resolver test stays within its 1 s budget;
+# the workspace's own crates stay unoptimized, with their assertions (T19).
+[profile.dev.package."*"]
+opt-level = 3
