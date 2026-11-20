@@ -147,6 +147,11 @@ fn anchors() -> Vec<Anchor> {
 }
 
 #[test]
+fn format_version() {
+    insta::assert_snapshot!(jsonl::format_json(), @r#"{"version":1}"#);
+}
+
+#[test]
 fn build_units() {
     let text = jsonl::write(&units());
     assert_eq!(jsonl::read::<BuildUnit>(&text).unwrap().len(), 2);
