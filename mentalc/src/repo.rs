@@ -1,11 +1,13 @@
-//! The file-system edge: reads a project's build files and writes `.mental/`.
+//! The file-system edge: reads a project's build files, its Python files
+//! and its environment's `RECORD`s, and writes `.mental/`.
 
 use std::fs;
 use std::io;
 use std::path::Path;
 
-use anyhow::Context;
+use anyhow::{Context, anyhow, bail};
 use mental_extract::ProjectFiles;
+use mental_model::BuildUnit;
 
 /// A project's build files as read; `None` for a file that is not there.
 pub(crate) struct Tree {
@@ -45,34 +47,165 @@ pub(crate) fn read(dir: &Path) -> anyhow::Result<Tree> {
     })
 }
 
+/// What stage 2 reads: the unit's Python files and the `RECORD` of each
+/// distribution installed in its environment, each as `(name, text)`.
+pub(crate) struct Sources {
+    /// Relative to the project directory, with `/` between folders.
+    pub(crate) files: Vec<(String, String)>,
+    /// By the name of its `.dist-info` folder.
+    pub(crate) records: Vec<(String, String)>,
+}
+
+/// Every `.py` file under the unit's roots, leaving out files and folders
+/// whose name starts with `.` (as `.venv`) and `__pycache__`, and each `RECORD` of the
+/// environment's `site-packages`. A symbolic link is not followed: one to a
+/// folder, or one whose name ends in `.py`, is an error, so no file goes
+/// unread unsaid; a broken one, like any other, is ignored.
+pub(crate) fn read_sources(dir: &Path, unit: &BuildUnit) -> anyhow::Result<Sources> {
+    let mut files = Vec::new();
+    for root in &unit.roots {
+        let prefix = if root == "." {
+            String::new()
+        } else {
+            format!("{root}/")
+        };
+        python_files(dir, &prefix, &mut files)?;
+    }
+    files.sort();
+    let environment = unit
+        .environment
+        .as_deref()
+        .expect("stage 2 runs only when stage 1 found no gap, so the unit has its environment");
+    let mut records = Vec::new();
+    for site_packages in site_packages(dir, environment)? {
+        dist_records(dir, &site_packages, &mut records)?;
+    }
+    records.sort();
+    Ok(Sources { files, records })
+}
+
+/// What failed, with the path relative to the project directory.
+fn cannot_read(relative: &str) -> String {
+    format!(
+        "cannot read `{relative}`; make it readable, as a UTF-8 file if it is one, or remove it"
+    )
+}
+
+/// The entries of the folder at `relative`, each with its name.
+fn entries(dir: &Path, relative: &str) -> anyhow::Result<Vec<(String, fs::DirEntry)>> {
+    let mut found = Vec::new();
+    let folder = dir.join(relative);
+    for entry in fs::read_dir(folder).with_context(|| cannot_read(relative))? {
+        let entry = entry.with_context(|| cannot_read(relative))?;
+        let name = entry.file_name().into_string().map_err(|name| {
+            anyhow!(
+                "`{relative}` holds `{}`, whose name is not UTF-8; rename it",
+                name.to_string_lossy()
+            )
+        })?;
+        found.push((name, entry));
+    }
+    Ok(found)
+}
+
+fn python_files(dir: &Path, prefix: &str, files: &mut Vec<(String, String)>) -> anyhow::Result<()> {
+    let folder = prefix.strip_suffix('/').unwrap_or(".");
+    for (name, entry) in entries(dir, folder)? {
+        if name.starts_with('.') || name == "__pycache__" {
+            continue;
+        }
+        let path = format!("{prefix}{name}");
+        let kind = entry.file_type().with_context(|| cannot_read(&path))?;
+        let python = Path::new(&name).extension().is_some_and(|ext| ext == "py");
+        if kind.is_symlink() {
+            let to_folder = fs::metadata(entry.path()).is_ok_and(|target| target.is_dir());
+            if to_folder || python {
+                bail!(
+                    "`{path}` is a symbolic link, which mentalc does not follow, so the files \
+                     it leads to would go unread; replace it with what it links to, or remove it"
+                );
+            }
+        } else if kind.is_dir() {
+            python_files(dir, &format!("{path}/"), files)?;
+        } else if kind.is_file() && python {
+            let text = fs::read_to_string(entry.path()).with_context(|| cannot_read(&path))?;
+            files.push((path, text));
+        }
+    }
+    Ok(())
+}
+
+/// The environment's `site-packages`, relative to the project directory:
+/// `lib/python3.12/site-packages`, the layout of an environment on Unix.
+/// None when the environment has no `lib`.
+fn site_packages(dir: &Path, environment: &str) -> anyhow::Result<Vec<String>> {
+    let lib = format!("{environment}/lib");
+    if !dir.join(&lib).exists() {
+        return Ok(Vec::new());
+    }
+    let mut found = Vec::new();
+    for (name, _) in entries(dir, &lib)? {
+        let path = format!("{lib}/{name}/site-packages");
+        if dir.join(&path).is_dir() {
+            found.push(path);
+        }
+    }
+    found.sort();
+    Ok(found)
+}
+
+fn dist_records(
+    dir: &Path,
+    site_packages: &str,
+    records: &mut Vec<(String, String)>,
+) -> anyhow::Result<()> {
+    for (name, entry) in entries(dir, site_packages)? {
+        if !name.ends_with(".dist-info") {
+            continue;
+        }
+        let record = entry.path().join("RECORD");
+        match fs::read_to_string(&record) {
+            Ok(text) => records.push((name, text)),
+            Err(error) if error.kind() == io::ErrorKind::NotFound => {}
+            Err(error) => {
+                return Err(error)
+                    .with_context(|| cannot_read(&format!("{site_packages}/{name}/RECORD")));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Writes each file that has a text under `.mental/`, and removes each that
 /// has none. Every file is written whole beside its place before any is
-/// moved into place, so a failed write leaves the earlier model as it was.
+/// moved into place, and none is removed before all are in place, so a
+/// failed write leaves the earlier model as it was.
 pub(crate) fn write(dir: &Path, files: &[(&str, Option<String>)]) -> anyhow::Result<()> {
     let place = |path: &str| dir.join(".mental").join(path);
     let fail = |doing: &str, path: &str| {
         format!("cannot {doing} `.mental/{path}`; check that the project directory is writable")
     };
     for (path, text) in files {
-        let target = place(path);
         if let Some(text) = text {
+            let target = place(path);
             let folder = target.parent().expect("every file is inside `.mental/`");
             fs::create_dir_all(folder).with_context(|| fail("make the folder of", path))?;
             let partial = target.with_extension("partial");
             fs::write(partial, text).with_context(|| fail("write", path))?;
-        } else {
-            match fs::remove_file(&target) {
-                Err(error) if error.kind() != io::ErrorKind::NotFound => {
-                    return Err(error).with_context(|| fail("remove", path));
-                }
-                Ok(()) | Err(_) => {}
-            }
         }
     }
     for (path, _) in files.iter().filter(|(_, text)| text.is_some()) {
         let target = place(path);
         let partial = target.with_extension("partial");
         fs::rename(partial, &target).with_context(|| fail("replace", path))?;
+    }
+    for (path, _) in files.iter().filter(|(_, text)| text.is_none()) {
+        match fs::remove_file(place(path)) {
+            Err(error) if error.kind() != io::ErrorKind::NotFound => {
+                return Err(error).with_context(|| fail("remove", path));
+            }
+            Ok(()) | Err(_) => {}
+        }
     }
     Ok(())
 }

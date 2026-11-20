@@ -36,13 +36,21 @@ pub(crate) fn print_text(out: &mut dyn Write, built: &Built) -> io::Result<()> {
         writeln!(out, "{}", text(diagnostic))?;
     }
     if built.units == 0 {
-        writeln!(out, "wrote nothing: there is no build unit")
-    } else {
-        writeln!(
-            out,
-            "wrote .mental/ (build units: {}, pins: {})",
-            built.units, built.pins
-        )
+        return writeln!(out, "wrote nothing: there is no build unit");
+    }
+    let (units, pins) = (built.units, built.pins);
+    match &built.sites {
+        None => writeln!(out, "wrote .mental/ (build units: {units}, pins: {pins})"),
+        Some(sites) => {
+            let (resolved, external, unresolved) =
+                (sites.resolved, sites.external, sites.unresolved_total());
+            let all = resolved + external + unresolved;
+            writeln!(
+                out,
+                "wrote .mental/ (build units: {units}, pins: {pins}, sites: {all}: resolved \
+                 {resolved}, external {external}, unresolved {unresolved})"
+            )
+        }
     }
 }
 

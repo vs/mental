@@ -203,6 +203,8 @@ The summary must agree with the full graph; a check enforces it.
 
 **Outcome of a site.** *Resolved:* the target is a definition in the repository. *External:* the target is outside the repository and has an identity: its package and where the type checker found it, such as `Session.commit` in `sqlalchemy.orm.session` of the pin `sqlalchemy`. *Unresolved:* the type checker cannot say, with a reason from a short closed list.
 
+**Resolution report.** The count of a build's reference sites by outcome, for all sites and for each kind, with the unresolved ones by reason; written to `.mental/resolution.json`. *Example:* report-jobs' 140 sites: 28 resolved, 105 external, 7 unresolved.
+
 **Gap.** Something unknown that could change the model: an unresolved site, a call into a library with no pack, a missing input such as an environment. A gap *counts* when it lies in code an entry point can reach, or is a decorator, base class or escape.
 
 **Gate.** The point after the facts and before the first LLM call where a build with counting gaps fails, one diagnostic per root cause, each with its fix. An *acceptance* in `mentalc.toml` turns a gap into a visible assumption.

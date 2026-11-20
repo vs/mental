@@ -534,7 +534,8 @@ fn every_site_of_every_fixture_is_listed_once() {
 }
 
 /// report-jobs with its own environment, which `uv sync` makes; the
-/// tests that need it run when `RUN_SLOW_TESTS` is set.
+/// tests that need it run when `RUN_SLOW_TESTS` is set; CI cannot make it
+/// yet (CONTRIBUTING.md, Exceptions).
 fn report_jobs() -> Option<Project> {
     std::env::var_os("RUN_SLOW_TESTS")?;
     Some(report_jobs_in(".venv"))

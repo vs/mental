@@ -21,15 +21,28 @@ fn report_jobs() -> TempDir {
     dir
 }
 
-/// Gives the copy the environment `uv sync` would make.
+/// Gives the copy an environment as `uv sync` makes one, with nothing
+/// installed in it.
 fn sync(dir: &TempDir) {
-    fs::create_dir(dir.path().join(".venv")).expect("the copy has no `.venv/` yet");
+    fs::create_dir_all(dir.path().join(".venv/lib/python3.12/site-packages"))
+        .expect("the copy has no `.venv/` yet");
     fs::write(
         dir.path().join(".venv/pyvenv.cfg"),
         "home = /usr/local/bin\nuv = 0.9.2\nversion_info = 3.12.8\n",
     )
     .expect("`.venv/` is writable");
 }
+
+/// Every file a build with both stages writes.
+const FILES: [&str; 7] = [
+    "model/format.json",
+    "model/build_unit.jsonl",
+    "model/pin.jsonl",
+    "model/site.jsonl",
+    "anchors.jsonl",
+    "diagnostics.jsonl",
+    "resolution.json",
+];
 
 fn mentalc(dir: &TempDir, args: &[&str]) -> Command {
     let mut command = Command::new(env!("CARGO_BIN_EXE_mentalc"));
@@ -92,31 +105,64 @@ fn build_json_prints_the_diagnostics_lines() {
     "#);
 }
 
-/// After `uv sync`: the reference, and the same bytes when built again.
+/// After `uv sync`, with no Python file: both stages run, and stage 2
+/// finds no site.
 #[test]
-fn build_with_an_environment_writes_the_reference() {
+fn build_with_an_environment_runs_both_stages() {
     let dir = report_jobs();
     sync(&dir);
     assert_cmd_snapshot!(mentalc(&dir, &["build"]), @r"
     success: true
     exit_code: 0
     ----- stdout -----
-    wrote .mental/ (build units: 1, pins: 40)
+    wrote .mental/ (build units: 1, pins: 40, sites: 0: resolved 0, external 0, unresolved 0)
 
     ----- stderr -----
     ");
-    let files = [
-        "model/format.json",
-        "model/build_unit.jsonl",
-        "model/pin.jsonl",
-        "anchors.jsonl",
-        "diagnostics.jsonl",
-    ];
-    let first = files.map(|path| written(&dir, path));
-    assert_eq!(first[1], reference("build_unit.jsonl"));
-    assert_eq!(first[4], "");
+    assert_eq!(
+        written(&dir, "model/build_unit.jsonl"),
+        reference("build_unit.jsonl")
+    );
+    assert_eq!(written(&dir, "model/site.jsonl"), "");
+    assert_eq!(written(&dir, "diagnostics.jsonl"), "");
+    assert_eq!(
+        written(&dir, "resolution.json"),
+        "{\"all\":{\"resolved\":0,\"external\":0},\"kinds\":{}}\n"
+    );
+}
+
+/// Stage 2 runs only when stage 1 found no gap, and its files from an
+/// earlier build go when it does not run.
+#[test]
+fn a_gap_in_the_build_model_stops_before_the_sites() {
+    let dir = report_jobs();
+    sync(&dir);
     assert!(mentalc(&dir, &["build"]).status().unwrap().success());
-    assert_eq!(files.map(|path| written(&dir, path)), first);
+    fs::remove_dir_all(dir.path().join(".venv")).unwrap();
+    assert_eq!(mentalc(&dir, &["build"]).status().unwrap().code(), Some(1));
+    let gone = ["model/site.jsonl", "resolution.json"]
+        .map(|path| dir.path().join(".mental").join(path).exists());
+    assert_eq!(gone, [false, false]);
+}
+
+/// An environment ty cannot use fails the tool, not the project.
+#[test]
+fn an_environment_with_no_site_packages_fails_the_tool() {
+    let dir = report_jobs();
+    fs::create_dir(dir.path().join(".venv")).unwrap();
+    fs::write(
+        dir.path().join(".venv/pyvenv.cfg"),
+        "home = /usr/local/bin\nversion_info = 3.12.8\n",
+    )
+    .unwrap();
+    assert_cmd_snapshot!(mentalc(&dir, &["build"]), @r"
+    success: false
+    exit_code: 2
+    ----- stdout -----
+
+    ----- stderr -----
+    error: cannot resolve the project's reference sites: the type checker could not open the project: Failed to discover the site-packages directory; check that the project directory and its environment are readable
+    ");
 }
 
 #[test]
@@ -142,14 +188,7 @@ fn a_build_with_no_unit_removes_the_earlier_model() {
     assert!(mentalc(&dir, &["build"]).status().unwrap().success());
     fs::remove_file(dir.path().join("pyproject.toml")).unwrap();
     assert_eq!(mentalc(&dir, &["build"]).status().unwrap().code(), Some(1));
-    let files = [
-        "model/format.json",
-        "model/build_unit.jsonl",
-        "model/pin.jsonl",
-        "anchors.jsonl",
-        "diagnostics.jsonl",
-    ];
-    let left: Vec<&str> = files
+    let left: Vec<&str> = FILES
         .into_iter()
         .filter(|path| dir.path().join(".mental").join(path).exists())
         .collect();
