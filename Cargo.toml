@@ -35,6 +35,21 @@ ruff_python_ast = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c216
 ruff_python_parser = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
 ruff_text_size = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
 
+# ty, the type checker that says what each reference site points to, used
+# in process on ruff's syntax tree (extract, X1): its project database, its
+# "go to definition", its module resolver (which search path a file is on),
+# its semantic model, and the ruff crates its API takes
+# (the file system with the `os` feature, ranged option values, notebooks in
+# the `System` trait); same commit as the parser.
+ruff_db = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888", features = ["os"] }
+ruff_notebook = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
+ruff_ranged_value = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
+ty_ide = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
+ty_module_resolver = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
+ty_project = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
+ty_python_core = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
+ty_python_semantic = { git = "https://github.com/astral-sh/ruff", rev = "4228f4c2168d50dc60df1aec705a1438c75a4888" }
+
 [workspace.lints.rust]
 unsafe_code = "forbid"
 

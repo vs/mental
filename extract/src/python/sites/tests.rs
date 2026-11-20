@@ -24,8 +24,8 @@ fn a_name_keeps_calls_and_subscripts_as_marks() {
 #[test]
 fn a_name_drops_what_is_not_a_name() {
     assert_eq!(
-        check("', '.join(x)\n(f or g)()\n"),
-        "callee m .join\ncallee m "
+        check("', '.join(rows)\n(f or g)()\n"),
+        "callee m .join\nescape m rows\ncallee m "
     );
 }
 
@@ -42,5 +42,13 @@ fn a_header_belongs_to_its_def_or_class() {
     assert_eq!(
         check("@d(e())\ndef f(x=g()):\n    pass\nclass C(B, k=h()):\n    pass\n"),
         "decorator m.f d\ncallee m.f e\ncallee m.f g\nbase-class m.C B\ncallee m.C h"
+    );
+}
+
+#[test]
+fn each_name_or_attribute_handed_to_a_call_is_an_escape_candidate() {
+    assert_eq!(
+        check("f(a, b.c, d(), key=e, other=1)\n"),
+        "callee m f\nescape m a\nescape m b.c\nescape m e\ncallee m d"
     );
 }

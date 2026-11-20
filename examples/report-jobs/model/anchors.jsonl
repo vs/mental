@@ -54,11 +54,13 @@
 {"id":"reports/unit:reports/site:app-api-create-report-callee-str","path":"src/app/api.py","lines":[28,28],"quote":"        report = Report(id=str(uuid.uuid4()), idempotency_key=idempotency_key,"}
 {"id":"reports/unit:reports/site:app-api-create-report-callee-uuid-uuid4","path":"src/app/api.py","lines":[28,28],"quote":"        report = Report(id=str(uuid.uuid4()), idempotency_key=idempotency_key,"}
 {"id":"reports/unit:reports/site:app-api-create-report-decorator-app-post","path":"src/app/api.py","lines":[20,20],"quote":"@app.post(\"/reports\", status_code=202)"}
+{"id":"reports/unit:reports/site:app-api-create-report-escape-report","path":"src/app/api.py","lines":[25,25],"quote":"        existing = s.query(Report).filter_by(idempotency_key=idempotency_key).one_or_none()"}
 {"id":"reports/unit:reports/site:app-api-create-report-handler-type-operationalerror","path":"src/app/api.py","lines":[34,34],"quote":"    except OperationalError:"}
 {"id":"reports/unit:reports/site:app-api-get-report-callee-httpexception","path":"src/app/api.py","lines":[44,44],"quote":"            raise HTTPException(404, \"not found\")"}
 {"id":"reports/unit:reports/site:app-api-get-report-callee-s-get","path":"src/app/api.py","lines":[42,42],"quote":"        report = s.get(Report, report_id)"}
 {"id":"reports/unit:reports/site:app-api-get-report-callee-session","path":"src/app/api.py","lines":[41,41],"quote":"    with Session() as s:"}
 {"id":"reports/unit:reports/site:app-api-get-report-decorator-app-get","path":"src/app/api.py","lines":[39,39],"quote":"@app.get(\"/reports/{report_id}\")"}
+{"id":"reports/unit:reports/site:app-api-get-report-escape-report","path":"src/app/api.py","lines":[42,42],"quote":"        report = s.get(Report, report_id)"}
 {"id":"reports/unit:reports/site:app-api-import-app-db-session","path":"src/app/api.py","lines":[8,8],"quote":"from app.db import Session"}
 {"id":"reports/unit:reports/site:app-api-import-app-models-report","path":"src/app/api.py","lines":[9,9],"quote":"from app.models import Report, ReportStatus"}
 {"id":"reports/unit:reports/site:app-api-import-app-models-reportstatus","path":"src/app/api.py","lines":[9,9],"quote":"from app.models import Report, ReportStatus"}
@@ -87,6 +89,7 @@
 {"id":"reports/unit:reports/site:app-cli-retry-callee-session","path":"src/app/cli.py","lines":[16,16],"quote":"    with Session() as s:"}
 {"id":"reports/unit:reports/site:app-cli-retry-decorator-click-argument","path":"src/app/cli.py","lines":[14,14],"quote":"@click.argument(\"report_id\")"}
 {"id":"reports/unit:reports/site:app-cli-retry-decorator-reportctl-command","path":"src/app/cli.py","lines":[13,13],"quote":"@reportctl.command()"}
+{"id":"reports/unit:reports/site:app-cli-retry-escape-report","path":"src/app/cli.py","lines":[17,17],"quote":"        report = s.get(Report, report_id)"}
 {"id":"reports/unit:reports/site:app-cli-retry-write-receiver-report-status","path":"src/app/cli.py","lines":[22,22],"quote":"        report.status = ReportStatus.PENDING"}
 {"id":"reports/unit:reports/site:app-db-callee-create-engine","path":"src/app/db.py","lines":[6,6],"quote":"engine = create_engine(os.environ[\"DATABASE_URL\"])"}
 {"id":"reports/unit:reports/site:app-db-callee-sessionmaker","path":"src/app/db.py","lines":[7,7],"quote":"Session = sessionmaker(bind=engine, expire_on_commit=False)"}
@@ -118,6 +121,7 @@
 {"id":"reports/unit:reports/site:app-models-report-callee-enum","path":"src/app/models.py","lines":[23,23],"quote":"    status = Column(Enum(ReportStatus), nullable=False, default=ReportStatus.PENDING)"}
 {"id":"reports/unit:reports/site:app-models-report-callee-func-now-0","path":"src/app/models.py","lines":[25,25],"quote":"    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())"}
 {"id":"reports/unit:reports/site:app-models-report-callee-func-now-1","path":"src/app/models.py","lines":[25,25],"quote":"    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())"}
+{"id":"reports/unit:reports/site:app-models-report-escape-reportstatus","path":"src/app/models.py","lines":[23,23],"quote":"    status = Column(Enum(ReportStatus), nullable=False, default=ReportStatus.PENDING)"}
 {"id":"reports/unit:reports/site:app-models-reportstatus-base-class-enum-enum","path":"src/app/models.py","lines":[9,9],"quote":"class ReportStatus(enum.Enum):"}
 {"id":"reports/unit:reports/site:app-tasks-callee-boto3-client","path":"src/app/tasks.py","lines":[20,20],"quote":"s3 = boto3.client(\"s3\")"}
 {"id":"reports/unit:reports/site:app-tasks-callee-celery","path":"src/app/tasks.py","lines":[14,14],"quote":"celery = Celery(\"reports\", broker=os.environ[\"CELERY_BROKER_URL\"])"}
@@ -142,6 +146,8 @@
 {"id":"reports/unit:reports/site:app-tasks-generate-report-callee-session","path":"src/app/tasks.py","lines":[27,27],"quote":"    with Session() as s:"}
 {"id":"reports/unit:reports/site:app-tasks-generate-report-callee-writer-writerows","path":"src/app/tasks.py","lines":[43,43],"quote":"            writer.writerows((o.id, o.created, o.total_cents) for o in orders)"}
 {"id":"reports/unit:reports/site:app-tasks-generate-report-decorator-celery-task","path":"src/app/tasks.py","lines":[25,25],"quote":"@celery.task(bind=True, max_retries=3, default_retry_delay=30)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-escape-order","path":"src/app/tasks.py","lines":[38,38],"quote":"            orders = (s.query(Order)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-escape-report","path":"src/app/tasks.py","lines":[28,28],"quote":"        report = s.get(Report, report_id)"}
 {"id":"reports/unit:reports/site:app-tasks-generate-report-handler-type-clienterror","path":"src/app/tasks.py","lines":[49,49],"quote":"        except ClientError as exc:"}
 {"id":"reports/unit:reports/site:app-tasks-generate-report-write-receiver-report-status-0","path":"src/app/tasks.py","lines":[31,31],"quote":"        report.status = ReportStatus.RUNNING"}
 {"id":"reports/unit:reports/site:app-tasks-generate-report-write-receiver-report-status-1","path":"src/app/tasks.py","lines":[50,50],"quote":"            report.status = (ReportStatus.FAILED if self.request.retries >= self.max_retries"}
@@ -169,6 +175,7 @@
 {"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-session","path":"src/app/tasks.py","lines":[68,68],"quote":"    with Session() as s:"}
 {"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-timedelta","path":"src/app/tasks.py","lines":[67,67],"quote":"    cutoff = datetime.utcnow() - timedelta(minutes=15)"}
 {"id":"reports/unit:reports/site:app-tasks-requeue-stuck-decorator-celery-task","path":"src/app/tasks.py","lines":[65,65],"quote":"@celery.task"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-escape-report","path":"src/app/tasks.py","lines":[69,69],"quote":"        stuck = s.query(Report).filter(Report.status == ReportStatus.RUNNING,"}
 {"id":"reports/unit:reports/site:app-tasks-requeue-stuck-write-receiver-report-status","path":"src/app/tasks.py","lines":[72,72],"quote":"            report.status = ReportStatus.PENDING"}
 {"id":"reports/unit:reports/site:app-tasks-write-receiver-celery-conf-beat-schedule","path":"src/app/tasks.py","lines":[16,16],"quote":"celery.conf.beat_schedule = {"}
 {"id":"reports/unit:reports/site:app-tasks-write-receiver-celery-conf-task-acks-late","path":"src/app/tasks.py","lines":[15,15],"quote":"celery.conf.task_acks_late = True"}

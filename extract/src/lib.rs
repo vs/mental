@@ -7,4 +7,4 @@ mod build;
 mod python;
 
 pub use build::{BuildModel, ProjectFiles, build_model};
-pub use python::{PythonFile, Sites, list_sites};
+pub use python::{DistRecord, Environment, PythonFile, ResolveError, Sites, extract_sites};
