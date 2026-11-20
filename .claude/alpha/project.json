@@ -807,7 +807,7 @@
     "third_party": []
   },
   "installed": {
-    "kit_version": "2.0.1",
+    "kit_version": "2.1.0",
     "mode": "adopted",
     "on": "2026-11-18",
     "components": {
@@ -819,5 +819,11 @@
       ".gitignore",
       "README.md"
     ]
-  }
+  },
+  "not_code": [
+    "examples",
+    "docs/research/*/experiments",
+    "extract/tests/fixtures",
+    "extract/tests/data"
+  ]
 }

@@ -31,6 +31,8 @@ Layout: monorepo.
 
 Components communicate with each other; keep their contract explicit.
 
+Not code: `examples/`, `docs/research/*/experiments/`, `extract/tests/fixtures/`, `extract/tests/data/`: examples, fixtures and reference data. No format, lint, test or docs rule and no principles review applies there; the secrets scan and the repository's text checks (spelling, Markdown, links) still do.
+
 ### Tool choices
 
 - rust: rustfmt, clippy, cargo-llvm-cov, cargo-machete. Commands: `cargo fetch`, `cargo test`, `cargo clippy --all-targets --no-deps -- -D warnings`, `cargo fmt`, `cargo fmt --check`, `cargo check --all-targets`, `cargo machete`. Its components form one workspace at the repository root (`Cargo.toml`, `clippy.toml`, `rust-toolchain.toml`, one lockfile); each command covers the component it runs in
