@@ -97,7 +97,7 @@ These would enter the [glossary](glossary.md) on acceptance.
 |---|---|
 | **Reference site** | One place in the code that names something whose identity the model depends on: an import, a call's callee, a decorator, a base class, the receiver of an attribute write. |
 | **Outcome** | The result of resolving a site: `Resolved` (a definition in the repository), `External` (a named thing outside it) or `Unresolved` (with a reason). |
-| **External symbol** | The identity of something outside the repository: a package plus an access path from the import, such as `sqlalchemy.orm` then `Member[sessionmaker].ReturnValue`. |
+| **External symbol** | The identity of something outside the repository. In milestone 1, its package plus the module and qualified name where the type checker found the definition, such as `sqlalchemy.orm.session` and `Session.commit` ([section 5](#5-external-references)). |
 | **Package** | One unit of outside code with a version: a distribution from a registry, a git repository at a commit, the language's standard library. |
 | **Pin** | The version or commit a package is fixed to, together with how that is known: `declared`, `observed`, `ranged` or `unpinned`. |
 | **Package class** | What Mental knows about a package's behavior: `modelled` (a pack describes it), `inert` (declared to have no effects and no entry points) or `unknown`. |
@@ -162,7 +162,9 @@ Two rules apply to every reason:
 
 **Status: Proposed.**
 
-### 5.1 Identity by access path
+Milestone 1 identifies an external symbol by where the type checker found its definition: the package (a pin, or the standard library), the module and the qualified name, such as `sqlalchemy.orm.session` and `Session.commit` (owner choice, 2026-11-20). Building an access path from the import needs value tracking of Mental's own, which X1 and X9 rule out, so the form below waits for the packs, which are written in it. A library that moves a definition between its modules changes the symbol across versions.
+
+### 5.1 Identity by access path (later)
 
 An external symbol is a **package** plus an **access path** that starts at an import and uses the pack grammar of X11:
 

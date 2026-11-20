@@ -6,7 +6,7 @@ use std::path::Path;
 use std::process::Command;
 
 use insta_cmd::assert_cmd_snapshot;
-use mental_model::{BuildUnit, jsonl};
+use mental_model::{Anchor, BuildUnit, jsonl};
 use tempfile::TempDir;
 
 const EXAMPLE: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../examples/report-jobs");
@@ -66,7 +66,12 @@ fn build_without_an_environment() {
         jsonl::write(&units)
     );
     assert_eq!(written(&dir, "model/pin.jsonl"), reference("pin.jsonl"));
-    assert_eq!(written(&dir, "anchors.jsonl"), reference("anchors.jsonl"));
+    let build_anchors: Vec<Anchor> = jsonl::read::<Anchor>(&reference("anchors.jsonl"))
+        .unwrap()
+        .into_iter()
+        .filter(|anchor| !anchor.id.as_str().contains("/site:"))
+        .collect();
+    assert_eq!(written(&dir, "anchors.jsonl"), jsonl::write(&build_anchors));
     assert_eq!(written(&dir, "model/format.json"), "{\"version\":1}\n");
     assert_eq!(
         written(&dir, "diagnostics.jsonl"),

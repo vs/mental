@@ -39,3 +39,143 @@
 {"id":"reports/unit:reports/pin:uvicorn","path":"uv.lock","lines":[802,803],"quote":"name = \"uvicorn\"\nversion = \"0.54.0\""}
 {"id":"reports/unit:reports/pin:vine","path":"uv.lock","lines":[815,816],"quote":"name = \"vine\"\nversion = \"5.1.0\""}
 {"id":"reports/unit:reports/pin:wcwidth","path":"uv.lock","lines":[824,825],"quote":"name = \"wcwidth\"\nversion = \"0.9.4\""}
+{"id":"reports/unit:reports/site:app-api-callee-fastapi","path":"src/app/api.py","lines":[12,12],"quote":"app = FastAPI()"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-generate-report-delay","path":"src/app/api.py","lines":[33,33],"quote":"        generate_report.delay(report.id)"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-header","path":"src/app/api.py","lines":[21,21],"quote":"def create_report(req: ReportRequest, idempotency_key: str = Header(...)):"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-httpexception-0","path":"src/app/api.py","lines":[23,23],"quote":"        raise HTTPException(400, \"date range longer than 366 days\")"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-httpexception-1","path":"src/app/api.py","lines":[35,35],"quote":"        raise HTTPException(503, \"queue unavailable\")"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-report","path":"src/app/api.py","lines":[28,29],"quote":"        report = Report(id=str(uuid.uuid4()), idempotency_key=idempotency_key,\n                        start=req.start, end=req.end, status=ReportStatus.PENDING)"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-s-add","path":"src/app/api.py","lines":[30,30],"quote":"        s.add(report)"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-s-commit","path":"src/app/api.py","lines":[31,31],"quote":"        s.commit()"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-s-query","path":"src/app/api.py","lines":[25,25],"quote":"        existing = s.query(Report).filter_by(idempotency_key=idempotency_key).one_or_none()"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-s-query-filter-by","path":"src/app/api.py","lines":[25,25],"quote":"        existing = s.query(Report).filter_by(idempotency_key=idempotency_key).one_or_none()"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-s-query-filter-by-one-or-none","path":"src/app/api.py","lines":[25,25],"quote":"        existing = s.query(Report).filter_by(idempotency_key=idempotency_key).one_or_none()"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-session","path":"src/app/api.py","lines":[24,24],"quote":"    with Session() as s:"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-str","path":"src/app/api.py","lines":[28,28],"quote":"        report = Report(id=str(uuid.uuid4()), idempotency_key=idempotency_key,"}
+{"id":"reports/unit:reports/site:app-api-create-report-callee-uuid-uuid4","path":"src/app/api.py","lines":[28,28],"quote":"        report = Report(id=str(uuid.uuid4()), idempotency_key=idempotency_key,"}
+{"id":"reports/unit:reports/site:app-api-create-report-decorator-app-post","path":"src/app/api.py","lines":[20,20],"quote":"@app.post(\"/reports\", status_code=202)"}
+{"id":"reports/unit:reports/site:app-api-create-report-escape-report","path":"src/app/api.py","lines":[25,25],"quote":"        existing = s.query(Report).filter_by(idempotency_key=idempotency_key).one_or_none()"}
+{"id":"reports/unit:reports/site:app-api-create-report-handler-type-operationalerror","path":"src/app/api.py","lines":[34,34],"quote":"    except OperationalError:"}
+{"id":"reports/unit:reports/site:app-api-get-report-callee-httpexception","path":"src/app/api.py","lines":[44,44],"quote":"            raise HTTPException(404, \"not found\")"}
+{"id":"reports/unit:reports/site:app-api-get-report-callee-s-get","path":"src/app/api.py","lines":[42,42],"quote":"        report = s.get(Report, report_id)"}
+{"id":"reports/unit:reports/site:app-api-get-report-callee-session","path":"src/app/api.py","lines":[41,41],"quote":"    with Session() as s:"}
+{"id":"reports/unit:reports/site:app-api-get-report-decorator-app-get","path":"src/app/api.py","lines":[39,39],"quote":"@app.get(\"/reports/{report_id}\")"}
+{"id":"reports/unit:reports/site:app-api-get-report-escape-report","path":"src/app/api.py","lines":[42,42],"quote":"        report = s.get(Report, report_id)"}
+{"id":"reports/unit:reports/site:app-api-import-app-db-session","path":"src/app/api.py","lines":[8,8],"quote":"from app.db import Session"}
+{"id":"reports/unit:reports/site:app-api-import-app-models-report","path":"src/app/api.py","lines":[9,9],"quote":"from app.models import Report, ReportStatus"}
+{"id":"reports/unit:reports/site:app-api-import-app-models-reportstatus","path":"src/app/api.py","lines":[9,9],"quote":"from app.models import Report, ReportStatus"}
+{"id":"reports/unit:reports/site:app-api-import-app-tasks-generate-report","path":"src/app/api.py","lines":[10,10],"quote":"from app.tasks import generate_report"}
+{"id":"reports/unit:reports/site:app-api-import-datetime-date","path":"src/app/api.py","lines":[2,2],"quote":"from datetime import date"}
+{"id":"reports/unit:reports/site:app-api-import-fastapi-fastapi","path":"src/app/api.py","lines":[4,4],"quote":"from fastapi import FastAPI, Header, HTTPException"}
+{"id":"reports/unit:reports/site:app-api-import-fastapi-header","path":"src/app/api.py","lines":[4,4],"quote":"from fastapi import FastAPI, Header, HTTPException"}
+{"id":"reports/unit:reports/site:app-api-import-fastapi-httpexception","path":"src/app/api.py","lines":[4,4],"quote":"from fastapi import FastAPI, Header, HTTPException"}
+{"id":"reports/unit:reports/site:app-api-import-kombu-exceptions-operationalerror","path":"src/app/api.py","lines":[5,5],"quote":"from kombu.exceptions import OperationalError"}
+{"id":"reports/unit:reports/site:app-api-import-pydantic-basemodel","path":"src/app/api.py","lines":[6,6],"quote":"from pydantic import BaseModel"}
+{"id":"reports/unit:reports/site:app-api-import-uuid","path":"src/app/api.py","lines":[1,1],"quote":"import uuid"}
+{"id":"reports/unit:reports/site:app-api-reportrequest-base-class-basemodel","path":"src/app/api.py","lines":[15,15],"quote":"class ReportRequest(BaseModel):"}
+{"id":"reports/unit:reports/site:app-cli-callee-reportctl","path":"src/app/cli.py","lines":[29,29],"quote":"    reportctl()"}
+{"id":"reports/unit:reports/site:app-cli-import-app-db-session","path":"src/app/cli.py","lines":[3,3],"quote":"from app.db import Session"}
+{"id":"reports/unit:reports/site:app-cli-import-app-models-report","path":"src/app/cli.py","lines":[4,4],"quote":"from app.models import Report, ReportStatus"}
+{"id":"reports/unit:reports/site:app-cli-import-app-models-reportstatus","path":"src/app/cli.py","lines":[4,4],"quote":"from app.models import Report, ReportStatus"}
+{"id":"reports/unit:reports/site:app-cli-import-app-tasks-generate-report","path":"src/app/cli.py","lines":[5,5],"quote":"from app.tasks import generate_report"}
+{"id":"reports/unit:reports/site:app-cli-import-click","path":"src/app/cli.py","lines":[1,1],"quote":"import click"}
+{"id":"reports/unit:reports/site:app-cli-reportctl-decorator-click-group","path":"src/app/cli.py","lines":[8,8],"quote":"@click.group()"}
+{"id":"reports/unit:reports/site:app-cli-retry-callee-click-clickexception-0","path":"src/app/cli.py","lines":[19,19],"quote":"            raise click.ClickException(\"no such report\")"}
+{"id":"reports/unit:reports/site:app-cli-retry-callee-click-clickexception-1","path":"src/app/cli.py","lines":[21,21],"quote":"            raise click.ClickException(f\"report is {report.status.value}, not FAILED\")"}
+{"id":"reports/unit:reports/site:app-cli-retry-callee-click-echo","path":"src/app/cli.py","lines":[25,25],"quote":"    click.echo(\"requeued\")"}
+{"id":"reports/unit:reports/site:app-cli-retry-callee-generate-report-delay","path":"src/app/cli.py","lines":[24,24],"quote":"    generate_report.delay(report_id)"}
+{"id":"reports/unit:reports/site:app-cli-retry-callee-s-commit","path":"src/app/cli.py","lines":[23,23],"quote":"        s.commit()"}
+{"id":"reports/unit:reports/site:app-cli-retry-callee-s-get","path":"src/app/cli.py","lines":[17,17],"quote":"        report = s.get(Report, report_id)"}
+{"id":"reports/unit:reports/site:app-cli-retry-callee-session","path":"src/app/cli.py","lines":[16,16],"quote":"    with Session() as s:"}
+{"id":"reports/unit:reports/site:app-cli-retry-decorator-click-argument","path":"src/app/cli.py","lines":[14,14],"quote":"@click.argument(\"report_id\")"}
+{"id":"reports/unit:reports/site:app-cli-retry-decorator-reportctl-command","path":"src/app/cli.py","lines":[13,13],"quote":"@reportctl.command()"}
+{"id":"reports/unit:reports/site:app-cli-retry-escape-report","path":"src/app/cli.py","lines":[17,17],"quote":"        report = s.get(Report, report_id)"}
+{"id":"reports/unit:reports/site:app-cli-retry-write-receiver-report-status","path":"src/app/cli.py","lines":[22,22],"quote":"        report.status = ReportStatus.PENDING"}
+{"id":"reports/unit:reports/site:app-db-callee-create-engine","path":"src/app/db.py","lines":[6,6],"quote":"engine = create_engine(os.environ[\"DATABASE_URL\"])"}
+{"id":"reports/unit:reports/site:app-db-callee-sessionmaker","path":"src/app/db.py","lines":[7,7],"quote":"Session = sessionmaker(bind=engine, expire_on_commit=False)"}
+{"id":"reports/unit:reports/site:app-db-import-os","path":"src/app/db.py","lines":[1,1],"quote":"import os"}
+{"id":"reports/unit:reports/site:app-db-import-sqlalchemy-create-engine","path":"src/app/db.py","lines":[3,3],"quote":"from sqlalchemy import create_engine"}
+{"id":"reports/unit:reports/site:app-db-import-sqlalchemy-orm-sessionmaker","path":"src/app/db.py","lines":[4,4],"quote":"from sqlalchemy.orm import sessionmaker"}
+{"id":"reports/unit:reports/site:app-models-callee-declarative-base","path":"src/app/models.py","lines":[6,6],"quote":"Base = declarative_base()"}
+{"id":"reports/unit:reports/site:app-models-import-enum","path":"src/app/models.py","lines":[1,1],"quote":"import enum"}
+{"id":"reports/unit:reports/site:app-models-import-sqlalchemy-column","path":"src/app/models.py","lines":[3,3],"quote":"from sqlalchemy import Column, Date, DateTime, Enum, Integer, String, func"}
+{"id":"reports/unit:reports/site:app-models-import-sqlalchemy-date","path":"src/app/models.py","lines":[3,3],"quote":"from sqlalchemy import Column, Date, DateTime, Enum, Integer, String, func"}
+{"id":"reports/unit:reports/site:app-models-import-sqlalchemy-datetime","path":"src/app/models.py","lines":[3,3],"quote":"from sqlalchemy import Column, Date, DateTime, Enum, Integer, String, func"}
+{"id":"reports/unit:reports/site:app-models-import-sqlalchemy-enum","path":"src/app/models.py","lines":[3,3],"quote":"from sqlalchemy import Column, Date, DateTime, Enum, Integer, String, func"}
+{"id":"reports/unit:reports/site:app-models-import-sqlalchemy-func","path":"src/app/models.py","lines":[3,3],"quote":"from sqlalchemy import Column, Date, DateTime, Enum, Integer, String, func"}
+{"id":"reports/unit:reports/site:app-models-import-sqlalchemy-integer","path":"src/app/models.py","lines":[3,3],"quote":"from sqlalchemy import Column, Date, DateTime, Enum, Integer, String, func"}
+{"id":"reports/unit:reports/site:app-models-import-sqlalchemy-orm-declarative-base","path":"src/app/models.py","lines":[4,4],"quote":"from sqlalchemy.orm import declarative_base"}
+{"id":"reports/unit:reports/site:app-models-import-sqlalchemy-string","path":"src/app/models.py","lines":[3,3],"quote":"from sqlalchemy import Column, Date, DateTime, Enum, Integer, String, func"}
+{"id":"reports/unit:reports/site:app-models-order-base-class-base","path":"src/app/models.py","lines":[28,28],"quote":"class Order(Base):"}
+{"id":"reports/unit:reports/site:app-models-order-callee-column-0","path":"src/app/models.py","lines":[31,31],"quote":"    id = Column(Integer, primary_key=True)"}
+{"id":"reports/unit:reports/site:app-models-order-callee-column-1","path":"src/app/models.py","lines":[32,32],"quote":"    created = Column(Date, nullable=False)"}
+{"id":"reports/unit:reports/site:app-models-order-callee-column-2","path":"src/app/models.py","lines":[33,33],"quote":"    total_cents = Column(Integer, nullable=False)"}
+{"id":"reports/unit:reports/site:app-models-report-base-class-base","path":"src/app/models.py","lines":[16,16],"quote":"class Report(Base):"}
+{"id":"reports/unit:reports/site:app-models-report-callee-column-0","path":"src/app/models.py","lines":[19,19],"quote":"    id = Column(String, primary_key=True)"}
+{"id":"reports/unit:reports/site:app-models-report-callee-column-1","path":"src/app/models.py","lines":[20,20],"quote":"    idempotency_key = Column(String, unique=True, nullable=False)"}
+{"id":"reports/unit:reports/site:app-models-report-callee-column-2","path":"src/app/models.py","lines":[21,21],"quote":"    start = Column(Date, nullable=False)"}
+{"id":"reports/unit:reports/site:app-models-report-callee-column-3","path":"src/app/models.py","lines":[22,22],"quote":"    end = Column(Date, nullable=False)"}
+{"id":"reports/unit:reports/site:app-models-report-callee-column-4","path":"src/app/models.py","lines":[23,23],"quote":"    status = Column(Enum(ReportStatus), nullable=False, default=ReportStatus.PENDING)"}
+{"id":"reports/unit:reports/site:app-models-report-callee-column-5","path":"src/app/models.py","lines":[24,24],"quote":"    url = Column(String)"}
+{"id":"reports/unit:reports/site:app-models-report-callee-column-6","path":"src/app/models.py","lines":[25,25],"quote":"    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())"}
+{"id":"reports/unit:reports/site:app-models-report-callee-enum","path":"src/app/models.py","lines":[23,23],"quote":"    status = Column(Enum(ReportStatus), nullable=False, default=ReportStatus.PENDING)"}
+{"id":"reports/unit:reports/site:app-models-report-callee-func-now-0","path":"src/app/models.py","lines":[25,25],"quote":"    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())"}
+{"id":"reports/unit:reports/site:app-models-report-callee-func-now-1","path":"src/app/models.py","lines":[25,25],"quote":"    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())"}
+{"id":"reports/unit:reports/site:app-models-report-escape-reportstatus","path":"src/app/models.py","lines":[23,23],"quote":"    status = Column(Enum(ReportStatus), nullable=False, default=ReportStatus.PENDING)"}
+{"id":"reports/unit:reports/site:app-models-reportstatus-base-class-enum-enum","path":"src/app/models.py","lines":[9,9],"quote":"class ReportStatus(enum.Enum):"}
+{"id":"reports/unit:reports/site:app-tasks-callee-boto3-client","path":"src/app/tasks.py","lines":[20,20],"quote":"s3 = boto3.client(\"s3\")"}
+{"id":"reports/unit:reports/site:app-tasks-callee-celery","path":"src/app/tasks.py","lines":[14,14],"quote":"celery = Celery(\"reports\", broker=os.environ[\"CELERY_BROKER_URL\"])"}
+{"id":"reports/unit:reports/site:app-tasks-callee-os-environ-get","path":"src/app/tasks.py","lines":[22,22],"quote":"WEBHOOK_URL = os.environ.get(\"WEBHOOK_URL\")"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-buf-getvalue","path":"src/app/tasks.py","lines":[48,48],"quote":"            s3.put_object(Bucket=BUCKET, Key=key, Body=buf.getvalue())"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-csv-writer","path":"src/app/tasks.py","lines":[35,35],"quote":"        writer = csv.writer(buf)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-io-stringio","path":"src/app/tasks.py","lines":[34,34],"quote":"        buf = io.StringIO()"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-order-created-between","path":"src/app/tasks.py","lines":[39,39],"quote":"                      .filter(Order.created.between(report.start, report.end))"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-requests-post","path":"src/app/tasks.py","lines":[62,62],"quote":"        requests.post(WEBHOOK_URL, json={\"id\": report_id, \"status\": \"DONE\"}, timeout=10)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-commit-0","path":"src/app/tasks.py","lines":[32,32],"quote":"        s.commit()"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-commit-1","path":"src/app/tasks.py","lines":[52,52],"quote":"            s.commit()"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-commit-2","path":"src/app/tasks.py","lines":[59,59],"quote":"        s.commit()"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-get","path":"src/app/tasks.py","lines":[28,28],"quote":"        report = s.get(Report, report_id)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-query","path":"src/app/tasks.py","lines":[38,38],"quote":"            orders = (s.query(Order)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-query-filter","path":"src/app/tasks.py","lines":[38,39],"quote":"            orders = (s.query(Order)\n                      .filter(Order.created.between(report.start, report.end))"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-query-filter-order-by","path":"src/app/tasks.py","lines":[38,40],"quote":"            orders = (s.query(Order)\n                      .filter(Order.created.between(report.start, report.end))\n                      .order_by(Order.id).offset(page * 1000).limit(1000).all())"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-query-filter-order-by-offset","path":"src/app/tasks.py","lines":[38,40],"quote":"            orders = (s.query(Order)\n                      .filter(Order.created.between(report.start, report.end))\n                      .order_by(Order.id).offset(page * 1000).limit(1000).all())"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-query-filter-order-by-offset-limit","path":"src/app/tasks.py","lines":[38,40],"quote":"            orders = (s.query(Order)\n                      .filter(Order.created.between(report.start, report.end))\n                      .order_by(Order.id).offset(page * 1000).limit(1000).all())"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s-query-filter-order-by-offset-limit-all","path":"src/app/tasks.py","lines":[38,40],"quote":"            orders = (s.query(Order)\n                      .filter(Order.created.between(report.start, report.end))\n                      .order_by(Order.id).offset(page * 1000).limit(1000).all())"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-s3-put-object","path":"src/app/tasks.py","lines":[48,48],"quote":"            s3.put_object(Bucket=BUCKET, Key=key, Body=buf.getvalue())"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-self-retry","path":"src/app/tasks.py","lines":[54,54],"quote":"                raise self.retry(exc=exc)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-session","path":"src/app/tasks.py","lines":[27,27],"quote":"    with Session() as s:"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-callee-writer-writerows","path":"src/app/tasks.py","lines":[43,43],"quote":"            writer.writerows((o.id, o.created, o.total_cents) for o in orders)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-decorator-celery-task","path":"src/app/tasks.py","lines":[25,25],"quote":"@celery.task(bind=True, max_retries=3, default_retry_delay=30)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-escape-order","path":"src/app/tasks.py","lines":[38,38],"quote":"            orders = (s.query(Order)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-escape-report","path":"src/app/tasks.py","lines":[28,28],"quote":"        report = s.get(Report, report_id)"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-handler-type-clienterror","path":"src/app/tasks.py","lines":[49,49],"quote":"        except ClientError as exc:"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-write-receiver-report-status-0","path":"src/app/tasks.py","lines":[31,31],"quote":"        report.status = ReportStatus.RUNNING"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-write-receiver-report-status-1","path":"src/app/tasks.py","lines":[50,50],"quote":"            report.status = (ReportStatus.FAILED if self.request.retries >= self.max_retries"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-write-receiver-report-status-2","path":"src/app/tasks.py","lines":[57,57],"quote":"        report.status = ReportStatus.DONE"}
+{"id":"reports/unit:reports/site:app-tasks-generate-report-write-receiver-report-url","path":"src/app/tasks.py","lines":[58,58],"quote":"        report.url = f\"s3://{BUCKET}/{key}\""}
+{"id":"reports/unit:reports/site:app-tasks-import-app-db-session","path":"src/app/tasks.py","lines":[11,11],"quote":"from app.db import Session"}
+{"id":"reports/unit:reports/site:app-tasks-import-app-models-order","path":"src/app/tasks.py","lines":[12,12],"quote":"from app.models import Order, Report, ReportStatus"}
+{"id":"reports/unit:reports/site:app-tasks-import-app-models-report","path":"src/app/tasks.py","lines":[12,12],"quote":"from app.models import Order, Report, ReportStatus"}
+{"id":"reports/unit:reports/site:app-tasks-import-app-models-reportstatus","path":"src/app/tasks.py","lines":[12,12],"quote":"from app.models import Order, Report, ReportStatus"}
+{"id":"reports/unit:reports/site:app-tasks-import-boto3","path":"src/app/tasks.py","lines":[6,6],"quote":"import boto3"}
+{"id":"reports/unit:reports/site:app-tasks-import-botocore-exceptions-clienterror","path":"src/app/tasks.py","lines":[8,8],"quote":"from botocore.exceptions import ClientError"}
+{"id":"reports/unit:reports/site:app-tasks-import-celery-celery","path":"src/app/tasks.py","lines":[9,9],"quote":"from celery import Celery"}
+{"id":"reports/unit:reports/site:app-tasks-import-csv","path":"src/app/tasks.py","lines":[1,1],"quote":"import csv"}
+{"id":"reports/unit:reports/site:app-tasks-import-datetime-datetime","path":"src/app/tasks.py","lines":[4,4],"quote":"from datetime import datetime, timedelta"}
+{"id":"reports/unit:reports/site:app-tasks-import-datetime-timedelta","path":"src/app/tasks.py","lines":[4,4],"quote":"from datetime import datetime, timedelta"}
+{"id":"reports/unit:reports/site:app-tasks-import-io","path":"src/app/tasks.py","lines":[2,2],"quote":"import io"}
+{"id":"reports/unit:reports/site:app-tasks-import-os","path":"src/app/tasks.py","lines":[3,3],"quote":"import os"}
+{"id":"reports/unit:reports/site:app-tasks-import-requests","path":"src/app/tasks.py","lines":[7,7],"quote":"import requests"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-datetime-utcnow","path":"src/app/tasks.py","lines":[67,67],"quote":"    cutoff = datetime.utcnow() - timedelta(minutes=15)"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-generate-report-delay","path":"src/app/tasks.py","lines":[75,75],"quote":"        generate_report.delay(report.id)"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-s-commit","path":"src/app/tasks.py","lines":[73,73],"quote":"        s.commit()"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-s-query","path":"src/app/tasks.py","lines":[69,69],"quote":"        stuck = s.query(Report).filter(Report.status == ReportStatus.RUNNING,"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-s-query-filter","path":"src/app/tasks.py","lines":[69,70],"quote":"        stuck = s.query(Report).filter(Report.status == ReportStatus.RUNNING,\n                                       Report.updated_at < cutoff).all()"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-s-query-filter-all","path":"src/app/tasks.py","lines":[69,70],"quote":"        stuck = s.query(Report).filter(Report.status == ReportStatus.RUNNING,\n                                       Report.updated_at < cutoff).all()"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-session","path":"src/app/tasks.py","lines":[68,68],"quote":"    with Session() as s:"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-callee-timedelta","path":"src/app/tasks.py","lines":[67,67],"quote":"    cutoff = datetime.utcnow() - timedelta(minutes=15)"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-decorator-celery-task","path":"src/app/tasks.py","lines":[65,65],"quote":"@celery.task"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-escape-report","path":"src/app/tasks.py","lines":[69,69],"quote":"        stuck = s.query(Report).filter(Report.status == ReportStatus.RUNNING,"}
+{"id":"reports/unit:reports/site:app-tasks-requeue-stuck-write-receiver-report-status","path":"src/app/tasks.py","lines":[72,72],"quote":"            report.status = ReportStatus.PENDING"}
+{"id":"reports/unit:reports/site:app-tasks-write-receiver-celery-conf-beat-schedule","path":"src/app/tasks.py","lines":[16,16],"quote":"celery.conf.beat_schedule = {"}
+{"id":"reports/unit:reports/site:app-tasks-write-receiver-celery-conf-task-acks-late","path":"src/app/tasks.py","lines":[15,15],"quote":"celery.conf.task_acks_late = True"}

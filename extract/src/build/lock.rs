@@ -78,7 +78,7 @@ pub(super) fn read(text: &str, unit: &Id, project: &Slug) -> (Option<Locked>, Ve
         let problem = Diagnostic {
             id: None,
             code: Code::LockVersionUnknown,
-            at: Some(super::location(PATH, text, head.version.span())),
+            at: Some(crate::anchor::location(PATH, text, head.version.span())),
             message: format!(
                 "`{PATH}` has schema version {}, and this build reads only version {VERSION}; \
                  lock with a uv that writes version {VERSION}",
@@ -142,7 +142,7 @@ fn pin(
         return Err(Diagnostic {
             id: None,
             code: Code::LockAmbiguous,
-            at: Some(super::location(PATH, text, span)),
+            at: Some(crate::anchor::location(PATH, text, span)),
             message: format!(
                 "`{PATH}` locks `{name}` {} times, such as once per platform, and a pin has one \
                  version; let uv lock one version for every platform, for example with a \
@@ -177,7 +177,7 @@ fn pin(
     let (name_span, version_span) = (package.name.span(), version.span());
     let span = name_span.start.min(version_span.start)..name_span.end.max(version_span.end);
     let id = unit.child(Kind::Pin, slug);
-    let anchor = super::anchor(id.clone(), PATH, text, span);
+    let anchor = crate::anchor::anchor(id.clone(), PATH, text, span);
     let pin = Pin {
         id,
         package: slug.as_str().to_owned(),
@@ -226,7 +226,7 @@ fn invalid(text: &str, span: Range<usize>, why: String) -> Diagnostic {
     Diagnostic {
         id: None,
         code: Code::LockInvalid,
-        at: Some(super::location(PATH, text, span)),
+        at: Some(crate::anchor::location(PATH, text, span)),
         message: why,
     }
 }

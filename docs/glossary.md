@@ -199,9 +199,9 @@ The summary must agree with the full graph; a check enforces it.
 
 **Extractor.** A deterministic program that reads build files, code or infrastructure files and produces facts: the build model, reference sites, the call graph, branch points, effects, entry points. Extractors never guess.
 
-**Reference site.** A place where the code names something: an import, a call, a decorator, a base class, the receiver of an attribute write, a function handed to outside code. Every site gets exactly one outcome.
+**Reference site.** A place where the code names something: an import, a call, a decorator, a base class, the receiver of an attribute write, a function handed to outside code (an *escape*), the type an `except` clause catches. Every site gets exactly one outcome. *Example:* the three `s.commit()` calls of `generate_report` are the sites `reports/unit:reports/site:app-tasks-generate-report-callee-s-commit-0` to `-2`.
 
-**Outcome of a site.** *Resolved:* the target is a definition in the repository. *External:* the target is outside the repository and has an identity, such as `sqlalchemy.orm.Session.commit`. *Unresolved:* the type checker cannot say, with a reason from a short closed list.
+**Outcome of a site.** *Resolved:* the target is a definition in the repository. *External:* the target is outside the repository and has an identity: its package and where the type checker found it, such as `Session.commit` in `sqlalchemy.orm.session` of the pin `sqlalchemy`. *Unresolved:* the type checker cannot say, with a reason from a short closed list.
 
 **Gap.** Something unknown that could change the model: an unresolved site, a call into a library with no pack, a missing input such as an environment. A gap *counts* when it lies in code an entry point can reach, or is a decorator, base class or escape.
 

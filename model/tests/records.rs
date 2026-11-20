@@ -1,6 +1,6 @@
 //! What the record types accept when read.
 
-use mental_model::{BuildUnit, Pin, jsonl};
+use mental_model::{BuildUnit, Pin, Site, jsonl};
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
@@ -78,5 +78,35 @@ fn a_git_origin_names_its_commit() {
             r#"{"id":"shop/unit:shop/pin:a","package":"a","version":"1","origin":{"git":{"url":"https://x/a"}},"source":"extractor"}"#
         ),
         "line 1, column 94: missing field `commit`"
+    );
+}
+
+#[test]
+fn an_unknown_site_kind_is_rejected() {
+    assert_eq!(
+        check::<Site>(
+            r#"{"id":"shop/unit:shop/site:shop-callee-f","kind":"call","outcome":{"unresolved":{"reason":"not_found"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}"#
+        ),
+        "line 1, column 55: unknown variant `call`, expected one of `import`, `decorator`, `callee`, `base-class`, `write-receiver`, `escape`, `handler-type`"
+    );
+}
+
+#[test]
+fn an_unknown_reason_is_rejected() {
+    assert_eq!(
+        check::<Site>(
+            r#"{"id":"shop/unit:shop/site:shop-callee-f","kind":"callee","outcome":{"unresolved":{"reason":"unknown"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}"#
+        ),
+        "line 1, column 101: unknown variant `unknown`, expected one of `missing_module`, `no_type`, `not_found`, `ambiguous`, `dynamic`, `unreachable`"
+    );
+}
+
+#[test]
+fn a_site_names_its_checker() {
+    assert_eq!(
+        check::<Site>(
+            r#"{"id":"shop/unit:shop/site:shop-callee-f","kind":"callee","outcome":{"unresolved":{"reason":"not_found"}},"source":"extractor"}"#
+        ),
+        "line 1, column 127: missing field `checker`"
     );
 }

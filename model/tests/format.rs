@@ -4,7 +4,8 @@
 use std::collections::BTreeSet;
 
 use mental_model::{
-    Anchor, BuildUnit, Id, Lines, Lock, Origin, Pin, Python, PythonFrom, Source, jsonl,
+    Anchor, BuildUnit, Checker, Id, Lines, Lock, Origin, Outcome, Package, Pin, Python, PythonFrom,
+    Reason, Site, SiteKind, Source, jsonl,
 };
 
 fn id(text: &str) -> Id {
@@ -73,6 +74,69 @@ fn pins() -> Vec<Pin> {
     ]
 }
 
+fn sites() -> Vec<Site> {
+    let site = |slug: &str, kind, outcome| Site {
+        id: id(&format!("shop/unit:shop/site:{slug}")),
+        kind,
+        outcome,
+        checker: Checker {
+            name: "ty".to_owned(),
+            version: "0.0.105".to_owned(),
+        },
+        source: Source::Extractor,
+    };
+    let resolved = |module: &str, name: &str| Outcome::Resolved {
+        module: module.to_owned(),
+        name: name.to_owned(),
+    };
+    let unresolved = |reason| Outcome::Unresolved { reason };
+    vec![
+        site(
+            "shop-import-shop-db",
+            SiteKind::Import,
+            resolved("shop.db", ""),
+        ),
+        site(
+            "shop-api-create-decorator-app-post",
+            SiteKind::Decorator,
+            Outcome::External {
+                package: Package::Pin(id("shop/unit:shop/pin:fastapi")),
+                module: "fastapi.applications".to_owned(),
+                name: "FastAPI.post".to_owned(),
+            },
+        ),
+        site(
+            "shop-api-create-callee-s-commit-0",
+            SiteKind::Callee,
+            unresolved(Reason::NoType),
+        ),
+        site(
+            "shop-models-order-base-class-base",
+            SiteKind::BaseClass,
+            resolved("shop.models", "Base"),
+        ),
+        site(
+            "shop-api-create-write-receiver-order-status",
+            SiteKind::WriteReceiver,
+            resolved("shop.models", "Order"),
+        ),
+        site(
+            "shop-api-create-escape-order",
+            SiteKind::Escape,
+            resolved("shop.models", "Order"),
+        ),
+        site(
+            "shop-api-create-handler-type-timeout",
+            SiteKind::HandlerType,
+            Outcome::External {
+                package: Package::Stdlib,
+                module: "builtins".to_owned(),
+                name: "TimeoutError".to_owned(),
+            },
+        ),
+    ]
+}
+
 fn anchors() -> Vec<Anchor> {
     vec![Anchor {
         id: id("shop/unit:shop/pin:requests"),
@@ -106,6 +170,21 @@ fn pins_with_every_origin() {
     {"id":"shop/unit:shop/pin:requests","package":"requests","version":"1.0.0","origin":{"registry":"https://pypi.org/simple"},"source":"extractor"}
     {"id":"shop/unit:shop/pin:tools","package":"tools","version":"1.0.0","origin":{"path":"../tools"},"source":"extractor"}
     {"id":"shop/unit:shop/pin:wheel","package":"wheel","version":"1.0.0","origin":{"url":"https://example.com/wheel-1.0.0-py3-none-any.whl"},"source":"extractor"}
+    "#);
+}
+
+#[test]
+fn sites_of_every_kind() {
+    let text = jsonl::write(&sites());
+    assert_eq!(jsonl::read::<Site>(&text).unwrap().len(), 7);
+    insta::assert_snapshot!(text, @r#"
+    {"id":"shop/unit:shop/site:shop-api-create-callee-s-commit-0","kind":"callee","outcome":{"unresolved":{"reason":"no_type"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-api-create-decorator-app-post","kind":"decorator","outcome":{"external":{"package":{"pin":"shop/unit:shop/pin:fastapi"},"module":"fastapi.applications","name":"FastAPI.post"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-api-create-escape-order","kind":"escape","outcome":{"resolved":{"module":"shop.models","name":"Order"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-api-create-handler-type-timeout","kind":"handler-type","outcome":{"external":{"package":"stdlib","module":"builtins","name":"TimeoutError"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-api-create-write-receiver-order-status","kind":"write-receiver","outcome":{"resolved":{"module":"shop.models","name":"Order"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-import-shop-db","kind":"import","outcome":{"resolved":{"module":"shop.db"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}
+    {"id":"shop/unit:shop/site:shop-models-order-base-class-base","kind":"base-class","outcome":{"resolved":{"module":"shop.models","name":"Base"}},"checker":{"name":"ty","version":"0.0.105"},"source":"extractor"}
     "#);
 }
 
