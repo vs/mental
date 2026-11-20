@@ -179,7 +179,7 @@ Stage 2 runs once per build unit, with the roots, Python version and environment
 
 ### 6.1 Parse and list sites
 
-`mentalc` parses every file itself, with ruff's parser pinned to an exact version. A type checker answers only "what does this point to"; control flow, obligations and effects come from Mental's own walk of the syntax tree.
+`mentalc` parses every file itself, with ruff's parser pinned to an exact version: every `.py` file under the build unit's roots, leaving out files and folders whose name starts with `.` (such as `.venv`, which Python does not import either) and `__pycache__`. A symbolic link to a folder, or one whose name ends in `.py`, is a tool failure that names the link, since following it could read files outside the project or twice; any other link, a broken one included, is ignored. A type checker answers only "what does this point to"; control flow, obligations and effects come from Mental's own walk of the syntax tree.
 
 The walk lists every **reference site**:
 
@@ -263,7 +263,7 @@ A gap **counts** when it can reach the model: it lies in code reachable from an 
 3. An acceptance that matches nothing fails the build.
 4. The resolution rate is reported and never gates: one unresolved decorator matters more than a hundred unresolved calls in a script (F-U5).
 
-Rules 2 and 3 need entry points, which milestone 2 adds. In milestone 1 a missing input and a missing module (an import found neither under a root nor in the environment) fail the build; every other unresolved site is listed in the resolution report.
+Rules 2 and 3 need entry points, which milestone 2 adds. In milestone 1 a missing input and a missing module (an import found neither under a root nor in the environment) fail the build; every other unresolved site keeps its outcome in `site.jsonl` and is counted in the resolution report.
 
 A failed gate prints one diagnostic per root cause, largest effect first, each with the sites, the ports it can affect and the fix. Under the agent backend the agent sees the same text, can supply the input with its own tools, and builds again.
 
@@ -366,6 +366,8 @@ The fields of each kind are fixed in the implementation plan of the milestone th
 - **Strict reading.** An unknown field, an unknown kind or a missing required field is an error, and so is a line that differs in any byte from how the record would be written, so a file that reads is written back to the same bytes.
 - **Diagnostics** are written one per line too, sorted by the record they are about, those about no record first, then by code name: an `id` when one record is the subject, a `code` such as `environment-missing`, `at` (a path and lines) for a place no record stands for, such as a syntax error, and a `message` that says what is wrong and how to fix it. The code fixes the severity: an `error` fails the command, a `warning` does not.
 - **One format version, no migrations.** A model in another format says "rebuild".
+- **The resolution report** counts the sites of a build, as one line of JSON: for all sites and for each kind, how many are `resolved`, `external`, and `unresolved` by reason. Milestone 1 has no root causes to add, since it fills in no `cause`. `mentalc build` prints the totals in its last line: `wrote .mental/ (build units: 1, pins: 40, sites: 140: resolved 28, external 105, unresolved 7)`.
+- **Stage 2 only after stage 1.** `mentalc build` resolves sites only when the build model has no error, as the build stops at the first stage that fails; a build that stops there removes the `site.jsonl` and `resolution.json` of an earlier build.
 - **Written whole or not at all.** `mentalc build` writes every file of `.mental/` beside its place before it moves any into place, so a build that fails to write keeps the earlier model. A build that finds no build unit (no `pyproject.toml`, or one that does not read) writes no `.mental/`, and removes a model an earlier build left there.
 - **The model is derived.** It is never edited by hand and never merged; after a merge the merged code is compiled again.
 - **`mentalc` reads the working tree,** the files as they are on disk. Reading a commit's objects without a checkout is Later ([source access](research/source-access/report.md)).

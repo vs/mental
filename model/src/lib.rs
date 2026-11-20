@@ -8,6 +8,7 @@ mod diagnostic;
 mod id;
 pub mod jsonl;
 mod record;
+mod report;
 
 pub use anchor::{Anchor, Lines};
 pub use diagnostic::{Code, Diagnostic, Location, Severity};
@@ -16,3 +17,4 @@ pub use record::{
     BuildUnit, Checker, Lock, Origin, Outcome, Package, Pin, Python, PythonFrom, Reason, Site,
     SiteKind, Source,
 };
+pub use report::{Resolution, Tally};

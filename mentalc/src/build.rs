@@ -1,28 +1,28 @@
-//! The build: the project's files in, the model's files and the
-//! diagnostics out. It writes nothing; `repo` does.
+//! The build: stage 1's model and, when stage 1 found no error, stage 2's
+//! sites, assembled into the model's files and the diagnostics. It reads
+//! and writes nothing; `repo` does.
 
-use mental_extract::{ProjectFiles, build_model};
-use mental_model::{Diagnostic, Severity, jsonl};
+use mental_extract::{BuildModel, Sites};
+use mental_model::{BuildUnit, Diagnostic, Resolution, Severity, Tally, jsonl};
 
 use crate::Status;
 
 pub(crate) struct Built {
-    /// Each file of `.mental/`, by its path in it, with its text. With no
-    /// build unit every text is `None`: an earlier build's file is removed,
-    /// and a directory that is no project gets no `.mental/`.
+    /// Each file of `.mental/`, by its path in it, with its text. A file
+    /// with no text is removed: with no build unit that is every file, and
+    /// a directory that is no project gets no `.mental/`; when stage 2 did
+    /// not run, its files.
     pub(crate) files: Vec<(&'static str, Option<String>)>,
     pub(crate) units: usize,
     pub(crate) pins: usize,
+    /// How the sites resolved, when stage 2 ran.
+    pub(crate) sites: Option<Tally>,
     pub(crate) diagnostics: Vec<Diagnostic>,
 }
 
 impl Built {
     pub(crate) fn status(&self) -> Status {
-        let failed = self
-            .diagnostics
-            .iter()
-            .any(|diagnostic| diagnostic.code.severity() == Severity::Error);
-        if failed {
+        if failed(&self.diagnostics) {
             Status::Failure
         } else {
             Status::Success
@@ -30,8 +30,40 @@ impl Built {
     }
 }
 
-pub(crate) fn build(files: &ProjectFiles) -> Built {
-    let (model, mut diagnostics) = build_model(files);
+fn failed(diagnostics: &[Diagnostic]) -> bool {
+    diagnostics
+        .iter()
+        .any(|diagnostic| diagnostic.code.severity() == Severity::Error)
+}
+
+/// The build unit stage 2 resolves: stage 1's, when it found no error, as
+/// the build stops at the first stage that fails.
+pub(crate) fn ready<'m>(
+    model: &'m BuildModel,
+    diagnostics: &[Diagnostic],
+) -> Option<&'m BuildUnit> {
+    if failed(diagnostics) {
+        None
+    } else {
+        model.units.first()
+    }
+}
+
+pub(crate) fn build(
+    model: BuildModel,
+    mut diagnostics: Vec<Diagnostic>,
+    stage_two: Option<(Sites, Vec<Diagnostic>)>,
+) -> Built {
+    let mut anchors = model.anchors;
+    let (sites, resolution) = match stage_two {
+        Some((sites, found)) => {
+            diagnostics.extend(found);
+            anchors.extend(sites.anchors);
+            let resolution = Resolution::of(&sites.sites);
+            (Some(sites.sites), Some(resolution))
+        }
+        None => (None, None),
+    };
     diagnostics.sort();
     let written = !model.units.is_empty();
     let file = |path, text: String| (path, written.then_some(text));
@@ -40,11 +72,17 @@ pub(crate) fn build(files: &ProjectFiles) -> Built {
             file("model/format.json", jsonl::format_json()),
             file("model/build_unit.jsonl", jsonl::write(&model.units)),
             file("model/pin.jsonl", jsonl::write(&model.pins)),
-            file("anchors.jsonl", jsonl::write(&model.anchors)),
+            ("model/site.jsonl", sites.as_deref().map(jsonl::write)),
+            file("anchors.jsonl", jsonl::write(&anchors)),
             file("diagnostics.jsonl", jsonl::write(&diagnostics)),
+            (
+                "resolution.json",
+                resolution.as_ref().map(Resolution::to_json),
+            ),
         ],
         units: model.units.len(),
         pins: model.pins.len(),
+        sites: resolution.map(|resolution| resolution.all),
         diagnostics,
     }
 }

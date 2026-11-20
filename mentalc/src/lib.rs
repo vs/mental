@@ -1,5 +1,6 @@
 //! Compiles a repository's working tree into a model of the system: the
-//! build model of the project in one directory, written to `.mental/`.
+//! build model of the project in one directory and, when it has no gap, its
+//! reference sites with their outcomes, written to `.mental/`.
 #![deny(clippy::wildcard_enum_match_arm)]
 
 mod build;
@@ -10,6 +11,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use anyhow::Context;
+use mental_extract::{DistRecord, Environment, PythonFile, build_model, extract_sites};
 
 pub use cli::{Cli, Command};
 
@@ -37,11 +39,44 @@ impl Status {
 ///
 /// # Errors
 ///
-/// When the tool itself fails: a file it cannot read or write.
+/// When the tool itself fails: a file it cannot read or write, a name that
+/// is not UTF-8 or a symbolic link to source it does not follow, a project
+/// directory whose path is not UTF-8, or a type checker that cannot open
+/// the project or its environment.
 pub fn run(cli: &Cli, dir: &Path, out: &mut dyn Write) -> anyhow::Result<Status> {
     let Command::Build { json } = cli.command;
     let tree = repo::read(dir)?;
-    let built = build::build(&tree.files());
+    let (model, diagnostics) = build_model(&tree.files());
+    let stage_two = match build::ready(&model, &diagnostics) {
+        Some(unit) => {
+            let sources = repo::read_sources(dir, unit)?;
+            let project_dir = dir.to_str().with_context(|| {
+                format!(
+                    "the project directory `{}` is not UTF-8; build from a directory whose path is",
+                    dir.display()
+                )
+            })?;
+            let files: Vec<PythonFile> = sources
+                .files
+                .iter()
+                .map(|(path, text)| PythonFile { path, text })
+                .collect();
+            let records: Vec<DistRecord> = sources
+                .records
+                .iter()
+                .map(|(dist_info, text)| DistRecord { dist_info, text })
+                .collect();
+            let environment = Environment {
+                project_dir,
+                records: &records,
+            };
+            let found = extract_sites(unit, &model.pins, &environment, &files)
+                .context("cannot resolve the project's reference sites")?;
+            Some(found)
+        }
+        None => None,
+    };
+    let built = build::build(model, diagnostics, stage_two);
     repo::write(dir, &built.files)?;
     let printed = if json {
         cli::print_json(out, &built.diagnostics)
