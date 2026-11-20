@@ -119,6 +119,8 @@ Code: `mentalc/**/*.rs`. Tests: `mentalc/tests/**/*.rs`, `mentalc/**/tests.rs`. 
 | structure | `cargo machete` |
 | run | add when the entry point exists |
 
+Not code: `examples/`, `docs/research/*/experiments/`, `extract/tests/fixtures/`, `extract/tests/data/`: examples, fixtures and reference data. No format, lint, test or docs rule and no principles review applies there; the secrets scan and the repository's text checks (spelling, Markdown, links) still do.
+
 Run every check: `mise run check` (CI runs the same checks).
 
 The hooks leave the full test suites to one checkpoint: before your work reaches main (a push to main, or merging a pull request), run `python3 .claude/alpha/hooks/stop_checks.py tests`. It runs the suite of each component you changed and remembers a pass until those files change. While you work, run the tests your change touches.
