@@ -48,7 +48,7 @@ cargo test
 cd mentalc
 cargo fetch
 cargo test
-# run: add the command once the entry point exists
+cd ../examples/report-jobs && uv sync --locked && cargo run -p mental-mentalc -- build
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) before your first commit.

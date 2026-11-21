@@ -117,7 +117,7 @@ Code: `mentalc/**/*.rs`. Tests: `mentalc/tests/**/*.rs`, `mentalc/**/tests.rs`. 
 | format_check | `cargo fmt --check` |
 | typecheck | `cargo check --all-targets` |
 | structure | `cargo machete` |
-| run | add when the entry point exists |
+| run | `cd ../examples/report-jobs && uv sync --locked && cargo run -p mental-mentalc -- build` |
 
 Not code: `examples/`, `docs/research/*/experiments/`, `extract/tests/fixtures/`, `extract/tests/data/`: examples, fixtures and reference data. No format, lint, test or docs rule and no principles review applies there; the secrets scan and the repository's text checks (spelling, Markdown, links) still do.
 
@@ -140,7 +140,7 @@ Follow the commit skill (`.claude/skills/commit/SKILL.md`, which the user runs a
 ## Docs
 
 - [Principles](docs/alpha/principles.toml)
-- [Specification](docs/alpha/specification.md): what the product does; `/alpha:update <area>` settles each open part, and each feature gets a folder in `docs/alpha/features/`
+- [Specification](docs/alpha/specification.md): what the product does; `/alpha:update <area>` settles each open part, and each full-track task gets a folder in `docs/alpha/features/`, `docs/alpha/bug-fixes/`, `docs/alpha/refactorings/` or `docs/alpha/perf/`
 - [Contributing](CONTRIBUTING.md): how the project is built, checked, released and kept secure
 - [Dependencies](docs/alpha/dependencies.md)
 - [Glossary](docs/alpha/glossary.md)
