@@ -3,7 +3,7 @@
 # hooks and reviewers read this file.
 
 schema = 1
-kit_version = "2.1.0"
+kit_version = "2.3.0"
 dependency_log = "docs/alpha/dependencies.md"
 not_code = ["examples", "docs/research/*/experiments", "extract/tests/fixtures", "extract/tests/data"]
 
@@ -87,6 +87,7 @@ test = "cargo test"
 format = "cargo fmt"
 format_file = "rustfmt --edition 2024 {file}"
 lint_file = ""
+run = ""
 
 [[components.rules]]
 id = "rust:cargo-for-dependencies"
@@ -126,6 +127,7 @@ test = "cargo test"
 format = "cargo fmt"
 format_file = "rustfmt --edition 2024 {file}"
 lint_file = ""
+run = ""
 
 [[components.rules]]
 id = "rust:cargo-for-dependencies"
@@ -165,6 +167,7 @@ test = "cargo test"
 format = "cargo fmt"
 format_file = "rustfmt --edition 2024 {file}"
 lint_file = ""
+run = "cd ../examples/report-jobs && uv sync --locked && cargo run -p mental-mentalc -- build"
 
 [[components.rules]]
 id = "rust:cargo-for-dependencies"

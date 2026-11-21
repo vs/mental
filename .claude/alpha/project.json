@@ -383,6 +383,7 @@
       "path": "mentalc",
       "kind": "cli",
       "stack": "rust",
+      "run": "cd ../examples/report-jobs && uv sync --locked && cargo run -p mental-mentalc -- build",
       "traits": {
         "has_ui": false,
         "deployed": false,
@@ -807,7 +808,7 @@
     "third_party": []
   },
   "installed": {
-    "kit_version": "2.1.0",
+    "kit_version": "2.3.0",
     "mode": "adopted",
     "on": "2026-11-18",
     "components": {
