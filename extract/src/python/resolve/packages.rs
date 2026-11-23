@@ -28,8 +28,48 @@ impl Packages {
         Packages(files)
     }
 
+    /// The pin of the installed file at `path`. A stub describes a module,
+    /// and `types-redis` or `redis-stubs` installs stubs of another
+    /// package's, so a `.pyi` file belongs to the pin that installs the
+    /// module it describes, when one does.
     pub(super) fn pin(&self, path: &str) -> Option<&Id> {
-        self.0.get(path)
+        let pin = self.0.get(path)?;
+        let Some(stub) = path.strip_suffix(".pyi") else {
+            return Some(pin);
+        };
+        Some(self.module_pin(stub).unwrap_or(pin))
+    }
+
+    /// The pin that installs the module of the stub `stub`, written without
+    /// `.pyi`, nearest file first: for `redis-stubs/commands/core`, the
+    /// module `redis/commands/core.py`, or one compiled as
+    /// `redis/commands/core.<tag>.so` or `.pyd`, then the `__init__.py` of
+    /// `redis/commands/core`, `redis/commands` and `redis`.
+    fn module_pin(&self, stub: &str) -> Option<&Id> {
+        let module = stub.strip_suffix("/__init__").unwrap_or(stub);
+        let mut parts: Vec<&str> = module.split('/').collect();
+        parts[0] = parts[0].strip_suffix("-stubs").unwrap_or(parts[0]);
+        let module = parts.join("/");
+        let compiled = format!("{module}.");
+        let own = self.0.get(&format!("{module}.py")).or_else(|| {
+            self.0
+                .range(compiled.clone()..)
+                .take_while(|(path, _)| path.starts_with(&compiled))
+                .find(|(path, _)| {
+                    std::path::Path::new(path.as_str())
+                        .extension()
+                        .is_some_and(|tag| {
+                            tag.eq_ignore_ascii_case("so") || tag.eq_ignore_ascii_case("pyd")
+                        })
+                })
+                .map(|(_, pin)| pin)
+        });
+        own.or_else(|| {
+            (1..=parts.len()).rev().find_map(|depth| {
+                self.0
+                    .get(&format!("{}/__init__.py", parts[..depth].join("/")))
+            })
+        })
     }
 }
 

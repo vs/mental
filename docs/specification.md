@@ -135,6 +135,8 @@ Before it reads a line of code, `mentalc` builds a small model of how the projec
 
 A project is what Python already calls one: a directory with a `pyproject.toml`, as `uv init` makes it, with a `uv.lock`, a `.python-version` file and, after `uv sync`, a `.venv`. Mental needs no file of its own to read a project.
 
+A **uv workspace** is read as uv reads it (F-B3, owner choice 2026-11-23). The directory whose `pyproject.toml` has `[tool.uv.workspace]` is the workspace root; it holds the one `uv.lock`, `.python-version` and `.venv` its members share, and its own `[project]` is optional. Each member is a build unit, and the root is one too when it has a `[project]`. `mentalc build` at the root builds every unit; in a member, it builds that member. A unit's pins are the packages of the shared lock that its own dependencies reach; a member that another member depends on is a pin with origin `path`. The system takes the root's project name, or the root directory's name when the root has none.
+
 ### 5.1 Records
 
 | Record | Says | Fields |
@@ -145,6 +147,8 @@ A project is what Python already calls one: a directory with a `pyproject.toml`,
 A field whose input is missing is left out, and the missing input is a gap (5.3): with no `.venv`, the build unit has no `environment`. Both records have `source: extractor`; the provenance and checks of [7.1](#71-shape) come with the first stage whose records can differ in them.
 
 "Component" stays the word for a box inside a service; a part built on its own is a **build unit**. The system and its build unit take the project's name.
+
+*In full-stack-fastapi-template:* the root lists one member, `backend/`, and has no `[project]`, so the system has one build unit, named after `backend/`'s project, with the lock and environment of the root.
 
 *In report-jobs:* one build unit, named `reports` after the project, with a pin for each package in `uv.lock` other than the project itself.
 
@@ -204,7 +208,7 @@ The walk finds six kinds in each file's syntax tree:
 - **write receiver**: every attribute that is assigned to: by `=`, an augmented or annotated assignment, a `for` or `with … as` target, or unpacking. An item assignment (`d[k] = v`) and `del` are not write sites.
 - **handler type**: each type an `except` or `except*` clause names, one per element of a tuple; a bare `except:` names none.
 
-An escape needs resolution to be told apart, so resolution finds it: a name or attribute handed to a call, as a positional or keyword argument, is an escape when the checker's declaration of it is a repository `def` or `class`, or it has none, and the callee does not resolve into the repository. In report-jobs, `s.query(Report)` and `Enum(ReportStatus)` are escapes. A lambda handed to a call is not found yet.
+An escape needs resolution to be told apart, so resolution finds it: a name or attribute handed to a call, as a positional or keyword argument, is an escape when the checker's declaration of it is a repository `def` or `class`, or it has none and its type is unknown or callable, and the callee does not resolve into the repository. A value with no declaration whose type is known and cannot be called is no escape: `logging.getLogger(__name__)` hands over a `str` (F-B5, owner choice 2026-11-23). In report-jobs, `s.query(Report)` and `Enum(ReportStatus)` are escapes. A lambda handed to a call is not found yet.
 
 A site is identified by names: the qualified name of its enclosing scope, its kind and the name it refers to, as written. The scope is a function, a class body, or the module for code at the top of a file; a site in the header of a `def` or `class` (a decorator, a base, a default, an annotation) belongs to that def or class, and a lambda or comprehension is not a scope of its own. The name is written with names and attributes as they are, a call as `()` and a subscript as `[]` after what they apply to, and nothing for any other expression: `s.query(Order).filter(…)` names `s.query().filter`, and `", ".join(rows)` names `.join`. The site's slug is made from the three together. Sites are grouped by that slug with any trailing segments made only of digits removed, across the whole build unit, so `s.commit()` and `s.commit_0()` fall in one group, and so do two sites whose scope, kind and name happen to run together into one slug; every site in a group of two or more gets its order in the group, by file and then by position, counted from 0, appended to its own slug. `generate_report` in report-jobs calls `s.commit()` three times, and those sites end in `-0`, `-1` and `-2`. Grouping this way keeps a counter from ever matching a name that already ends in digits. A line number is never part of the ID: a change outside the scope changes no ID, unless it adds or removes a site whose slug, without its trailing digit segments, equals that of a site in the scope; and moving a line inside the scope changes no ID, unless the line holds one of a group of two or more sites.
 
@@ -232,7 +236,7 @@ What ty is asked depends on the site's kind:
 | import, base class, handler type, escape, a decorator that is not a call | the declaration of the last name written | `except ClientError` → `botocore.exceptions.ClientError` |
 | write receiver | the class of the object written to; an object with no type is `no_type`. `self` and `cls` stand for the class of the method that holds the site, and so does a call of `cls` (F-B2) | `report.status = …` → `app.models.Report` |
 
-A definition is named by its module and its qualified name in the module, both as ty finds them; ty also says whether the module lies in a root, the standard library or `site-packages`. The package of a definition in `site-packages` is the pin whose installed `RECORD` lists its file. A path dependency installed editable lies on none of the three, so its targets are `not_found` until a later milestone maps it to its pin. Targets with the same module and name are one target, as the overloads of one function are; different targets make the site `ambiguous`. The repository's own files reach ty as `mentalc` read them, so the walk and the checker see the same text.
+A definition is named by its module and its qualified name in the module, both as ty finds them; ty also says whether the module lies in a root, the standard library or `site-packages`. The package of a definition in `site-packages` is the pin whose installed `RECORD` lists its file, except for a stub: ty prefers a `.pyi` file, and `types-redis` or `redis-stubs` installs stubs of another package's modules, so a `.pyi` file belongs to the pin that installs the module it describes. For `redis/client.pyi` that is the pin whose `RECORD` lists `redis/client.py`, a compiled `redis/client.<tag>.so` or `.pyd`, or else the `__init__.py` of the nearest package above it; a `-stubs` folder names its package without the suffix. With no such pin, the stub pin stays (F-B6, owner choice 2026-11-23). A path dependency installed editable lies on none of the three, so its targets are `not_found` until a later milestone maps it to its pin. Targets with the same module and name are one target, as the overloads of one function are; different targets make the site `ambiguous`. The repository's own files reach ty as `mentalc` read them, so the walk and the checker see the same text.
 
 ### 6.3 Outcomes
 
@@ -254,7 +258,7 @@ Candidates found by name are never edges: name matching links unrelated definiti
 
 A **gap** is something unknown that could change the model: an unresolved site, an external call into a package with no pack, a missing input from stage 1.
 
-A gap **counts** when it can reach the model: it lies in code reachable from an entry point along resolved calls, or it is a decorator, base class or escape anywhere (those create entry points and stores themselves). A gap in code that no entry point reaches, such as tests and scripts, is listed in the resolution report and raises nothing.
+A gap **counts** when it can reach the model: it lies in code reachable from an entry point along resolved calls, or it is a decorator, base class or escape in a module that holds such code or is imported by one, directly or indirectly, whether or not a call reaches the site (those create entry points and stores themselves; F-B5, owner choice 2026-11-23). A gap in code that no entry point reaches, such as tests and scripts, is listed in the resolution report and raises nothing.
 
 **The gate** runs after stage 2 and before any LLM call:
 
@@ -263,7 +267,7 @@ A gap **counts** when it can reach the model: it lies in code reachable from an 
 3. An acceptance that matches nothing fails the build.
 4. The resolution rate is reported and never gates: one unresolved decorator matters more than a hundred unresolved calls in a script (F-U5).
 
-Rules 2 and 3 need entry points, which milestone 2 adds. In milestone 1 a missing input and a missing module (an import found neither under a root nor in the environment) fail the build; every other unresolved site keeps its outcome in `site.jsonl` and is counted in the resolution report.
+Rules 2 and 3 need entry points, which milestone 2 adds. In milestone 1 a missing input and a missing module (an import found neither under a root nor in the environment) fail the build, unless the import is **guarded**: it sits in a `try` with a handler that names `ImportError` or `ModuleNotFoundError`, alone or in a tuple. The lock leaves the module out, so the handler's fallback is what runs; a guarded import keeps `unresolved: missing_module` and gives the warning `module-optional` in place of the error. The guard covers the `try` body and the class bodies in it, not a `def` there, which runs later, nor the handlers, `else` or `finally`. A bare `except:` or `except Exception:` is no guard (F-B4, owner choice 2026-11-23); every other unresolved site keeps its outcome in `site.jsonl` and is counted in the resolution report.
 
 A failed gate prints one diagnostic per root cause, largest effect first, each with the sites, the ports it can affect and the fix. Under the agent backend the agent sees the same text, can supply the input with its own tools, and builds again.
 

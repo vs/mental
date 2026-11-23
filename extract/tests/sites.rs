@@ -266,33 +266,53 @@ fn a_syntax_error_says_where_and_what_to_do() {
 }
 
 #[test]
-fn each_import_of_a_module_nowhere_is_a_module_missing_error() {
+fn each_import_of_a_module_nowhere_is_a_module_missing_error_unless_guarded() {
     let (sites, diagnostics) = build(&fixtures()).unwrap();
-    let missing: BTreeSet<&Id> = sites
+    let missing: BTreeSet<&str> = sites
         .sites
         .iter()
         .filter(|site| written(&site.outcome) == "unresolved:missing_module")
-        .map(|site| &site.id)
+        .map(|site| site.id.as_str())
         .collect();
-    let reported: BTreeSet<&Id> = diagnostics
-        .iter()
-        .filter(|diagnostic| diagnostic.code == Code::ModuleMissing)
-        .filter_map(|diagnostic| diagnostic.id.as_ref())
-        .collect();
-    assert_eq!(reported, missing);
-    let nowhere = diagnostics
-        .iter()
-        .find(|diagnostic| {
-            diagnostic
-                .id
-                .as_ref()
-                .is_some_and(|id| id.as_str() == "fx/unit:fx/site:resolve-outcomes-import-nowhere")
-        })
-        .unwrap();
+    let reported = |code: Code| -> BTreeSet<&str> {
+        diagnostics
+            .iter()
+            .filter(|diagnostic| diagnostic.code == code)
+            .filter_map(|diagnostic| diagnostic.id.as_ref().map(Id::as_str))
+            .collect()
+    };
+    let (failing, optional) = (
+        reported(Code::ModuleMissing),
+        reported(Code::ModuleOptional),
+    );
     assert_eq!(
-        nowhere.message,
+        optional,
+        BTreeSet::from([
+            "fx/unit:fx/site:resolve-optional-holder-import-class-absent",
+            "fx/unit:fx/site:resolve-optional-import-fast-json",
+            "fx/unit:fx/site:resolve-optional-import-inner-absent",
+            "fx/unit:fx/site:resolve-optional-import-tuple-absent-thing",
+        ])
+    );
+    assert_eq!(&failing | &optional, missing);
+    assert!(failing.is_disjoint(&optional));
+    let message = |id: &str| {
+        &diagnostics
+            .iter()
+            .find(|diagnostic| diagnostic.id.as_ref().is_some_and(|at| at.as_str() == id))
+            .unwrap()
+            .message
+    };
+    assert_eq!(
+        message("fx/unit:fx/site:resolve-outcomes-import-nowhere"),
         "the import `nowhere` names a module that is neither under a root nor in the \
          environment; run `uv sync`, or add the package that provides it with `uv add`"
+    );
+    assert_eq!(
+        message("fx/unit:fx/site:resolve-optional-import-fast-json"),
+        "the import `fast_json` names a module that is neither under a root nor in the \
+         environment; the handler that guards it runs instead; add the package with `uv add` \
+         if the code needs it"
     );
 }
 

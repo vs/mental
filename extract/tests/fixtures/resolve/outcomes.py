@@ -40,7 +40,8 @@ def escapes(shape: Shape):
     os.fspath(Shape)  # $ callee=resolve-outcomes-escapes-callee-os-fspath-0@external:stdlib:os:fspath escape=resolve-outcomes-escapes-escape-shape@resolved:resolve.helpers:Shape
     os.fspath(shape)  # $ callee=resolve-outcomes-escapes-callee-os-fspath-1@external:stdlib:os:fspath
     os.fspath(nothing_here)  # $ callee=resolve-outcomes-escapes-callee-os-fspath-2@external:stdlib:os:fspath escape=resolve-outcomes-escapes-escape-nothing-here@unresolved:not_found
-    os.fspath(path=os.sep)  # $ callee=resolve-outcomes-escapes-callee-os-fspath-3@external:stdlib:os:fspath
+    os.fspath(__file__)  # $ callee=resolve-outcomes-escapes-callee-os-fspath-3@external:stdlib:os:fspath
+    os.fspath(path=os.sep)  # $ callee=resolve-outcomes-escapes-callee-os-fspath-4@external:stdlib:os:fspath
     double(double)  # $ callee=resolve-outcomes-escapes-callee-double@resolved:resolve.helpers:double
 
 

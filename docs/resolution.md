@@ -149,7 +149,7 @@ A closed list. Each reason belongs to one of three groups, and the group decides
 | | `unparsed` | the target lies in a file region the parser could not recover | fix the file, or set the Python version |
 | **Outside the rules** | `no_type` | the receiver has no type that its own statement gives it: an unannotated parameter, an element of an untyped container | an annotation |
 | | `not_found` | the module or class is known and does not define the name | usually a real defect or generated code; inspect |
-| | `ambiguous` | several definitions can be meant: a conditional definition, a `try`/`except ImportError` pair | an acceptance that picks one, or both become candidates |
+| | `ambiguous` | several definitions can be meant: a conditional definition, a `try`/`except ImportError` pair whose modules both exist (one that is missing is a guarded import) | an acceptance that picks one, or both become candidates |
 | | `not_converged` | the bounded fixpoint over module-level bindings ran out | raise the bound; report as a tool limit |
 | **Dynamic by construction** | `dynamic_attr`, `dynamic_import`, `eval`, `wildcard_import` | the code computes the name at run time | an acceptance, which turns the site into an assumption |
 
@@ -358,6 +358,7 @@ Each gap is named by its consequence, because the consequence is what the reader
 | **possible write** | an attribute write whose receiver is unresolved | error |
 | **unknown base** | an unresolved or unknown-package base class | error |
 | **missing module** | an import that nothing provides | error |
+| **guarded import** | a missing module imported in a `try` whose handler names `ImportError` or `ModuleNotFoundError` | warning: the handler runs (F-B4) |
 | **version decides** | a pin that fails the rule of 7.3 | error |
 | **imprecise handler** | an unresolved exception type in an `except` | warning |
 | **unbound key** | a route, task name or environment name that is not a literal | handled by Link, as today: an assumption or a `heuristic` wire |
@@ -370,11 +371,11 @@ A gap **counts** when it lies where it can reach the model:
 
 - in a function reachable from an entry point along resolved call edges;
 - at module level in a module imported, directly or indirectly, by such a function's module;
-- on any decorator, base class or escape, wherever it is, since these create entry points and stores themselves.
+- on any decorator, base class or escape in such a module, whether or not a call reaches it, since these create entry points and stores themselves.
 
 A gap elsewhere, in code no entry point reaches, is recorded in the resolution report and raises no diagnostic. Test code and scripts are the usual case.
 
-**Why this is sound (R2).** Suppose a function matters to the model and holds a gap that does not count. Then no entry point reaches it along resolved edges. If some entry point reaches it at all, the path must pass through a call that did not resolve, and that call lies in reachable code, so it counts and is reported. If the function is itself an entry point that was not recognized, its decorator or registration did not resolve, and those always count. So every gap that could matter is either reported or stands behind a reported one.
+**Why this is sound (R2).** Suppose a function matters to the model and holds a gap that does not count. Then no entry point reaches it along resolved edges. If some entry point reaches it at all, the path must pass through a call that did not resolve, and that call lies in reachable code, so it counts and is reported. If the function is itself an entry point that was not recognized, its decorator or registration did not resolve, and those count in every module the system imports. A module the system loads without an import that the repository writes, such as a framework that discovers modules by path, must be declared by that framework's pack, as with naming conventions (section 16). So every gap that could matter is either reported or stands behind a reported one.
 
 ### 8.4 Root causes
 
@@ -658,7 +659,7 @@ Three things carry over unchanged:
 - **How many packages does a typical service use that would need a pack?** The class scheme works if the answer is tens. Classifying the standard library alone is real work, and its size is unmeasured.
 - **Who may declare a package inert?** A pack author's statement and a user's acceptance are both claims. Whether a shipped list of inert packages needs evidence beyond review is undecided.
 - **Closedness of hand-written packs.** A closed pack that misses an effect is a silent gap, the very thing this document forbids. A check of pack rows against the package's real surface would narrow it; nothing removes it.
-- **Reachability and dynamic entry points.** The soundness argument of 8.3 rests on decorators, bases and escapes always counting. A framework that finds handlers by naming convention alone (a function named `handle_*` in a certain folder) creates entry points with no site at all. Such frameworks need a slot row keyed on names and paths, which the pack grammar does not have yet.
+- **Reachability and dynamic entry points.** The soundness argument of 8.3 rests on decorators, bases and escapes counting in every module the system imports. A framework that finds handlers by naming convention alone (a function named `handle_*` in a certain folder) creates entry points with no site at all. Such frameworks need a slot row keyed on names and paths, which the pack grammar does not have yet.
 - **Conditional imports and platform markers.** `try: import ujson as json` followed by `except ImportError: import json` is two candidates today. Whether that should be a variation point instead is open.
 - **Acceptances at scale.** If a first build of a large repository asks for fifty acceptances, the strict policy fails in practice, whatever its merits. E1 measures this.
 - **The environment as an input.** Recording what was read from an environment keeps builds reproducible on one machine. Two developers with different environments and no lockfile get different models, each correctly labelled `observed`. Whether a build should refuse `observed` pins in automated runs is undecided.
