@@ -65,7 +65,7 @@ Each rule below removed a difference of spelling, not of answer; every rule was 
 
 ## `mentalc build` against these answers
 
-On 2026-11-23, milestone 1's `mentalc build` was run on rq and full-stack-fastapi-template at the commits above, and its sites paired with ty's recorded answers by `mentalc.py` ([findings, section B](../../../findings.md#b-mentalc-build-on-rq-and-full-stack-fastapi-template)). Neither project builds as committed, so each got the setup its diagnostics asked for:
+On 2026-11-23, milestone 1's `mentalc build` was run on rq and full-stack-fastapi-template at the commits above, and its sites paired with ty's recorded answers by `mentalc.py` ([findings, section B](../../../findings.md#b-mentalc-build-on-outside-projects)). Neither project builds as committed, so each got the setup its diagnostics asked for:
 
 ```sh
 M=<path to target/release/mentalc>
@@ -80,4 +80,13 @@ python3 -I mentalc.py <work dir>/src/full-stack-fastapi-template/backend results
 
 rq has no `uv.lock` and no `.python-version`; its lock forks by Python version, which `mentalc` refuses, so `environments` keeps it to the 3.13 the experiment used, and `--exclude-newer` keeps it to packages published before the experiment. The template is a uv workspace whose lock, Python version and environment sit at the workspace root, above the project in `backend/`; the links put them where `mentalc` looks.
 
-`mentalc` lists a decorator that is a call as a decorator site, not a callee, and the experiment truncated the text of a multi-line callee; `mentalc.py` counts both apart as unmatched.
+Experiment B1 ran it the same day on Mealie and Redash, as committed, with no setup beyond their environments ([findings](../../../findings.md#b-mentalc-build-on-outside-projects), F-B7 to F-B9). Both exit 1, for the gaps of F-B9, and both write their sites:
+
+```sh
+(cd mealie && uv sync --frozen --python 3.14 && $M build)
+(cd redash && uv sync --frozen --python 3.13 && $M build)
+python3 -I mentalc.py <work dir>/src/mealie results/sites-mealie.jsonl.gz mealie/ 10
+python3 -I mentalc.py <work dir>/src/redash results/sites-redash.jsonl.gz redash/ 10
+```
+
+`mentalc` lists a decorator that is a call as a decorator site, not a callee, and the experiment truncated the text of a multi-line callee; `mentalc.py` counts both apart as unmatched. Three more spellings differ and are left as they are, so they show among the differing pairs: the experiment names a module `module:x` where `mentalc.py` prints `x`, a string's `.format` call carries the string in the experiment's text, and the script drops a trailing number from a name, so `get_object_or_404` finds no site.
