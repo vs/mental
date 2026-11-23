@@ -263,7 +263,7 @@ A gap **counts** when it can reach the model: it lies in code reachable from an 
 3. An acceptance that matches nothing fails the build.
 4. The resolution rate is reported and never gates: one unresolved decorator matters more than a hundred unresolved calls in a script (F-U5).
 
-Rules 2 and 3 need entry points, which milestone 2 adds. In milestone 1 a missing input and a missing module (an import found neither under a root nor in the environment) fail the build; every other unresolved site keeps its outcome in `site.jsonl` and is counted in the resolution report.
+Rules 2 and 3 need entry points, which milestone 2 adds. In milestone 1 a missing input and a missing module (an import found neither under a root nor in the environment) fail the build, unless the import is **guarded**: it sits in a `try` with a handler that names `ImportError` or `ModuleNotFoundError`, alone or in a tuple. The lock leaves the module out, so the handler's fallback is what runs; a guarded import keeps `unresolved: missing_module` and the resolution report lists it apart. A bare `except:` or `except Exception:` is no guard (F-B4, owner choice 2026-11-23); every other unresolved site keeps its outcome in `site.jsonl` and is counted in the resolution report.
 
 A failed gate prints one diagnostic per root cause, largest effect first, each with the sites, the ports it can affect and the fix. Under the agent backend the agent sees the same text, can supply the input with its own tools, and builds again.
 

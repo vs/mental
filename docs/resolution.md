@@ -149,7 +149,7 @@ A closed list. Each reason belongs to one of three groups, and the group decides
 | | `unparsed` | the target lies in a file region the parser could not recover | fix the file, or set the Python version |
 | **Outside the rules** | `no_type` | the receiver has no type that its own statement gives it: an unannotated parameter, an element of an untyped container | an annotation |
 | | `not_found` | the module or class is known and does not define the name | usually a real defect or generated code; inspect |
-| | `ambiguous` | several definitions can be meant: a conditional definition, a `try`/`except ImportError` pair | an acceptance that picks one, or both become candidates |
+| | `ambiguous` | several definitions can be meant: a conditional definition, a `try`/`except ImportError` pair whose modules both exist (one that is missing is a guarded import) | an acceptance that picks one, or both become candidates |
 | | `not_converged` | the bounded fixpoint over module-level bindings ran out | raise the bound; report as a tool limit |
 | **Dynamic by construction** | `dynamic_attr`, `dynamic_import`, `eval`, `wildcard_import` | the code computes the name at run time | an acceptance, which turns the site into an assumption |
 
@@ -358,6 +358,7 @@ Each gap is named by its consequence, because the consequence is what the reader
 | **possible write** | an attribute write whose receiver is unresolved | error |
 | **unknown base** | an unresolved or unknown-package base class | error |
 | **missing module** | an import that nothing provides | error |
+| **guarded import** | a missing module imported in a `try` whose handler names `ImportError` or `ModuleNotFoundError` | listed: the fallback runs (F-B4) |
 | **version decides** | a pin that fails the rule of 7.3 | error |
 | **imprecise handler** | an unresolved exception type in an `except` | warning |
 | **unbound key** | a route, task name or environment name that is not a literal | handled by Link, as today: an assumption or a `heuristic` wire |
