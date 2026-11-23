@@ -170,14 +170,15 @@ pub fn extract_sites(
 }
 
 /// Whether a name handed to a call escapes: it is a repository `def` or
-/// `class`, or the checker cannot say what it is, and the callee is not
-/// in the repository, so outside code may call it.
+/// `class`, or the checker cannot say what it is and its type may be
+/// called, and the callee is not in the repository, so outside code may
+/// call it.
 fn escapes(argument: &resolve::Checked, call: &resolve::Checked) -> bool {
     let outside = !matches!(call.outcome, Outcome::Resolved { .. });
     let callable = match argument.outcome {
         Outcome::Resolved { .. } => argument.definition,
         Outcome::External { .. } => false,
-        Outcome::Unresolved { .. } => true,
+        Outcome::Unresolved { .. } => !argument.uncallable,
     };
     outside && callable
 }

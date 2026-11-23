@@ -16,7 +16,7 @@ use ruff_db::source::source_text;
 use ruff_db::system::{SystemPath, SystemPathBuf};
 use ruff_python_ast::find_node::covering_node;
 use ruff_python_ast::visitor::{self, Visitor};
-use ruff_python_ast::{Expr, ExprRef, Stmt};
+use ruff_python_ast::{AnyNodeRef, Expr, ExprRef, Stmt};
 use ruff_ranged_value::RangedValue;
 use ruff_text_size::{Ranged, TextRange, TextSize};
 use ty_ide::{NavigationTargets, goto_declaration, goto_definition, goto_type_definition};
@@ -93,6 +93,10 @@ impl std::error::Error for ResolveError {}
 pub(super) struct Checked {
     pub(super) outcome: Outcome,
     pub(super) definition: bool,
+    /// The site has no declaration, and ty types it with a type nothing of
+    /// which can be called, as `__name__` is a `str`: handed to a call, it
+    /// hands over no code.
+    pub(super) uncallable: bool,
 }
 
 pub(super) struct Resolver {
@@ -206,9 +210,14 @@ impl Resolver {
             (Some((outcome, definition)), None) => Checked {
                 outcome,
                 definition,
+                uncallable: false,
             },
             (Some(_), Some(_)) => unresolved(Reason::Ambiguous),
-            (None, _) => unresolved(self.no_answer(program, model, site)),
+            (None, _) => Checked {
+                uncallable: site.kind == SiteKind::Escape
+                    && !may_be_called(&self.db, program, model, site.range),
+                ..unresolved(self.no_answer(program, model, site))
+            },
         }
     }
 
@@ -432,10 +441,49 @@ fn type_at<'db>(
         .and_then(|expr| expr.inferred_type(model))
 }
 
+/// Whether the argument at `at` may be called: ty upcasts its type to a
+/// callable, as it does for a function, a class, an instance with
+/// `__call__` and a value of no type it can name.
+///
+/// shortcut: ty keeps that upcast crate-private, so this asks the public
+/// signatures of the call that holds the argument with the argument as its
+/// callee, which ty types by the argument's node; upgrade when ty makes the
+/// upcast public.
+fn may_be_called(
+    db: &ProjectDatabase,
+    program: ProgramFile,
+    model: &SemanticModel,
+    at: TextRange,
+) -> bool {
+    let parsed = parsed_module(db, program.python_file(db)).load(db);
+    let covering = covering_node(parsed.syntax().into(), at);
+    let call = covering
+        .ancestors()
+        .find_map(|node| {
+            if let AnyNodeRef::ExprCall(call) = node {
+                Some(call)
+            } else {
+                None
+            }
+        })
+        .expect("an escape candidate is handed to a call");
+    let argument = call
+        .arguments
+        .args
+        .iter()
+        .chain(call.arguments.keywords.iter().map(|keyword| &keyword.value))
+        .find(|value| value.range() == at)
+        .expect("an escape candidate is an argument of its call");
+    let mut asked = call.clone();
+    *asked.func = argument.clone();
+    !call_signature_details(model, &asked).is_empty()
+}
+
 fn unresolved(reason: Reason) -> Checked {
     Checked {
         outcome: Outcome::Unresolved { reason },
         definition: false,
+        uncallable: false,
     }
 }
 
