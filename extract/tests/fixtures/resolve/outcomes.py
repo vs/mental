@@ -33,6 +33,7 @@ def calls(untyped, handlers: list, never: Never):
 def writes(shape: Shape, untyped):
     shape.sides = 3  # $ write-receiver=resolve-outcomes-writes-write-receiver-shape-sides@resolved:resolve.helpers:Shape
     untyped.sides = 3  # $ write-receiver=resolve-outcomes-writes-write-receiver-untyped-sides@unresolved:no_type
+    os.sep = "/"  # $ write-receiver=resolve-outcomes-writes-write-receiver-os-sep@external:stdlib:os:
 
 
 def escapes(shape: Shape):

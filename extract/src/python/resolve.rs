@@ -504,9 +504,12 @@ fn version(stated: &str) -> Result<SupportedPythonVersion, ResolveError> {
 }
 
 /// The qualified name of what stands at `focus` in `file`, and whether it
-/// is the name of a `def` or `class`. An empty focus is the module itself.
+/// is the name of a `def` or `class`. A focus that is empty or the whole
+/// file is the module itself: ty's "go to definition" of a module gives the
+/// one, its "go to type definition" the other.
 fn qualified(db: &ProjectDatabase, file: File, focus: TextRange) -> (String, bool) {
-    if focus.is_empty() {
+    let text = source_text(db, file);
+    if focus.is_empty() || focus == TextRange::up_to(TextSize::of(text.as_str())) {
         return (String::new(), false);
     }
     let parsed = parsed_module(db, db.program_file(file).python_file(db)).load(db);
@@ -516,7 +519,6 @@ fn qualified(db: &ProjectDatabase, file: File, focus: TextRange) -> (String, boo
         definition: false,
     };
     enclosing.visit_body(&parsed.syntax().body);
-    let text = source_text(db, file);
     enclosing.scopes.push(text[focus].to_owned());
     (enclosing.scopes.join("."), enclosing.definition)
 }
