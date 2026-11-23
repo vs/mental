@@ -589,3 +589,28 @@ fn a_root_that_does_not_read_is_reported_from_a_member() {
         "{printed}"
     );
 }
+
+#[test]
+fn a_project_below_a_folder_of_tool_settings_is_on_its_own() {
+    let outer = TempDir::new().unwrap();
+    fs::write(
+        outer.path().join("pyproject.toml"),
+        "[tool.ruff]\nline-length = 100\n",
+    )
+    .unwrap();
+    let project = project(|_| ());
+    let svc = outer.path().join("svc");
+    fs::create_dir(&svc).unwrap();
+    for name in ["pyproject.toml", "uv.lock", ".python-version"] {
+        fs::copy(project.path().join(name), svc.join(name)).unwrap();
+    }
+    let cli = Cli {
+        command: Command::Build { json: false },
+    };
+    assert_eq!(run(&cli, &svc, &mut io::sink()).unwrap(), Status::Failure);
+    let units = fs::read_to_string(svc.join(".mental/model/build_unit.jsonl")).unwrap();
+    assert!(
+        units.contains(r#""lock":{"path":"uv.lock","version":1}"#),
+        "{units}"
+    );
+}

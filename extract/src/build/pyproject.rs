@@ -101,15 +101,28 @@ struct WorkspaceTable {
     exclude: Vec<Spanned<String>>,
 }
 
+/// Only the workspace table, so that a `pyproject.toml` that holds only
+/// tool settings, or a `[project]` the build would reject, is no workspace.
+#[derive(Deserialize)]
+struct WorkspaceFile {
+    tool: Option<Tool>,
+}
+
 /// The workspace `text` declares, if any, for finding the members before
-/// the build; `Err` when it does not read, which the build reports.
+/// the build, whatever else the file holds.
 ///
 /// # Errors
 ///
-/// When `text` does not read as a `pyproject.toml` of a project or a
-/// workspace.
+/// When `text` is not TOML, or its workspace table does not read or holds
+/// a pattern this build does not read; the build reports it.
 pub fn workspace(text: &str) -> Result<Option<Workspace>, Diagnostic> {
-    Ok(read(text, PATH)?.workspace)
+    let file = toml::from_str::<WorkspaceFile>(text)
+        .map_err(|error| super::unreadable(Code::ProjectInvalid, PATH, text, &error, FIX))?;
+    file.tool
+        .and_then(|tool| tool.uv)
+        .and_then(|uv| uv.workspace)
+        .map(|table| patterns(text, PATH, table))
+        .transpose()
 }
 
 /// Reads `text`, the `pyproject.toml` at `path`. It must declare a project,

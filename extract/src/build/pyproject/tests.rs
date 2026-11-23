@@ -114,6 +114,10 @@ fn a_workspace_root_needs_no_project() {
     );
     assert_eq!(workspace("[project]\nname = \"shop\"\n"), Ok(None));
     assert!(workspace("[tool.uv.workspace]\nmembers = 1\n").is_err());
+    assert!(workspace("[tool.uv.workspace]\nmembers = [\"a/**\"]\n").is_err());
+    assert!(workspace("[tool\n").is_err());
+    assert_eq!(workspace("[tool.ruff]\nline-length = 100\n"), Ok(None));
+    assert_eq!(workspace("[project]\nname = 7\n\n[tool.uv]\n"), Ok(None));
 }
 
 #[test]
