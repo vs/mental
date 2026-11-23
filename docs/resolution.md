@@ -358,7 +358,7 @@ Each gap is named by its consequence, because the consequence is what the reader
 | **possible write** | an attribute write whose receiver is unresolved | error |
 | **unknown base** | an unresolved or unknown-package base class | error |
 | **missing module** | an import that nothing provides | error |
-| **guarded import** | a missing module imported in a `try` whose handler names `ImportError` or `ModuleNotFoundError` | listed: the fallback runs (F-B4) |
+| **guarded import** | a missing module imported in a `try` whose handler names `ImportError` or `ModuleNotFoundError` | warning: the handler runs (F-B4) |
 | **version decides** | a pin that fails the rule of 7.3 | error |
 | **imprecise handler** | an unresolved exception type in an `except` | warning |
 | **unbound key** | a route, task name or environment name that is not a literal | handled by Link, as today: an assumption or a `heuristic` wire |

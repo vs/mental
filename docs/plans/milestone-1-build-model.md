@@ -66,6 +66,7 @@ Every record has an anchor (file, lines, quote) in `anchors.jsonl`, and a `sourc
 | `python-version-unknown` | error | no source of D3 states a version | add a `.python-version` file |
 | `environment-missing` | error | the project has no `.venv` | `uv sync`; `mentalc` does not run it |
 | `module-missing` | error | an import names a module that is neither under a root nor in the environment | `uv sync`, or add the dependency |
+| `module-optional` | warning | the same, for an import that a handler of `ImportError` or `ModuleNotFoundError` guards (F-B4): the handler runs | `uv add` if the package should be there |
 | `syntax-error` | warning | a file does not parse; the recovered tree is used | — |
 
 An unreadable file is a tool failure: exit code 2.

@@ -54,7 +54,8 @@ pub struct Sites {
 /// Lists every reference site of the unit's files and resolves it with ty.
 /// A file that does not parse gives a `syntax-error` per error, and the
 /// sites of the tree the parser recovered; an import of a module that is
-/// nowhere gives a `module-missing`.
+/// nowhere gives a `module-missing`, or a `module-optional` when a handler
+/// of a failed import guards it.
 ///
 /// # Errors
 ///
@@ -92,6 +93,7 @@ pub fn extract_sites(
                 range: site.range,
                 kind: site.kind,
                 written: site.name.clone(),
+                guarded: site.guarded,
                 slug: slugify(&words).expect("a site's words hold its kind's name"),
                 outcome: check.outcome.clone(),
             });
@@ -124,13 +126,24 @@ pub fn extract_sites(
                 reason: Reason::MissingModule,
             })
         {
+            let (code, fix) = if site.guarded {
+                (
+                    Code::ModuleOptional,
+                    "the handler that guards it runs instead; add the package with `uv add` if the code needs it",
+                )
+            } else {
+                (
+                    Code::ModuleMissing,
+                    "run `uv sync`, or add the package that provides it with `uv add`",
+                )
+            };
             diagnostics.push(Diagnostic {
                 id: Some(id.clone()),
-                code: Code::ModuleMissing,
+                code,
                 at: None,
                 message: format!(
                     "the import `{}` names a module that is neither under a root nor in the \
-                     environment; run `uv sync`, or add the package that provides it with `uv add`",
+                     environment; {fix}",
                     site.written
                 ),
             });
@@ -175,6 +188,7 @@ struct Found<'a> {
     range: TextRange,
     kind: SiteKind,
     written: String,
+    guarded: bool,
     slug: Slug,
     outcome: Outcome,
 }

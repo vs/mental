@@ -28,12 +28,16 @@ pub(super) struct Listed {
     pub(super) module: Option<TextSize>,
     /// For an escape candidate: the listed site of the call it is handed to.
     pub(super) call: Option<usize>,
+    /// For an import: whether it runs in the body of a `try` that handles
+    /// `ImportError` or `ModuleNotFoundError`, so a missing module is optional.
+    pub(super) guarded: bool,
 }
 
 pub(super) fn sites(module: &str, body: &[Stmt]) -> Vec<Listed> {
     let mut walk = Walk {
         scope: vec![module.to_owned()],
         sites: Vec::new(),
+        guarded: false,
     };
     walk.visit_body(body);
     walk.sites
@@ -42,6 +46,9 @@ pub(super) fn sites(module: &str, body: &[Stmt]) -> Vec<Listed> {
 struct Walk {
     scope: Vec<String>,
     sites: Vec<Listed>,
+    /// Whether the statement walked runs in the body of a `try` that
+    /// handles a failed import.
+    guarded: bool,
 }
 
 impl Walk {
@@ -57,6 +64,7 @@ impl Walk {
             receiver,
             module: None,
             call: None,
+            guarded: false,
         })
     }
 
@@ -90,6 +98,7 @@ impl Walk {
             receiver: None,
             module,
             call: None,
+            guarded: self.guarded,
         });
     }
 }
@@ -98,8 +107,20 @@ impl<'a> Visitor<'a> for Walk {
     fn visit_stmt(&mut self, stmt: &'a Stmt) {
         if let Stmt::FunctionDef(def) = stmt {
             self.scope.push(def.name.to_string());
+            let outer = std::mem::replace(&mut self.guarded, false);
             visitor::walk_stmt(self, stmt);
+            self.guarded = outer;
             self.scope.pop();
+        } else if let Stmt::Try(block) = stmt {
+            let outer = self.guarded;
+            self.guarded = outer || block.handlers.iter().any(handles_failed_import);
+            self.visit_body(&block.body);
+            self.guarded = outer;
+            for handler in &block.handlers {
+                self.visit_except_handler(handler);
+            }
+            self.visit_body(&block.orelse);
+            self.visit_body(&block.finalbody);
         } else if let Stmt::ClassDef(class) = stmt {
             self.scope.push(class.name.to_string());
             for base in class.bases() {
@@ -165,6 +186,21 @@ impl<'a> Visitor<'a> for Walk {
         }
         visitor::walk_except_handler(self, handler);
     }
+}
+
+/// Whether `handler` names `ImportError` or `ModuleNotFoundError`, alone or
+/// in a tuple. A bare `except:` or `except Exception:` catches a failed
+/// import too, but says nothing about the import being optional.
+fn handles_failed_import(handler: &ExceptHandler) -> bool {
+    let ExceptHandler::ExceptHandler(clause) = handler;
+    let names = |caught: &Expr| matches!(caught, Expr::Name(name) if name.id == "ImportError" || name.id == "ModuleNotFoundError");
+    clause.type_.as_deref().is_some_and(|caught| {
+        if let Expr::Tuple(tuple) = caught {
+            tuple.elts.iter().any(names)
+        } else {
+            names(caught)
+        }
+    })
 }
 
 /// Where the last segment of a dotted name starts: `b` in `import a.b`.

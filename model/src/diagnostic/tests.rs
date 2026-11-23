@@ -34,6 +34,7 @@ Error {"code":"lock-invalid","message":"m"}
 Error {"code":"lock-missing","message":"m"}
 Error {"code":"lock-version-unknown","message":"m"}
 Error {"code":"module-missing","message":"m"}
+Warning {"code":"module-optional","message":"m"}
 Error {"code":"project-invalid","message":"m"}
 Error {"code":"project-missing","message":"m"}
 Error {"code":"python-version-unknown","message":"m"}

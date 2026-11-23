@@ -24,6 +24,10 @@ pub enum Code {
     LockVersionUnknown,
     /// An import names a module found neither under a root nor in the environment.
     ModuleMissing,
+    /// An import that a handler of `ImportError` or `ModuleNotFoundError`
+    /// guards names a module found neither under a root nor in the
+    /// environment, so the handler runs instead.
+    ModuleOptional,
     /// The `pyproject.toml` does not read, has no `[project]` name, or its
     /// name has no ASCII letter to name the system with.
     ProjectInvalid,
@@ -43,13 +47,14 @@ pub enum Severity {
 }
 
 impl Code {
-    pub const ALL: [Code; 10] = [
+    pub const ALL: [Code; 11] = [
         Code::EnvironmentMissing,
         Code::LockAmbiguous,
         Code::LockInvalid,
         Code::LockMissing,
         Code::LockVersionUnknown,
         Code::ModuleMissing,
+        Code::ModuleOptional,
         Code::ProjectInvalid,
         Code::ProjectMissing,
         Code::PythonVersionUnknown,
@@ -68,7 +73,7 @@ impl Code {
             | Code::ProjectInvalid
             | Code::ProjectMissing
             | Code::PythonVersionUnknown => Severity::Error,
-            Code::SyntaxError => Severity::Warning,
+            Code::ModuleOptional | Code::SyntaxError => Severity::Warning,
         }
     }
 }
