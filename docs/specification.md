@@ -135,6 +135,8 @@ Before it reads a line of code, `mentalc` builds a small model of how the projec
 
 A project is what Python already calls one: a directory with a `pyproject.toml`, as `uv init` makes it, with a `uv.lock`, a `.python-version` file and, after `uv sync`, a `.venv`. Mental needs no file of its own to read a project.
 
+A **uv workspace** is read as uv reads it (F-B3, owner choice 2026-11-23). The directory whose `pyproject.toml` has `[tool.uv.workspace]` is the workspace root; it holds the one `uv.lock`, `.python-version` and `.venv` its members share, and its own `[project]` is optional. Each member is a build unit, and the root is one too when it has a `[project]`. `mentalc build` at the root builds every unit; in a member, it builds that member. A unit's pins are the packages of the shared lock that its own dependencies reach; a member that another member depends on is a pin with origin `path`. The system takes the root's project name, or the root directory's name when the root has none.
+
 ### 5.1 Records
 
 | Record | Says | Fields |
@@ -145,6 +147,8 @@ A project is what Python already calls one: a directory with a `pyproject.toml`,
 A field whose input is missing is left out, and the missing input is a gap (5.3): with no `.venv`, the build unit has no `environment`. Both records have `source: extractor`; the provenance and checks of [7.1](#71-shape) come with the first stage whose records can differ in them.
 
 "Component" stays the word for a box inside a service; a part built on its own is a **build unit**. The system and its build unit take the project's name.
+
+*In full-stack-fastapi-template:* the root lists one member, `backend/`, and has no `[project]`, so the system has one build unit, named after `backend/`'s project, with the lock and environment of the root.
 
 *In report-jobs:* one build unit, named `reports` after the project, with a pin for each package in `uv.lock` other than the project itself.
 
