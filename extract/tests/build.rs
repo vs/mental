@@ -499,3 +499,52 @@ fn a_root_with_no_project_is_named_after_its_directory() {
 "#
     );
 }
+
+#[test]
+fn a_workspace_that_names_no_member_has_nothing_to_build() {
+    let tree = Tree::read_in(&fixture("ok/workspace"), ".", &[]);
+    assert_eq!(
+        show(&tree),
+        r#"{"code":"project-invalid","message":"the workspace root has no `[project]`, and its `members` name no folder, so there is nothing to build; fix the patterns, or give the root a `[project]`"}
+"#
+    );
+}
+
+#[test]
+fn a_package_is_a_problem_once_for_the_units_that_reach_it_and_never_for_others() {
+    let mut tree = Tree::read_in(
+        &fixture("ok/workspace"),
+        ".",
+        &["packages/api", "packages/core"],
+    );
+    let lock = tree.lock.take().expect("the fixture has a lock");
+    let broken = lock
+        .replace(
+            "version = \"0.2.0\"\nsource = { editable = \"packages/core\" }\n",
+            "source = { editable = \"packages/core\" }\ndependencies = [{ name = \"requests\" }]\n",
+        )
+        .replace(
+            "name = \"requests\"\nversion = \"2.32.3\"\n",
+            "name = \"requests\"\n",
+        );
+    tree.lock = Some(broken.clone());
+    let problems: Vec<String> = tree
+        .build()
+        .1
+        .iter()
+        .map(|problem| problem.message.clone())
+        .collect();
+    assert_eq!(
+        problems,
+        [
+            "package `core` has no fixed version, as when its version is dynamic, and a pin has one; give it a static `version` in its own `pyproject.toml`",
+            "package `requests` has no fixed version, as when its version is dynamic, and a pin has one; give it a static `version` in its own `pyproject.toml`",
+        ]
+    );
+    let mut alone = Tree::read_in(&fixture("ok/workspace/packages/core"), "../..", &[]);
+    alone.lock = Some(lock.replace(
+        "version = \"0.1.0\"\nsource = { editable = \"packages/api\" }",
+        "source = { editable = \"packages/api\" }",
+    ));
+    assert_eq!(alone.build().1, []);
+}

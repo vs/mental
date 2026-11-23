@@ -91,12 +91,8 @@ pub fn build_model(files: &ProjectFiles) -> (BuildModel, Vec<Diagnostic>) {
         }
     };
     let shared = files.root.map_or(".", |root| root.dir);
-    let slugs = projects
-        .iter()
-        .map(|declared| declared.project.slug.as_str().to_owned())
-        .collect();
     let lockfile = files.lock.and_then(|text| {
-        let (lockfile, problems) = lock::read(text, &join(shared, LOCK), &slugs);
+        let (lockfile, problems) = lock::read(text, &join(shared, LOCK));
         diagnostics.extend(problems);
         lockfile
     });
@@ -149,6 +145,8 @@ pub fn build_model(files: &ProjectFiles) -> (BuildModel, Vec<Diagnostic>) {
             source: Source::Extractor,
         });
     }
+    diagnostics.sort();
+    diagnostics.dedup();
     (model, diagnostics)
 }
 
@@ -191,6 +189,17 @@ fn declared<'a>(
                 Err(problem) => diagnostics.push(problem),
             }
         }
+    }
+    if projects.is_empty() && files.members.is_empty() {
+        return Err(Diagnostic {
+            id: None,
+            code: Code::ProjectInvalid,
+            at: None,
+            message: "the workspace root has no `[project]`, and its `members` name no folder, \
+                      so there is nothing to build; fix the patterns, or give the root a \
+                      `[project]`"
+                .to_owned(),
+        });
     }
     Ok((Id::root(&system), projects))
 }

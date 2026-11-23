@@ -112,18 +112,24 @@ fn a_workspace_root_needs_no_project() {
         check("[project]\nname = \"shop\"\n\n[tool.uv.workspace]\n"),
         r#"shop at "\"shop\"", requires None; workspace [] but []"#
     );
-    assert_eq!(workspace("[project]\nname = \"shop\"\n"), None);
-    assert_eq!(workspace("[tool.uv.workspace]\nmembers = 1\n"), None);
+    assert_eq!(workspace("[project]\nname = \"shop\"\n"), Ok(None));
+    assert!(workspace("[tool.uv.workspace]\nmembers = 1\n").is_err());
 }
 
 #[test]
 fn a_member_pattern_reads_only_star_wildcards() {
-    let unread = ["pkg?", "[ab]", "a/**", "../a", "/a", "{a,b}", "a\\\\b"].map(|pattern| {
+    let unread = [
+        "pkg?", "[ab]", "a/**", "../a", "/a", "{a,b}", "a\\\\b", "./a", "a//b", "",
+    ]
+    .map(|pattern| {
         check(&format!("[tool.uv.workspace]\nmembers = [\"{pattern}\"]\n"))
             .contains("is not one this build reads")
             .to_string()
     });
-    assert_eq!(unread.join(" "), "true true true true true true true");
+    assert_eq!(
+        unread.join(" "),
+        "true true true true true true true true true true"
+    );
     assert_eq!(
         check("[tool.uv.workspace]\nmembers = [\"a\"]\nexclude = [\"b?\"]\n"),
         r#"{"code":"project-invalid","at":{"path":"pyproject.toml","lines":[3,3]},"message":"the workspace pattern `b?` is not one this build reads: it reads a folder under the root in which `*` stands for any name; list the members that way"}

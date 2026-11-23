@@ -81,7 +81,9 @@ pub(crate) fn read(dir: &Path) -> anyhow::Result<Tree> {
         )
     })?;
     let pyproject = optional(&dir.join("pyproject.toml"), "pyproject.toml")?;
-    let own = pyproject.as_deref().and_then(workspace);
+    let own = pyproject
+        .as_deref()
+        .and_then(|text| workspace(text).ok().flatten());
     let (root, members) = match &own {
         Some(workspace) => (None, members(dir, workspace)?),
         None if pyproject.is_some() => (workspace_root(dir)?, Vec::new()),
@@ -167,6 +169,8 @@ fn members(
 
 /// The root of the nearest workspace above `dir`, when it lists `dir` as a
 /// member: its folder relative to `dir`, its name and its `pyproject.toml`.
+/// A `pyproject.toml` on the way that does not read is taken as the root,
+/// so that the build reports it rather than build `dir` alone.
 fn workspace_root(dir: &Path) -> anyhow::Result<Option<(String, String, String)>> {
     let mut up = Vec::new();
     let mut below: Vec<String> = Vec::new();
@@ -177,12 +181,12 @@ fn workspace_root(dir: &Path) -> anyhow::Result<Option<(String, String, String)>
         let Some(text) = optional(&parent.join("pyproject.toml"), &shown)? else {
             continue;
         };
-        let Some(workspace) = workspace(&text) else {
-            continue;
+        let includes = match workspace(&text) {
+            Ok(None) => continue,
+            Ok(Some(workspace)) => workspace.includes(&below.join("/")),
+            Err(_) => true,
         };
-        return Ok(workspace
-            .includes(&below.join("/"))
-            .then(|| (up.join("/"), dir_name(parent), text)));
+        return Ok(includes.then(|| (up.join("/"), dir_name(parent), text)));
     }
     Ok(None)
 }

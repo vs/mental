@@ -6,17 +6,16 @@ use super::*;
 /// anchors and the diagnostics, one JSON line each.
 #[track_caller]
 fn check(text: &str) -> String {
-    check_projects(text, &["shop"])
+    check_project(text, "shop")
 }
 
-/// Reads `text` as the `uv.lock` of a workspace whose projects are
-/// `projects`, and gives the pins of the first.
+/// Reads `text` as a `uv.lock`, and gives the pins of the unit whose
+/// project is `project`.
 #[track_caller]
-fn check_projects(text: &str, projects: &[&str]) -> String {
-    let unit = Id::parse(&format!("shop/unit:{}", projects[0])).unwrap();
-    let project = slugify(projects[0]).unwrap();
-    let names = projects.iter().map(|name| (*name).to_owned()).collect();
-    let (lockfile, diagnostics) = read(text, "uv.lock", &names);
+fn check_project(text: &str, project: &str) -> String {
+    let unit = Id::parse(&format!("shop/unit:{project}")).unwrap();
+    let project = slugify(project).unwrap();
+    let (lockfile, diagnostics) = read(text, "uv.lock");
     let lock = lockfile.map(|lockfile| {
         let Lock { path, version } = lockfile.lock.clone();
         let found = lockfile.pins(&unit, &project);
@@ -172,8 +171,10 @@ fn a_package_locked_twice_is_ambiguous() {
 fn names_that_share_a_slug_are_one_package() {
     let text = "version = 1\n\n\
                 [[package]]\nname = \"zope.interface\"\nversion = \"7.2\"\nsource = { registry = \"https://pypi.org/simple\" }\n\n\
-                [[package]]\nname = \"zope-interface\"\nversion = \"7.2\"\nsource = { registry = \"https://pypi.org/simple\" }\n";
-    assert!(check(text).contains("locks `zope-interface` 2 times"));
+                [[package]]\nname = \"zope-interface\"\nversion = \"7.2\"\nsource = { registry = \"https://pypi.org/simple\" }\n"
+        .to_owned()
+        + &shop(&["zope.interface"]);
+    assert!(check(&text).contains("locks `zope-interface` 2 times"));
 }
 
 #[test]
@@ -268,10 +269,10 @@ fn package(name: &str, extra: &str) -> String {
     )
 }
 
-/// The packages the pins of the first project name.
+/// The packages the pins of `project`'s unit name.
 #[track_caller]
-fn pinned_packages(text: &str, projects: &[&str]) -> String {
-    let out = check_projects(text, projects);
+fn pinned_packages(text: &str, project: &str) -> String {
+    let out = check_project(text, project);
     let pins: Vec<&str> = out
         .lines()
         .filter(|line| line.contains("\"package\""))
@@ -307,7 +308,7 @@ fn a_unit_pins_what_its_dependencies_reach_through_asked_extras() {
          [package.dev-dependencies]\ndev = [{ name = \"pytest\" }]\n",
     );
     assert_eq!(
-        pinned_packages(&text, &["shop"]),
+        pinned_packages(&text, "shop"),
         "fastapi pytest starlette uvicorn / 0 problems"
     );
 }
@@ -330,21 +331,27 @@ fn a_member_another_depends_on_is_a_pin_by_its_path() {
         member("tools", "", ""),
         package("requests", ""),
     );
-    let out = check_projects(&text, &["api", "core", "tools"]);
+    let out = check_project(&text, "api");
     assert!(
         out.contains(r#"{"id":"shop/unit:api/pin:core","package":"core","version":"0.2.0","origin":{"path":"packages/core"},"source":"extractor"}"#),
         "{out}"
     );
-    assert_eq!(
-        pinned_packages(&text, &["api", "core", "tools"]),
-        "core requests / 1 problems"
-    );
+    assert_eq!(pinned_packages(&text, "api"), "core requests / 1 problems");
     assert!(
         out.contains("package `tools` has no fixed version"),
         "{out}"
     );
-    assert_eq!(
-        pinned_packages(&text, &["core", "api", "tools"]),
-        "requests / 0 problems"
+    assert_eq!(pinned_packages(&text, "core"), "requests / 0 problems");
+}
+
+#[test]
+fn a_package_no_unit_reaches_is_no_problem() {
+    let text = format!(
+        "version = 1\n{}{}\n[[package]]\nname = \"tools\"\nsource = {{ editable = \"tools\" }}\n{}",
+        package("a", ""),
+        "\n[[package]]\nname = \"numpy\"\nversion = \"1.26.4\"\nsource = { registry = \"https://pypi.org/simple\" }\n\n\
+         [[package]]\nname = \"numpy\"\nversion = \"2.1.0\"\nsource = { registry = \"https://pypi.org/simple\" }\n",
+        shop(&["a"]),
     );
+    assert_eq!(pinned_packages(&text, "shop"), "a / 0 problems");
 }

@@ -101,11 +101,15 @@ struct WorkspaceTable {
     exclude: Vec<Spanned<String>>,
 }
 
-/// The workspace `text` declares, when it reads and declares one, for
-/// finding the members before the build; the build reports what is wrong.
-#[must_use]
-pub fn workspace(text: &str) -> Option<Workspace> {
-    read(text, PATH).ok()?.workspace
+/// The workspace `text` declares, if any, for finding the members before
+/// the build; `Err` when it does not read, which the build reports.
+///
+/// # Errors
+///
+/// When `text` does not read as a `pyproject.toml` of a project or a
+/// workspace.
+pub fn workspace(text: &str) -> Result<Option<Workspace>, Diagnostic> {
+    Ok(read(text, PATH)?.workspace)
 }
 
 /// Reads `text`, the `pyproject.toml` at `path`. It must declare a project,
@@ -179,7 +183,10 @@ fn patterns(text: &str, path: &str, table: WorkspaceTable) -> Result<Workspace, 
             .map(|pattern| {
                 let written = pattern.get_ref();
                 let unread = written.contains(['?', '[', ']', '{', '}', '\\'])
-                    || written.split('/').any(|part| part == "**" || part == "..")
+                    || written
+                        .trim_end_matches('/')
+                        .split('/')
+                        .any(|part| matches!(part, "**" | ".." | "." | ""))
                     || written.starts_with('/');
                 if unread {
                     Err(Diagnostic {

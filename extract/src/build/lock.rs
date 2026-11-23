@@ -1,6 +1,5 @@
 //! `uv.lock`: a pin for each package a project's dependencies reach.
 
-use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Range;
 
@@ -18,9 +17,6 @@ pub(super) struct Lockfile<'t> {
     pub(super) lock: Lock,
     /// Every entry of each package, by its slug.
     packages: BTreeMap<String, Vec<Package>>,
-    /// How each package that is not a project is pinned, or that it cannot
-    /// be, which `read` reported.
-    pinned: BTreeMap<String, Option<Pinned>>,
 }
 
 /// A unit's pins, their anchors, and the packages it reaches that cannot be
@@ -33,7 +29,6 @@ pub(super) struct Reached {
 }
 
 /// How the lock pins a package, for each unit that reaches it.
-#[derive(Clone)]
 struct Pinned {
     version: String,
     origin: Origin,
@@ -96,14 +91,10 @@ struct LockedSource {
     r#virtual: Option<String>,
 }
 
-/// Reads `text`, the `uv.lock` at `path`, and reports each package it
-/// cannot pin. A package named in `projects` is a build unit, which needs no
-/// pin of its own.
-pub(super) fn read<'t>(
-    text: &'t str,
-    path: &str,
-    projects: &BTreeSet<String>,
-) -> (Option<Lockfile<'t>>, Vec<Diagnostic>) {
+/// Reads `text`, the `uv.lock` at `path`. Only a package with no name to
+/// key it by is a problem here; one that cannot be pinned is a problem for
+/// each unit that reaches it.
+pub(super) fn read<'t>(text: &'t str, path: &str) -> (Option<Lockfile<'t>>, Vec<Diagnostic>) {
     let unreadable = |error| {
         (
             None,
@@ -145,7 +136,6 @@ pub(super) fn read<'t>(
             version: VERSION,
         },
         packages: BTreeMap::new(),
-        pinned: BTreeMap::new(),
     };
     for package in file.package {
         let Some(slug) = slugify(package.name.get_ref()) else {
@@ -159,19 +149,6 @@ pub(super) fn read<'t>(
         };
         let entries = lockfile.packages.entry(slug.as_str().to_owned());
         entries.or_default().push(package);
-    }
-    for (slug, entries) in &lockfile.packages {
-        if projects.contains(slug) {
-            continue;
-        }
-        let pinned = match pinned(path, text, entries) {
-            Ok(pinned) => Some(pinned),
-            Err(problem) => {
-                diagnostics.push(problem);
-                None
-            }
-        };
-        lockfile.pinned.insert(slug.clone(), pinned);
     }
     (Some(lockfile), diagnostics)
 }
@@ -198,24 +175,21 @@ impl Lockfile<'_> {
             return pins;
         };
         for slug in self.reach(own) {
-            let entries = &self.packages[&slug];
-            let found = match self.pinned.get(&slug) {
-                Some(Some(pinned)) => Cow::Borrowed(pinned),
-                Some(None) => continue,
-                None if slug == project.as_str() => continue,
-                None => match pinned(&self.lock.path, self.text, entries) {
-                    Ok(pinned) => Cow::Owned(pinned),
-                    Err(problem) => {
-                        pins.diagnostics.push(problem);
-                        continue;
-                    }
-                },
+            if slug == project.as_str() {
+                continue;
+            }
+            let found = match pinned(&self.lock.path, self.text, &self.packages[&slug]) {
+                Ok(pinned) => pinned,
+                Err(problem) => {
+                    pins.diagnostics.push(problem);
+                    continue;
+                }
             };
             let id = unit.child(
                 Kind::Pin,
                 &slugify(&slug).expect("a package is keyed by its slug"),
             );
-            let span = found.span.clone();
+            let span = found.span;
             pins.anchors.push(crate::anchor::anchor(
                 id.clone(),
                 &self.lock.path,
@@ -225,8 +199,8 @@ impl Lockfile<'_> {
             pins.pins.push(Pin {
                 id,
                 package: slug,
-                version: found.version.clone(),
-                origin: found.origin.clone(),
+                version: found.version,
+                origin: found.origin,
                 source: Source::Extractor,
             });
         }

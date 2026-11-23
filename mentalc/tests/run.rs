@@ -568,3 +568,24 @@ fn a_members_folder_that_cannot_be_read_fails_the_tool() {
         "cannot read `packages`; make it readable, as a UTF-8 file if it is one, or remove it"
     );
 }
+
+#[test]
+fn a_root_that_does_not_read_is_reported_from_a_member() {
+    let dir = workspace();
+    fs::write(
+        dir.path().join("root/pyproject.toml"),
+        "[tool.uv.workspace]\nmembers = [\"packages/**\"]\n",
+    )
+    .unwrap();
+    let cli = Cli {
+        command: Command::Build { json: true },
+    };
+    let mut out = Vec::new();
+    let status = run(&cli, &dir.path().join("root/packages/api"), &mut out).unwrap();
+    let printed = String::from_utf8(out).unwrap();
+    assert_eq!(status, Status::Failure);
+    assert!(
+        printed.contains(r#""at":{"path":"../../pyproject.toml","lines":[2,2]},"message":"the workspace pattern `packages/**` is not one this build reads"#),
+        "{printed}"
+    );
+}
