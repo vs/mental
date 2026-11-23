@@ -65,3 +65,23 @@ def produced():
 
 def callbacks(callback: Callable[[], None]):
     callback()  # $ callee=resolve-outcomes-callbacks-callee-callback@resolved:resolve.outcomes:callbacks.callback
+
+
+class Box:
+    def __init__(self):
+        self.size = 1  # $ write-receiver=resolve-outcomes-box-init-write-receiver-self-size@resolved:resolve.outcomes:Box
+
+    @classmethod  # $ decorator=resolve-outcomes-box-make-decorator-classmethod@external:stdlib:builtins:classmethod
+    def make(cls):
+        return cls()  # $ callee=resolve-outcomes-box-make-callee-cls@resolved:resolve.outcomes:Box
+
+    def copy(self):
+        def grow():
+            self.size = 2  # $ write-receiver=resolve-outcomes-box-copy-grow-write-receiver-self-size@resolved:resolve.outcomes:Box
+
+        grow()  # $ callee=resolve-outcomes-box-copy-callee-grow@resolved:resolve.outcomes:Box.copy.grow
+        return self.__class__()  # $ callee=resolve-outcomes-box-copy-callee-self-class@resolved:resolve.outcomes:Box
+
+
+def made[T: Shape](kind: type[T]):
+    kind()  # $ callee=resolve-outcomes-made-callee-kind@resolved:resolve.outcomes:made.T

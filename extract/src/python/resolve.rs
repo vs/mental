@@ -18,7 +18,7 @@ use ruff_python_ast::find_node::covering_node;
 use ruff_python_ast::visitor::{self, Visitor};
 use ruff_python_ast::{Expr, ExprRef, Stmt};
 use ruff_ranged_value::RangedValue;
-use ruff_text_size::{Ranged, TextRange};
+use ruff_text_size::{Ranged, TextRange, TextSize};
 use ty_ide::{NavigationTargets, goto_declaration, goto_definition, goto_type_definition};
 use ty_module_resolver::file_to_module;
 use ty_project::metadata::options::{EnvironmentOptions, Options};
@@ -26,8 +26,8 @@ use ty_project::metadata::python_version::SupportedPythonVersion;
 use ty_project::metadata::value::RelativePathBuf;
 use ty_project::{ProjectDatabase, ProjectMetadata, SemanticDb};
 use ty_python_core::ProgramFile;
-use ty_python_semantic::types::Type;
 use ty_python_semantic::types::ide_support::call_signature_details;
+use ty_python_semantic::types::{Type, TypeVarKind};
 use ty_python_semantic::{HasType, SemanticModel};
 
 use super::sites::Listed;
@@ -171,17 +171,17 @@ impl Resolver {
         };
         let found = match site.kind {
             SiteKind::WriteReceiver => {
-                if let Some(reason) = site
+                let receiver = site
                     .receiver
-                    .and_then(|receiver| self.untyped(program, model, receiver))
-                {
+                    .expect("a write receiver's site records the object written to");
+                if let Some(reason) = self.untyped(program, model, receiver) {
                     return unresolved(reason);
                 }
-                self.targets(goto_type_definition(&self.db, program, ask))
+                self.class_of(program, model, receiver, ask)
             }
             SiteKind::Callee | SiteKind::Decorator => match self.called(program, model, site.range)
             {
-                Called::Class => self.targets(goto_type_definition(&self.db, program, ask)),
+                Called::Class(callee) => self.class_of(program, model, callee, ask),
                 Called::Untyped(reason) => {
                     if self
                         .targets(goto_declaration(&self.db, program, ask))
@@ -239,7 +239,7 @@ impl Resolver {
         if let Some(Type::ClassLiteral(_) | Type::GenericAlias(_) | Type::SubclassOf(_)) =
             call.func.inferred_type(model)
         {
-            return Called::Class;
+            return Called::Class(call.func.range());
         }
         if let Some(reason) = self.untyped(program, model, call.func.range()) {
             return Called::Untyped(reason);
@@ -284,16 +284,66 @@ impl Resolver {
         model: &SemanticModel,
         receiver: TextRange,
     ) -> Option<Reason> {
-        let parsed = parsed_module(&self.db, program.python_file(&self.db)).load(&self.db);
-        let typed = covering_node(parsed.syntax().into(), receiver)
-            .node()
-            .as_expr_ref()
-            .and_then(|expr| expr.inferred_type(model));
-        match typed {
+        match type_at(&self.db, program, model, receiver) {
             Some(Type::Dynamic(_) | Type::Divergent(_)) | None => Some(Reason::NoType),
             Some(Type::Never) => Some(Reason::Unreachable),
             Some(_) => None,
         }
+    }
+
+    /// The class of the object at `at`, or the class it is: the class a
+    /// `Self` stands for, else ty's "go to type definition" asked at `ask`.
+    fn class_of(
+        &self,
+        program: ProgramFile,
+        model: &SemanticModel,
+        at: TextRange,
+        ask: TextSize,
+    ) -> BTreeSet<(Outcome, bool)> {
+        match self.self_class(program, model, at) {
+            Some(class) => BTreeSet::from([class]),
+            None => self.targets(goto_type_definition(&self.db, program, ask)),
+        }
+    }
+
+    /// The class `Self` stands for, when the object at `at` is `Self` or
+    /// `type[Self]`, as `self` and `cls` are in a method. ty's "go to type
+    /// definition" finds nothing for it: the `Self` of a method is made up
+    /// by ty and has no definition.
+    ///
+    /// shortcut: ty keeps the class of a `Self` crate-private, so this takes
+    /// the class of the method that holds `at`, which is wrong only for the
+    /// `Self` of an outer method used inside a class nested in it; upgrade
+    /// when ty makes the class public.
+    fn self_class(
+        &self,
+        program: ProgramFile,
+        model: &SemanticModel,
+        at: TextRange,
+    ) -> Option<(Outcome, bool)> {
+        let typed = type_at(&self.db, program, model, at)
+            .expect("a class is asked for only where ty typed the object");
+        let bound = if let Type::TypeVar(bound) = typed {
+            bound
+        } else if let Type::SubclassOf(class) = typed {
+            class.into_type_var()?
+        } else {
+            return None;
+        };
+        if !matches!(
+            bound.typevar(&self.db).kind(&self.db),
+            TypeVarKind::TypingSelf { .. }
+        ) {
+            return None;
+        }
+        let parsed = parsed_module(&self.db, program.python_file(&self.db)).load(&self.db);
+        let mut method = MethodClass {
+            at,
+            in_class_body: None,
+            class: None,
+        };
+        method.visit_body(&parsed.syntax().body);
+        Some(self.target(program.file(&self.db), method.class?))
     }
 
     /// The outcome a definition ty found stands for, and whether it is a
@@ -357,8 +407,8 @@ impl Resolver {
 
 /// What a call site calls, as far as its syntax and the callee's type tell.
 enum Called {
-    /// A class, which is the target itself.
-    Class,
+    /// A class, which is the target itself, by the callee at this range.
+    Class(TextRange),
     /// A callee of no type ty can name, or of type `Never`: a value of no
     /// type when ty declares the name, else a name nothing defines.
     Untyped(Reason),
@@ -366,6 +416,20 @@ enum Called {
     Runs(BTreeSet<(Outcome, bool)>),
     /// The site is a decorator that is not a call.
     NotACall,
+}
+
+/// ty's type of the expression at `at`.
+fn type_at<'db>(
+    db: &'db ProjectDatabase,
+    program: ProgramFile,
+    model: &SemanticModel<'db>,
+    at: TextRange,
+) -> Option<Type<'db>> {
+    let parsed = parsed_module(db, program.python_file(db)).load(db);
+    covering_node(parsed.syntax().into(), at)
+        .node()
+        .as_expr_ref()
+        .and_then(|expr| expr.inferred_type(model))
 }
 
 fn unresolved(reason: Reason) -> Checked {
@@ -434,6 +498,31 @@ impl<'a> Visitor<'a> for Enclosing {
                 return;
             }
             self.scopes.push(name.to_string());
+        }
+        visitor::walk_stmt(self, stmt);
+    }
+
+    fn visit_expr(&mut self, _expr: &'a Expr) {}
+}
+
+/// The name of the class whose method holds a range: the class of the
+/// innermost `def` that holds the range and sits directly in a class body,
+/// not in another `def`.
+struct MethodClass {
+    at: TextRange,
+    in_class_body: Option<TextRange>,
+    class: Option<TextRange>,
+}
+
+impl<'a> Visitor<'a> for MethodClass {
+    fn visit_stmt(&mut self, stmt: &'a Stmt) {
+        if !stmt.range().contains_range(self.at) {
+            return;
+        }
+        if let Stmt::ClassDef(class) = stmt {
+            self.in_class_body = Some(class.name.range);
+        } else if let Stmt::FunctionDef(_) = stmt {
+            self.class = self.in_class_body.take().or(self.class);
         }
         visitor::walk_stmt(self, stmt);
     }

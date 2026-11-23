@@ -9,6 +9,7 @@ Research code behind the [experiment section of the report](../report.md#experim
 | `tyharness/` | A Rust program on ty's crates (ruff commit `4228f4c`, the commit of ty 0.0.105). It walks ruff's syntax tree of each file and asks ty, per site, for the definition ("go to definition") and the inferred type. One record per call, attribute access (load or store), decorator and class base |
 | `run.py` | Writes one Pyrefly and one ty configuration per project and runs both tools; records the time each takes |
 | `compare.py` | Looks up Pyrefly's answer for every ty site by its `line:col-line:col` range, normalises names and classifies each site: `agree`, `overlap` (several targets, at least one shared), `disagree`, `ty only`, `pyrefly only`, `neither`, `no pyrefly record` |
+| `mentalc.py` | Pairs the sites `mentalc build` writes with ty's answers recorded here ([below](#mentalc-build-against-these-answers)) |
 | `neither.py` | For receivers neither tool resolved: is the base an unannotated parameter, a chain from one, a `self` attribute chain, or something else |
 | `results/compare.json` | Counts per project and site kind, Pyrefly's unresolved reasons, timings |
 | `results/neither.json` | Output of `neither.py` |
@@ -61,3 +62,22 @@ Each rule below removed a difference of spelling, not of answer; every rule was 
 - **Unresolved on both sides.** `Unknown`, `Any`, `Never`, and a union with any of them; Pyrefly's `is_exhaustive: false`.
 - **"Go to definition" on a variable.** For a call, ty may stop at the variable (`blue = make_colorizer(...)`) or an import; that names no callee, so the script falls back to ty's type of the callee.
 - **Out of scope for one tool.** Built-in decorators (`property`, `classmethod`, `staticmethod`, `overload`, setters) are not listed by Pyrefly; expressions inside annotations are not exported by Pyrefly (`no pyrefly record`).
+
+## `mentalc build` against these answers
+
+On 2026-11-23, milestone 1's `mentalc build` was run on rq and full-stack-fastapi-template at the commits above, and its sites paired with ty's recorded answers by `mentalc.py` ([findings, section B](../../../findings.md#b-mentalc-build-on-rq-and-full-stack-fastapi-template)). Neither project builds as committed, so each got the setup its diagnostics asked for:
+
+```sh
+M=<path to target/release/mentalc>
+(cd rq && uv python pin 3.13 \
+  && printf '\n[tool.uv]\nenvironments = ["python_version == '"'"'3.13'"'"'"]\n' >> pyproject.toml \
+  && uv lock --exclude-newer 2026-11-18T00:00:00Z && uv sync --frozen && $M build)
+(cd full-stack-fastapi-template && uv sync --frozen --python 3.14 && cd backend \
+  && ln -s ../uv.lock uv.lock && ln -s ../.python-version .python-version && ln -s ../.venv .venv && $M build)
+python3 -I mentalc.py <work dir>/src/rq results/sites-rq.jsonl.gz rq/ 10
+python3 -I mentalc.py <work dir>/src/full-stack-fastapi-template/backend results/sites-fastapi-template.jsonl.gz app/ 10
+```
+
+rq has no `uv.lock` and no `.python-version`; its lock forks by Python version, which `mentalc` refuses, so `environments` keeps it to the 3.13 the experiment used, and `--exclude-newer` keeps it to packages published before the experiment. The template is a uv workspace whose lock, Python version and environment sit at the workspace root, above the project in `backend/`; the links put them where `mentalc` looks.
+
+`mentalc` lists a decorator that is a call as a decorator site, not a callee, and the experiment truncated the text of a multi-line callee; `mentalc.py` counts both apart as unmatched.
