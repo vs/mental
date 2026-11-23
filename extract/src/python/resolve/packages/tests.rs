@@ -106,3 +106,79 @@ fn a_distribution_the_unit_does_not_pin_owns_nothing() {
         [None]
     );
 }
+
+/// The pin of each path, given the `RECORD` of each `dist_info`; the unit
+/// pins `redis`, `types-redis`, `redis-stubs` and `types-six`.
+#[track_caller]
+fn check_all(records: &[(&str, &str)], paths: &[&str]) -> Vec<Option<String>> {
+    let unit = Id::parse("shop/unit:shop").unwrap();
+    let pins = ["redis", "types-redis", "redis-stubs", "types-six"].map(|name| pin(&unit, name));
+    let records: Vec<DistRecord> = records
+        .iter()
+        .map(|&(dist_info, text)| DistRecord { dist_info, text })
+        .collect();
+    let packages = Packages::new(&unit, &pins, &records);
+    paths
+        .iter()
+        .map(|path| {
+            packages
+                .pin(path)
+                .map(|pin| pin.as_str().rsplit(':').next().unwrap().to_owned())
+        })
+        .collect()
+}
+
+const REDIS: (&str, &str) = (
+    "redis-5.0.dist-info",
+    "redis/__init__.py,,\nredis/client.py,,\nredis/commands/__init__.py,,\nredis/_speedups.cpython-312-darwin.so,,\n",
+);
+
+#[test]
+fn a_stub_file_belongs_to_the_pin_of_the_module_it_describes() {
+    let types_redis = (
+        "types_redis-4.6.dist-info",
+        "redis/__init__.pyi,,\nredis/client.pyi,,\nredis/_speedups.pyi,,\nredis/commands/core.pyi,,\nredis/py.typed,,\n",
+    );
+    assert_eq!(
+        check_all(
+            &[REDIS, types_redis],
+            &[
+                "redis/client.pyi",
+                "redis/__init__.pyi",
+                "redis/_speedups.pyi",
+                "redis/commands/core.pyi"
+            ],
+        ),
+        ["redis", "redis", "redis", "redis"].map(|pin| Some(pin.to_owned()))
+    );
+}
+
+#[test]
+fn a_stubs_folder_describes_the_package_without_its_suffix() {
+    let stubs = ("redis_stubs-1.0.dist-info", "redis-stubs/client.pyi,,\n");
+    assert_eq!(
+        check_all(&[REDIS, stubs], &["redis-stubs/client.pyi"]),
+        [Some("redis".to_owned())]
+    );
+}
+
+#[test]
+fn a_stub_file_keeps_its_pin_when_no_pin_installs_its_module() {
+    let stubs = ("types_six-1.0.dist-info", "six.pyi,,\n");
+    assert_eq!(
+        check_all(&[REDIS, stubs], &["six.pyi"]),
+        [Some("types-six".to_owned())]
+    );
+}
+
+#[test]
+fn a_package_with_its_own_stubs_keeps_them() {
+    let inline = (
+        "redis-5.0.dist-info",
+        "redis/__init__.py,,\nredis/client.py,,\nredis/client.pyi,,\n",
+    );
+    assert_eq!(
+        check_all(&[inline], &["redis/client.pyi"]),
+        [Some("redis".to_owned())]
+    );
+}

@@ -1,36 +1,81 @@
 //! Which pin an installed file belongs to, from the `RECORD` file that each
 //! installed distribution's `.dist-info` folder holds.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use mental_model::{Id, Kind, Pin, slugify};
 
 use crate::python::DistRecord;
 
 /// The pin of each installed file, by its path in `site-packages`.
-pub(super) struct Packages(BTreeMap<String, Id>);
+pub(super) struct Packages {
+    files: BTreeMap<String, Id>,
+    /// The pins that install stubs and no module, as `types-redis` and
+    /// `redis-stubs` do: they describe another package.
+    stubs: BTreeSet<Id>,
+}
 
 impl Packages {
     /// Only distributions the build unit pins count: a file of anything
     /// else installed belongs to no package of the unit.
     pub(super) fn new(unit: &Id, pins: &[Pin], records: &[DistRecord]) -> Packages {
-        let mut files = BTreeMap::new();
+        let mut packages = Packages {
+            files: BTreeMap::new(),
+            stubs: BTreeSet::new(),
+        };
         for record in records {
             let Some(pin) = pin_of(unit, pins, record.dist_info) else {
                 continue;
             };
-            for path in record.text.lines().filter_map(first_field) {
-                if !path.starts_with("../") {
-                    files.insert(path, pin.clone());
-                }
+            let paths: Vec<String> = record
+                .text
+                .lines()
+                .filter_map(first_field)
+                .filter(|path| !path.starts_with("../"))
+                .collect();
+            let has = |suffix: &str| paths.iter().any(|path| path.ends_with(suffix));
+            if has(".pyi") && !has(".py") {
+                packages.stubs.insert(pin.clone());
+            }
+            for path in paths {
+                packages.files.insert(path, pin.clone());
             }
         }
-        Packages(files)
+        packages
     }
 
+    /// The pin of the installed file at `path`; for a file of a stub-only
+    /// pin, the pin that installs the module it describes, when one does.
     pub(super) fn pin(&self, path: &str) -> Option<&Id> {
-        self.0.get(path)
+        let pin = self.files.get(path)?;
+        if !self.stubs.contains(pin) {
+            return Some(pin);
+        }
+        let runtime = runtime_files(path)
+            .iter()
+            .find_map(|candidate| self.files.get(candidate));
+        Some(runtime.unwrap_or(pin))
     }
+}
+
+/// The files that may install the module a stub file describes, nearest
+/// first: for `redis-stubs/commands/core.pyi`, `redis/commands/core.py`,
+/// then the `__init__.py` of `redis/commands/core`, `redis/commands` and
+/// `redis`, since a compiled module has no `.py` of its own. None of them
+/// belongs to a stub-only pin, which installs no `.py`.
+fn runtime_files(stub: &str) -> Vec<String> {
+    let module = stub
+        .strip_suffix(".pyi")
+        .expect("ty finds only `.py` and `.pyi` files, and a stub-only pin installs no `.py`");
+    let module = module.strip_suffix("/__init__").unwrap_or(module);
+    let mut parts: Vec<&str> = module.split('/').collect();
+    parts[0] = parts[0].strip_suffix("-stubs").unwrap_or(parts[0]);
+    let mut files = vec![format!("{}.py", parts.join("/"))];
+    while !parts.is_empty() {
+        files.push(format!("{}/__init__.py", parts.join("/")));
+        parts.pop();
+    }
+    files
 }
 
 /// The pin of `<name>-<version>.dist-info`: the one whose ID the slug of

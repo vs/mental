@@ -12,6 +12,7 @@ All notable changes, newest first. Versions follow semantic versioning.
 - `model`: the `site` record, and the hand-written reference of report-jobs' 133 reference sites.
 - `extract`: `extract_sites` parses each Python file with ruff's parser, lists its imports, decorators, callees, base classes, write receivers, handler types and escapes, and resolves each with ty to `resolved`, `external` or `unresolved` with a reason, with an ID and an anchor each; a file that does not parse gives a `syntax-error` per error, and an import of a module that is nowhere a `module-missing`.
 - `model`: the outcome and checker of each site, and report-jobs' 140 sites with their outcomes.
+- `extract`: a target in a stub-only package, such as `types-redis` or `redis-stubs`, belongs to the pin that installs the module it describes, `redis`, when one does.
 - `extract`: a name or attribute with no declaration handed to an outside call is no escape when ty types it with a type that cannot be called, as `logging.getLogger(__name__)` hands over a `str`.
 - `mentalc build`: a missing module whose import a handler of `ImportError` or `ModuleNotFoundError` guards is the warning `module-optional`, not the error `module-missing`, so the build goes on.
 - `extract`: `self` and `cls` in a method resolve to the method's class, at write receivers and calls of `cls`; they were `not_found`.
