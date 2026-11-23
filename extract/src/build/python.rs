@@ -5,20 +5,24 @@ use mental_model::{Code, Diagnostic, Id, Lines, Location, Python, PythonFrom};
 
 const PYTHON_VERSION: &str = ".python-version";
 const PYVENV: &str = ".venv/pyvenv.cfg";
-const FIX: &str = "write one in `.python-version`, for example with `uv python pin 3.12`";
 
+/// The version of `unit`, from the files at `root`, the folder that holds
+/// them relative to the build directory.
 pub(super) fn version(
     unit: &Id,
+    root: &str,
     python_version: Option<&str>,
     pyvenv: Option<&str>,
 ) -> Result<Python, Diagnostic> {
+    let version_file = super::join(root, PYTHON_VERSION);
+    let fix = format!("write one in `{version_file}`, for example with `uv python pin 3.12`");
     let problem = |at, message| Diagnostic {
         id: Some(unit.clone()),
         code: Code::PythonVersionUnknown,
         at,
         message,
     };
-    let (path, from, stated) = match (python_version, pyvenv) {
+    let (file, from, stated) = match (python_version, pyvenv) {
         (Some(text), _) => (
             PYTHON_VERSION,
             PythonFrom::PythonVersionFile,
@@ -29,27 +33,28 @@ pub(super) fn version(
             return Err(problem(
                 None,
                 format!(
-                    "there is no `{PYTHON_VERSION}` and no environment to take the Python \
-                     version from; {FIX}"
+                    "there is no `{version_file}` and no environment to take the Python \
+                     version from; {fix}"
                 ),
             ));
         }
     };
+    let path = super::join(root, file);
     let Some((line, version)) = stated else {
         return Err(problem(
             None,
-            format!("`{path}` states no Python version; {FIX}"),
+            format!("`{path}` states no Python version; {fix}"),
         ));
     };
     if !is_version(version) {
         return Err(problem(
             Some(Location {
-                path: path.to_owned(),
+                path: path.clone(),
                 lines: Lines::new(line, line).expect("lines are counted from 1"),
             }),
             format!(
                 "`{path}` says the Python version is `{version}`, which is not a version such \
-                 as 3.12 or 3.12.1; {FIX}"
+                 as 3.12 or 3.12.1; {fix}"
             ),
         ));
     }

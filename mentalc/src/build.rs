@@ -3,7 +3,7 @@
 //! and writes nothing; `repo` does.
 
 use mental_extract::{BuildModel, Sites};
-use mental_model::{BuildUnit, Diagnostic, Resolution, Severity, Tally, jsonl};
+use mental_model::{Diagnostic, Resolution, Severity, Tally, jsonl};
 
 use crate::Status;
 
@@ -36,17 +36,10 @@ fn failed(diagnostics: &[Diagnostic]) -> bool {
         .any(|diagnostic| diagnostic.code.severity() == Severity::Error)
 }
 
-/// The build unit stage 2 resolves: stage 1's, when it found no error, as
-/// the build stops at the first stage that fails.
-pub(crate) fn ready<'m>(
-    model: &'m BuildModel,
-    diagnostics: &[Diagnostic],
-) -> Option<&'m BuildUnit> {
-    if failed(diagnostics) {
-        None
-    } else {
-        model.units.first()
-    }
+/// Whether stage 2 runs: when stage 1 found no error, as the build stops at
+/// the first stage that fails.
+pub(crate) fn ready(diagnostics: &[Diagnostic]) -> bool {
+    !failed(diagnostics)
 }
 
 pub(crate) fn build(

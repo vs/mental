@@ -15,8 +15,9 @@ pub enum Code {
     /// The `uv.lock` locks one package more than once, such as at one
     /// version per platform; a pin has one version.
     LockAmbiguous,
-    /// The `uv.lock` does not read as a lockfile, or holds a package with no
-    /// fixed version or with a source this build does not read.
+    /// The `uv.lock` does not read as a lockfile, does not lock the project,
+    /// or holds a package with no fixed version or with a source this build
+    /// does not read.
     LockInvalid,
     /// The project has no `uv.lock`.
     LockMissing,

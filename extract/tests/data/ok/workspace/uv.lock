@@ -1,0 +1,33 @@
+version = 1
+revision = 3
+requires-python = ">=3.12"
+
+[manifest]
+members = ["api", "core"]
+
+[manifest.dependency-groups]
+dev = [{ name = "ruff", specifier = ">=0.8" }]
+
+[[package]]
+name = "api"
+version = "0.1.0"
+source = { editable = "packages/api" }
+dependencies = [
+    { name = "core" },
+    { name = "requests" },
+]
+
+[[package]]
+name = "core"
+version = "0.2.0"
+source = { editable = "packages/core" }
+
+[[package]]
+name = "requests"
+version = "2.32.3"
+source = { registry = "https://pypi.org/simple" }
+
+[[package]]
+name = "ruff"
+version = "0.8.0"
+source = { registry = "https://pypi.org/simple" }

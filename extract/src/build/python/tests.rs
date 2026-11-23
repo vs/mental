@@ -6,7 +6,7 @@ use super::*;
 #[track_caller]
 fn check(python_version: Option<&str>, pyvenv: Option<&str>) -> String {
     let unit = Id::parse("shop/unit:shop").unwrap();
-    match version(&unit, python_version, pyvenv) {
+    match version(&unit, ".", python_version, pyvenv) {
         Ok(python) => format!("{} from {:?}", python.version, python.from),
         Err(problem) => jsonl::write(&[problem]),
     }
