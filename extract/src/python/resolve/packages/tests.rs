@@ -108,11 +108,22 @@ fn a_distribution_the_unit_does_not_pin_owns_nothing() {
 }
 
 /// The pin of each path, given the `RECORD` of each `dist_info`; the unit
-/// pins `redis`, `types-redis`, `redis-stubs` and `types-six`.
+/// pins the packages its tests install.
 #[track_caller]
 fn check_all(records: &[(&str, &str)], paths: &[&str]) -> Vec<Option<String>> {
     let unit = Id::parse("shop/unit:shop").unwrap();
-    let pins = ["redis", "types-redis", "redis-stubs", "types-six"].map(|name| pin(&unit, name));
+    let pins = [
+        "redis",
+        "types-redis",
+        "redis-stubs",
+        "types-six",
+        "django",
+        "django-stubs",
+        "pycurl",
+        "types-pycurl",
+        "fastx",
+    ]
+    .map(|name| pin(&unit, name));
     let records: Vec<DistRecord> = records
         .iter()
         .map(|&(dist_info, text)| DistRecord { dist_info, text })
@@ -180,5 +191,41 @@ fn a_package_with_its_own_stubs_keeps_them() {
     assert_eq!(
         check_all(&[inline], &["redis/client.pyi"]),
         [Some("redis".to_owned())]
+    );
+}
+
+#[test]
+fn a_stubs_folder_beside_code_still_describes_its_package() {
+    let django = (
+        "django-5.0.dist-info",
+        "django/__init__.py,,\ndjango/db/models/__init__.py,,\n",
+    );
+    let stubs = (
+        "django_stubs-5.0.dist-info",
+        "django-stubs/db/models/__init__.pyi,,\nmypy_django_plugin/main.py,,\n",
+    );
+    assert_eq!(
+        check_all(
+            &[django, stubs],
+            &[
+                "django-stubs/db/models/__init__.pyi",
+                "mypy_django_plugin/main.py"
+            ]
+        ),
+        [Some("django".to_owned()), Some("django-stubs".to_owned())]
+    );
+}
+
+#[test]
+fn a_stub_of_a_compiled_module_belongs_to_the_pin_that_installs_it() {
+    let pycurl = ("pycurl-7.45.dist-info", "pycurl.cpython-312-darwin.so,,\n");
+    let stubs = ("types_pycurl-7.45.dist-info", "pycurl.pyi,,\n");
+    let fastx = (
+        "fastx-1.0.dist-info",
+        "fastx.cp312-win_amd64.pyd,,\nfastx.pyi,,\n",
+    );
+    assert_eq!(
+        check_all(&[pycurl, stubs, fastx], &["pycurl.pyi", "fastx.pyi"]),
+        [Some("pycurl".to_owned()), Some("fastx".to_owned())]
     );
 }
