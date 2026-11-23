@@ -614,3 +614,28 @@ fn a_project_below_a_folder_of_tool_settings_is_on_its_own() {
         "{units}"
     );
 }
+
+#[test]
+fn a_star_first_names_the_folders_of_the_root() {
+    let dir = workspace();
+    let root = dir.path().join("root");
+    fs::write(
+        root.join("pyproject.toml"),
+        "[tool.uv.workspace]\nmembers = [\"*\"]\nexclude = [\"packages\"]\n",
+    )
+    .unwrap();
+    fs::create_dir(root.join("app")).unwrap();
+    fs::write(
+        root.join("app/pyproject.toml"),
+        "[project]\nname = \"app\"\n",
+    )
+    .unwrap();
+    let lock = fs::read_to_string(root.join("uv.lock")).unwrap();
+    fs::write(
+        root.join("uv.lock"),
+        lock + "\n[[package]]\nname = \"app\"\nversion = \"0.1.0\"\nsource = { editable = \"app\" }\n",
+    )
+    .unwrap();
+    assert_eq!(check_in(&dir, "."), "Success");
+    assert_eq!(written(&root), "root/unit:app in app locked by uv.lock");
+}
