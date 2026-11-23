@@ -122,6 +122,7 @@ fn check_all(records: &[(&str, &str)], paths: &[&str]) -> Vec<Option<String>> {
         "pycurl",
         "types-pycurl",
         "fastx",
+        "types-fastx",
     ]
     .map(|name| pin(&unit, name));
     let records: Vec<DistRecord> = records
@@ -220,12 +221,13 @@ fn a_stubs_folder_beside_code_still_describes_its_package() {
 fn a_stub_of_a_compiled_module_belongs_to_the_pin_that_installs_it() {
     let pycurl = ("pycurl-7.45.dist-info", "pycurl.cpython-312-darwin.so,,\n");
     let stubs = ("types_pycurl-7.45.dist-info", "pycurl.pyi,,\n");
-    let fastx = (
-        "fastx-1.0.dist-info",
-        "fastx.cp312-win_amd64.pyd,,\nfastx.pyi,,\n",
-    );
+    let fastx = ("fastx-1.0.dist-info", "fastx.cp312-win_amd64.pyd,,\n");
+    let fastx_stubs = ("types_fastx-1.0.dist-info", "fastx.pyi,,\n");
     assert_eq!(
-        check_all(&[pycurl, stubs, fastx], &["pycurl.pyi", "fastx.pyi"]),
+        check_all(
+            &[pycurl, stubs, fastx, fastx_stubs],
+            &["pycurl.pyi", "fastx.pyi"]
+        ),
         [Some("pycurl".to_owned()), Some("fastx".to_owned())]
     );
 }
