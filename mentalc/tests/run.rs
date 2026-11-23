@@ -12,7 +12,10 @@ fn project(prepare: impl Fn(&TempDir)) -> TempDir {
     let dir = TempDir::new().expect("a temporary directory can be made");
     let files = [
         ("pyproject.toml", "[project]\nname = \"shop\"\n"),
-        ("uv.lock", "version = 1\n"),
+        (
+            "uv.lock",
+            "version = 1\n\n[[package]]\nname = \"shop\"\nversion = \"0.1.0\"\nsource = { virtual = \".\" }\n",
+        ),
         (".python-version", "3.12\n"),
     ];
     for (name, text) in files {
@@ -376,4 +379,192 @@ fn skipped_and_broken_links_are_ignored() {
         symlink(dir.path().join("gone"), dir.path().join("ghost")).unwrap();
     });
     assert_eq!(check(&dir, &mut io::sink()), "Success");
+}
+
+/// A uv workspace in the folder `root`: a root with no `[project]` whose members are
+/// `packages/*` but `packages/old`, holding the lock, Python version and an
+/// environment; the members `api`, with `src/`, and `core`, each with a
+/// Python file.
+fn workspace() -> TempDir {
+    let dir = TempDir::new().expect("a temporary directory can be made");
+    let lock = "version = 1\n\n\
+                [[package]]\nname = \"api\"\nversion = \"0.1.0\"\nsource = { editable = \"packages/api\" }\ndependencies = [{ name = \"core\" }]\n\n\
+                [[package]]\nname = \"core\"\nversion = \"0.2.0\"\nsource = { editable = \"packages/core\" }\n\n\
+                [[package]]\nname = \"shop\"\nversion = \"0.1.0\"\nsource = { virtual = \".\" }\n";
+    let files = [
+        (
+            "pyproject.toml",
+            "[tool.uv.workspace]\nmembers = [\"packages/*\", \"tools\"]\nexclude = [\"packages/old\"]\n",
+        ),
+        ("uv.lock", lock),
+        (".python-version", "3.12\n"),
+        (
+            ".venv/pyvenv.cfg",
+            "home = /usr/local/bin\nversion_info = 3.12.8\n",
+        ),
+        ("packages/api/pyproject.toml", "[project]\nname = \"api\"\n"),
+        ("packages/api/src/api/__init__.py", "print('api')\n"),
+        (
+            "packages/core/pyproject.toml",
+            "[project]\nname = \"core\"\n",
+        ),
+        ("packages/core/core.py", "print('core')\n"),
+        ("packages/old/pyproject.toml", "[project]\nname = \"old\"\n"),
+        (
+            "packages/.cache/pyproject.toml",
+            "[project]\nname = \"cache\"\n",
+        ),
+        ("packages/README.md", "the members\n"),
+    ];
+    for (name, text) in files {
+        let path = dir.path().join("root").join(name);
+        let folder = path.parent().expect("every file is in the root");
+        fs::create_dir_all(folder).expect("the directory is writable");
+        fs::write(path, text).expect("the directory is writable");
+    }
+    fs::create_dir_all(dir.path().join("root/.venv/lib/python3.12/site-packages"))
+        .expect("the directory is writable");
+    dir
+}
+
+/// `mentalc build` in `dir` below the workspace's root.
+#[track_caller]
+fn check_in(root: &TempDir, dir: &str) -> String {
+    let cli = Cli {
+        command: Command::Build { json: false },
+    };
+    match run(&cli, &root.path().join("root").join(dir), &mut io::sink()) {
+        Ok(status) => format!("{status:?}"),
+        Err(error) => error.to_string(),
+    }
+}
+
+/// The IDs and `dir` of each build unit written in `dir`, and the paths
+/// its site anchors stand on.
+fn written(dir: &std::path::Path) -> String {
+    let read = |path: &str| fs::read_to_string(dir.join(path)).expect("the build wrote it");
+    let (units, anchors) = (
+        read(".mental/model/build_unit.jsonl"),
+        read(".mental/anchors.jsonl"),
+    );
+    let field = |line: &str, key: &str| {
+        let after = line.split(&format!("\"{key}\":\"")).nth(1);
+        let value = after.and_then(|after| after.split('"').next());
+        value.expect("every record has the field").to_owned()
+    };
+    let mut lines: Vec<String> = units
+        .lines()
+        .map(|line| {
+            format!(
+                "{} in {} locked by {}",
+                field(line, "id"),
+                field(line, "dir"),
+                field(line, "path")
+            )
+        })
+        .collect();
+    let mut sites: Vec<String> = anchors
+        .lines()
+        .filter(|line| line.contains("/site:"))
+        .map(|line| format!("{} at {}", field(line, "id"), field(line, "path")))
+        .collect();
+    lines.append(&mut sites);
+    lines.join("\n")
+}
+
+#[test]
+fn a_workspace_root_builds_every_member_its_patterns_name() {
+    let dir = workspace();
+    assert_eq!(check_in(&dir, "."), "Success");
+    assert_eq!(
+        written(&dir.path().join("root")),
+        "root/unit:api in packages/api locked by uv.lock\n\
+         root/unit:core in packages/core locked by uv.lock\n\
+         root/unit:api/site:api-callee-print at packages/api/src/api/__init__.py\n\
+         root/unit:core/site:core-callee-print at packages/core/core.py"
+    );
+}
+
+#[test]
+fn a_member_builds_alone_with_the_files_of_its_root() {
+    let dir = workspace();
+    assert_eq!(check_in(&dir, "packages/api"), "Success");
+    assert_eq!(
+        written(&dir.path().join("root/packages/api")),
+        "root/unit:api in . locked by ../../uv.lock\n\
+         root/unit:api/site:api-callee-print at src/api/__init__.py"
+    );
+}
+
+#[test]
+fn a_project_the_workspace_leaves_out_is_on_its_own() {
+    let dir = workspace();
+    assert_eq!(check_in(&dir, "packages/old"), "Failure");
+    let diagnostics = fs::read_to_string(
+        dir.path()
+            .join("root/packages/old/.mental/diagnostics.jsonl"),
+    )
+    .unwrap();
+    assert!(
+        diagnostics.contains("\"code\":\"lock-missing\""),
+        "{diagnostics}"
+    );
+    fs::write(
+        dir.path().join("root/pyproject.toml"),
+        "[project]\nname = \"shop\"\n",
+    )
+    .unwrap();
+    assert_eq!(check_in(&dir, "packages/old"), "Failure");
+}
+
+#[test]
+fn a_root_that_is_a_project_leaves_its_members_folders_to_them() {
+    let dir = workspace();
+    let root = fs::read_to_string(dir.path().join("root/pyproject.toml")).unwrap();
+    fs::write(
+        dir.path().join("root/pyproject.toml"),
+        format!("[project]\nname = \"shop\"\n\n{root}"),
+    )
+    .unwrap();
+    fs::write(dir.path().join("root/run.py"), "print('shop')\n").unwrap();
+    assert_eq!(check_in(&dir, "."), "Success");
+    let shop: Vec<String> = written(&dir.path().join("root"))
+        .lines()
+        .filter(|line| line.starts_with("shop/unit:shop/"))
+        .map(str::to_owned)
+        .collect();
+    assert_eq!(shop, ["shop/unit:shop/site:run-callee-print at run.py"]);
+}
+
+#[test]
+fn a_member_file_that_cannot_be_read_fails_the_tool() {
+    let dir = workspace();
+    fs::remove_file(dir.path().join("root/packages/core/pyproject.toml")).unwrap();
+    fs::create_dir(dir.path().join("root/packages/core/pyproject.toml")).unwrap();
+    assert_eq!(
+        check_in(&dir, "."),
+        "cannot read `packages/core/pyproject.toml`; make it a readable UTF-8 file, or remove it"
+    );
+    let outer = workspace();
+    fs::remove_file(outer.path().join("root/pyproject.toml")).unwrap();
+    fs::create_dir(outer.path().join("root/pyproject.toml")).unwrap();
+    assert_eq!(
+        check_in(&outer, "packages/api"),
+        "cannot read `../../pyproject.toml`; make it a readable UTF-8 file, or remove it"
+    );
+}
+
+#[cfg(unix)]
+#[test]
+fn a_members_folder_that_cannot_be_read_fails_the_tool() {
+    use std::os::unix::fs::PermissionsExt;
+    let dir = workspace();
+    let packages = dir.path().join("root/packages");
+    fs::set_permissions(&packages, fs::Permissions::from_mode(0o000)).unwrap();
+    let result = check_in(&dir, ".");
+    fs::set_permissions(&packages, fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!(
+        result,
+        "cannot read `packages`; make it readable, as a UTF-8 file if it is one, or remove it"
+    );
 }

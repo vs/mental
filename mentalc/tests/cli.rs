@@ -161,7 +161,7 @@ fn an_environment_with_no_site_packages_fails_the_tool() {
     ----- stdout -----
 
     ----- stderr -----
-    error: cannot resolve the project's reference sites: the type checker could not open the project: Failed to discover the site-packages directory; check that the project directory and its environment are readable
+    error: cannot resolve the reference sites of `reports/unit:reports`: the type checker could not open the project: Failed to discover the site-packages directory; check that the project directory and its environment are readable
     ");
 }
 

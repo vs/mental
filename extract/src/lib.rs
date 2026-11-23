@@ -6,5 +6,5 @@ mod anchor;
 mod build;
 mod python;
 
-pub use build::{BuildModel, ProjectFiles, build_model};
+pub use build::{BuildModel, Member, ProjectFiles, Root, Workspace, build_model, workspace};
 pub use python::{DistRecord, Environment, PythonFile, ResolveError, Sites, extract_sites};

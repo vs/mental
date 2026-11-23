@@ -11,7 +11,7 @@ use std::io::{self, Write};
 use std::path::Path;
 
 use anyhow::Context;
-use mental_extract::{DistRecord, Environment, PythonFile, build_model, extract_sites};
+use mental_extract::{DistRecord, Environment, PythonFile, Sites, build_model, extract_sites};
 
 pub use cli::{Cli, Command};
 
@@ -46,16 +46,25 @@ impl Status {
 pub fn run(cli: &Cli, dir: &Path, out: &mut dyn Write) -> anyhow::Result<Status> {
     let Command::Build { json } = cli.command;
     let tree = repo::read(dir)?;
-    let (model, diagnostics) = build_model(&tree.files());
-    let stage_two = match build::ready(&model, &diagnostics) {
-        Some(unit) => {
-            let sources = repo::read_sources(dir, unit)?;
-            let project_dir = dir.to_str().with_context(|| {
-                format!(
-                    "the project directory `{}` is not UTF-8; build from a directory whose path is",
-                    dir.display()
-                )
-            })?;
+    let members = tree.members();
+    let (model, diagnostics) = build_model(&tree.files(&members));
+    let stage_two = if build::ready(&diagnostics) {
+        let project_dir = tree.path.as_str();
+        let mut found = (
+            Sites {
+                sites: Vec::new(),
+                anchors: Vec::new(),
+            },
+            Vec::new(),
+        );
+        for unit in &model.units {
+            let others: Vec<&str> = model
+                .units
+                .iter()
+                .filter(|other| other.id != unit.id)
+                .map(|other| other.dir.as_str())
+                .collect();
+            let sources = repo::read_sources(dir, unit, &others)?;
             let files: Vec<PythonFile> = sources
                 .files
                 .iter()
@@ -70,11 +79,15 @@ pub fn run(cli: &Cli, dir: &Path, out: &mut dyn Write) -> anyhow::Result<Status>
                 project_dir,
                 records: &records,
             };
-            let found = extract_sites(unit, &model.pins, &environment, &files)
-                .context("cannot resolve the project's reference sites")?;
-            Some(found)
+            let (sites, problems) = extract_sites(unit, &model.pins, &environment, &files)
+                .with_context(|| format!("cannot resolve the reference sites of `{}`", unit.id))?;
+            found.0.sites.extend(sites.sites);
+            found.0.anchors.extend(sites.anchors);
+            found.1.extend(problems);
         }
-        None => None,
+        Some(found)
+    } else {
+        None
     };
     let built = build::build(model, diagnostics, stage_two);
     repo::write(dir, &built.files)?;
