@@ -37,6 +37,12 @@ Comput = "Comput"
 restat = "restat"
 SMOVE = "SMOVE"
 flate = "flate"
+# The ReverX protocol reverse-engineering tool and Nam (Alur, Cerny,
+# Madhusudan, Nam, POPL 2005), cited in the decompilers research.
+Rever = "Rever"
+Nam = "Nam"
+# PROGRES, the graph rewriting language (Schürr), cited in the decompilers research.
+PROGRES = "PROGRES"
 # A level-of-detail field, a variable in a research script, "mis-cited",
 # and "PNGs".
 lod = "lod"
