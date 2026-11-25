@@ -29,7 +29,7 @@ Two parts, both reading an index that `mentalc` didn't produce. The indexer runs
 On the five projects of the type-checker experiment, at the same commits and with the same environments ([corpus](../type-checkers-as-libraries/experiments/README.md#corpus)):
 
 1. Run `mentalc build`, which uses ty, as experiment B1 did ([findings, section B](../../findings.md#b-mentalc-build-on-outside-projects)).
-2. Make two indexes: one with scip-python, the latest release, and one with `pyrefly check --report-scip` from Pyrefly 1.4.1. The second is a current checker, so a gap that shows only in scip-python comes from its outdated Pyright, not from SCIP.
+2. Make two indexes: one with scip-python, at its latest release on the day of the run, pinned and recorded in the experiment's README, and one with `pyrefly check --report-scip` from Pyrefly 1.4.1. The second is a current checker, so a gap that shows only in scip-python comes from its outdated Pyright, not from SCIP.
 3. Pair each site of `site.jsonl` with an occurrence: same file, an occurrence starting on the site's anchor lines, on the last name the site is written with (`commit` for `s.commit()`). When that name appears twice on those lines, the pair is ambiguous and counted apart.
 4. Use ty's outcome as the reference. Normalize names with the rules of the earlier experiment's [comparison](../type-checkers-as-libraries/experiments/README.md#what-the-comparison-normalises), plus one more: a SCIP descriptor written as a module and a qualified name.
 
