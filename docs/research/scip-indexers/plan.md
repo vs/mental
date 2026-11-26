@@ -1,6 +1,6 @@
 # Experiment plan: SCIP indexers as the checker behind `extract`
 
-**Status: Experiment, not run.** **Date:** 2026-11-25. Experiment **R4** of the [specification](../../specification.md#152-experiments) (owner choice, 2026-11-26).
+**Status: Experiment, run 2026-11-26** ([report](report.md)). **Date:** 2026-11-25. Experiment **R4** of the [specification](../../specification.md#152-experiments) (owner choice, 2026-11-26).
 
 ## Question
 

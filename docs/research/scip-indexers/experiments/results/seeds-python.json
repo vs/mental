@@ -1,0 +1,218 @@
+{
+ "dependency-removed": {
+  "mentalc exit": 1,
+  "mentalc diagnostics": [
+   [
+    "module-missing",
+    "the import `boto3` names a module that is neither under a root nor in the environment; run `uv sync`, or add the package that provides it with `uv add`"
+   ]
+  ],
+  "index runs": {
+   "scip-python": {
+    "exit": 0,
+    "seconds": 1.29,
+    "peak_mb": 417
+   },
+   "pyrefly": {
+    "exit": 1,
+    "seconds": 0.2,
+    "peak_mb": 215
+   }
+  },
+  "lines": [
+   {
+    "path": "src/app/tasks.py",
+    "line": 6,
+    "text": "import boto3",
+    "ty": [
+     [
+      "import",
+      "app-tasks-import-boto3",
+      {
+       "unresolved": {
+        "reason": "missing_module"
+       }
+      }
+     ]
+    ],
+    "scip-python": [
+     [
+      "boto3",
+      "local 0",
+      []
+     ]
+    ],
+    "pyrefly": [
+     [
+      "boto3",
+      "local 13",
+      []
+     ]
+    ]
+   },
+   {
+    "path": "src/app/tasks.py",
+    "line": 20,
+    "text": "s3 = boto3.client(\"s3\")",
+    "ty": [
+     [
+      "callee",
+      "app-tasks-callee-boto3-client",
+      {
+       "unresolved": {
+        "reason": "no_type"
+       }
+      }
+     ]
+    ],
+    "scip-python": [
+     [
+      "s3",
+      "scip-python python project 0 `app.tasks`/s3.",
+      []
+     ],
+     [
+      "boto3",
+      "local 0",
+      []
+     ]
+    ],
+    "pyrefly": [
+     [
+      "s3",
+      "scip-python python project 0 `app.tasks`/s3.",
+      []
+     ],
+     [
+      "boto3",
+      "local 13",
+      []
+     ]
+    ]
+   }
+  ],
+  "scip-python: occurrences with a diagnostic": 0,
+  "pyrefly: occurrences with a diagnostic": 0
+ },
+ "name-not-defined": {
+  "mentalc exit": 0,
+  "mentalc diagnostics": [],
+  "index runs": {
+   "scip-python": {
+    "exit": 0,
+    "seconds": 1.45,
+    "peak_mb": 462
+   },
+   "pyrefly": {
+    "exit": 1,
+    "seconds": 0.2,
+    "peak_mb": 236
+   }
+  },
+  "lines": [
+   {
+    "path": "src/app/api.py",
+    "line": 32,
+    "text": "s.commit_all()",
+    "ty": [
+     [
+      "callee",
+      "app-api-create-report-callee-s-commit-all",
+      {
+       "unresolved": {
+        "reason": "not_found"
+       }
+      }
+     ]
+    ],
+    "scip-python": [
+     [
+      "s",
+      "local 0",
+      []
+     ]
+    ],
+    "pyrefly": [
+     [
+      "s",
+      "local 0",
+      []
+     ]
+    ]
+   }
+  ],
+  "scip-python: occurrences with a diagnostic": 0,
+  "pyrefly: occurrences with a diagnostic": 0
+ },
+ "dynamic-call": {
+  "mentalc exit": 0,
+  "mentalc diagnostics": [],
+  "index runs": {
+   "scip-python": {
+    "exit": 0,
+    "seconds": 1.59,
+    "peak_mb": 461
+   },
+   "pyrefly": {
+    "exit": 1,
+    "seconds": 0.19,
+    "peak_mb": 235
+   }
+  },
+  "lines": [
+   {
+    "path": "src/app/api.py",
+    "line": 32,
+    "text": "getattr(s, \"commit\")()",
+    "ty": [
+     [
+      "callee",
+      "app-api-create-report-callee-getattr-0",
+      {
+       "external": {
+        "package": "stdlib",
+        "module": "builtins",
+        "name": "getattr"
+       }
+      }
+     ],
+     [
+      "callee",
+      "app-api-create-report-callee-getattr-1",
+      {
+       "unresolved": {
+        "reason": "dynamic"
+       }
+      }
+     ]
+    ],
+    "scip-python": [
+     [
+      "getattr",
+      "scip-python python python-stdlib 3.12 builtins/getattr().",
+      []
+     ],
+     [
+      "s",
+      "local 0",
+      []
+     ]
+    ],
+    "pyrefly": [
+     [
+      "getattr",
+      "scip-python python python-stdlib 3.12 builtins/getattr().",
+      []
+     ],
+     [
+      "s",
+      "local 0",
+      []
+     ]
+    ]
+   }
+  ],
+  "scip-python: occurrences with a diagnostic": 0,
+  "pyrefly: occurrences with a diagnostic": 0
+ }
+}

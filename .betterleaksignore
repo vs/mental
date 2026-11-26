@@ -6,3 +6,11 @@ examples/report-jobs/src/docker-compose.yml:generic-password:34
 docs/research/type-checkers-as-libraries/experiments/results/sites-mealie.jsonl.gz:generic-password:8004
 # type signature `password: bytes` of bcrypt.checkpw in mealie's code, recorded as a resolved site, not a secret (review 2027-05-18)
 docs/research/type-checkers-as-libraries/experiments/results/sites-mealie.jsonl.gz:generic-password:8014
+# a field assigned from a constructor parameter of the same name in spring-boot-realworld-example-app's code, recorded as an indexed site, not a secret (review 2027-05-26)
+docs/research/scip-indexers/experiments/results/examples-java.jsonl.gz:generic-password:20265
+# a field assigned from a constructor parameter of the same name in spring-boot-realworld-example-app's code, recorded as an indexed site, not a secret (review 2027-05-26)
+docs/research/scip-indexers/experiments/results/examples-java.jsonl.gz:generic-password:20277
+# the entry on line 10: its line number after the rule name reads as a password (review 2027-05-26)
+.betterleaksignore:generic-password:10
+# the entry on line 12: its line number after the rule name reads as a password (review 2027-05-26)
+.betterleaksignore:generic-password:12
