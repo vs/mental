@@ -2,13 +2,14 @@
 
 **Question.** When Mental adds a language after Python, can a SCIP index be the checker behind `extract`, with the site walk staying Mental's? What does that lose against what Mental needs: an outcome per site, a reason when it is unresolved, the class behind a callee, and the escapes? ([plan](plan.md))
 
-**Date:** 2026-11-26. Everything below was run; the scripts, tool versions and corpus are in [`experiments/`](experiments/README.md), the raw counts in [`experiments/results/`](experiments/results/). Measured facts are in the [findings, section I](../../findings.md#i-scip-indexes-experiment-r4).
+**Date:** 2026-11-26, with a second run on javac the same day ([below](#run-2-a-thin-tool-on-javac)). Everything below was run; the scripts, tool versions and corpus are in [`experiments/`](experiments/README.md), the raw counts in [`experiments/results/`](experiments/results/). Measured facts are in the [findings, section I](../../findings.md#i-scip-indexes-experiment-r4).
 
 ## Per-product summary
 
 - **Pyrefly 1.5.0, `--report-scip`** (Python): answers 93.4% of `mentalc`'s sites and agrees with ty on 99.0% of those both answer; 1 wrong answer in 50 disagreements read. No reasons, no symbol kinds, no roles.
 - **scip-python 0.6.8** (Python, Pyright of March 2023): answers 90.4% and agrees on 96.9%; 7 wrong answers in 50 read, and three naming defects. It names the right package for fewer than half of the external targets, crediting the rest to the project.
 - **scip-java 0.14.2** (Java, a javac plugin): names 99.8–100% of single and on-demand imports, calls, constructors, annotations, base types and `catch` types, all right in a sample of 63. It never names a static import's member, writes no index at all when the build fails, and cannot say what a local variable handed to a call is.
+- **A thin tool on javac** (run 2, JDK 17's `JavacTask`, one 370-line file): answers 98.0% of the same Java sites, against scip-java's 82.3%. It names the same target on all but 2 of the 17,537 sites both name, and the 2 read as right. It keeps answering when the code does not compile, with javac's error on the broken site.
 
 ## Part P: Python, against ty
 
@@ -134,16 +135,79 @@ The reasons exist, in javac's words with file and line, but only in the build's 
 - **First runs are slow.** They took 78 s (petclinic), 81 s (realworld) and 198 s (mockito), dependency downloads included.
 - **The indexer runs the project's build, with whatever it does.** mockito's build published a Gradle Build Scan to an outside service during indexing.
 
+## Run 2: a thin tool on javac
+
+The first run pointed to a query on javac for what the index lacks, so the plan's [second run](plan.md#run-2-a-thin-tool-on-javac-design-b) built one and measured it on the same 21,965 sites and the same seeded gaps.
+
+- **The tool.** [`javac/JavacQuery.java`](experiments/javac/JavacQuery.java), one file the JDK's source launcher runs. It parses and attributes a project's main sources through `JavacTask` and `Trees`. For each name it writes the element javac chose, where that element is defined, the expression's type and a method's overrides, plus every diagnostic.
+- **Its inputs.** The tool gets what `compileJava` would hand javac: sources, classpath or module path, processor path, options. A Gradle init script reads them and runs only the tasks `compileJava` depends on, such as code generation and sibling modules, with Build Scans off.
+
+| Kind: form | Sites | scip-java | javac |
+|---|---|---|---|
+| import: static | 264 | 0.0% | 100.0% |
+| escape: argument (a callee and a type) | 3,607 | 13.6% | 100.0% |
+| escape: lambda (its functional interface) | 106 | 0.0% | 100.0% |
+| callee: `new` | 1,229 | 100.0% | 95.1%: 60 anonymous classes are named by their own constructor |
+| every other kind | 16,759 | 97.7% | 97.7% |
+| **all** | **21,965** | **82.3%** | **98.0%** |
+
+Per form, with the local answers apart, in [`summary-javac.md`](experiments/results/summary-javac.md).
+
+**Where both answer, they agree.** Every difference was read ([hand check](experiments/results/hand-check-javac.md)):
+
+- **Targets:** the same on 17,535 of the 17,537 sites both name. The 2 are `toString()` on an interface that redeclares it: javac names `Object#toString()`, scip-java the interface's declaration, both declarations of the method that runs.
+- **Overrides:** the same classification on all 2,552 methods; 188 override outside code.
+- **Own code or not:** the same on all but 3: an enum's implicit `valueOf` is own code by javac, and has no definition in the index.
+- **Jars:** the same Maven coordinates for 2,277 of 2,283 targets in a jar. The 6 are `javax.servlet` classes, which javac reads from `tomcat-embed-core`, the only jar on the main compile classpath that holds them. scip-java names `jakarta.servlet-api` from its own list of dependencies, which spans every configuration.
+- **Lombok:** where scip-java puts two symbols on a call to a generated getter, javac gives one, the receiver's (5 sites).
+
+**What only javac answers.** Each sample of 8 read right:
+
+- **Static imports:** javac keeps no element on an import's member, so the tool lists the static members of that name in the qualifier's class. 47 of the 264 have several, which are overloads.
+- **Arguments:** every name handed to a call gets the call's target and the name's static type. 116 of 3,607 are a repository type handed to outside code, which is an escape.
+- **Lambdas:** each gets its functional interface.
+
+**On code that does not compile**, the tool exits 0 and names the cause on the site:
+
+| Gap | scip-java | javac tool |
+|---|---|---|
+| `javax.cache:cache-api` removed | exit 1, no index | 4 errors, each on its line (`package javax.cache.configuration does not exist` on the import); all 771 sites of the other files answered, 10 of 14 in the broken file |
+| `owner.noSuchMethod()` | exit 1, no index | `cannot find symbol` on that call, the one site left unanswered of 786 |
+| Lombok's processor removed | exit 1, no index | 213 errors; the files without one fully answered (856 sites), 2,165 of 2,562 in the files with one |
+| `Method.invoke` | `Method#invoke()` | `Method#invoke()`, no diagnostic |
+
+javac's error policy hardly matters. `JavacTask.analyze()` attributes every class whatever the error count (`JavaCompiler.attribute` in JDK 17). `--should-stop=ifError=FLOW` only adds types to erroneous trees, 7 more sites of 2,562 with Lombok off.
+
+**What the tool needed** that the index's build did for it:
+
+- **The module path** for mockito, which declares modules (`module-info.java`).
+- **Error Prone left out:** mockito's build runs it as a javac plugin.
+- **javac's 100-error cap lifted.**
+- **One internal javac API** (`ClassSymbol.classfile`), to tell which jar a class was read from.
+
+The Gradle step still runs the project's build scripts.
+
+**Cost, warm Gradle cache:**
+
+- **The Gradle step:** 3.0 to 6.3 s per project.
+- **The tool:** 0.6 to 1.6 s per module, at 204 to 542 MB peak.
+
+scip-java took 78 to 198 s, but on first runs, so the two are not compared.
+
 ## Decision by the plan's rules
 
 - **Java: design A (index only) is not enough.**
   - Code that compiles is fully covered, but measure 6 needs a type for 3,607 argument escapes, not a few.
   - Three of the four seeded gaps stop the indexer with javac's message naming them, which the plan's rule accepts. But the message is only in the build log, the stop takes the whole project's answers with it, and the reflective call passes silently as `Method#invoke()`. No gap leaves a diagnostic on a site.
   - Static imports are a hole of their own.
-- **Not design B either.** The index's targets are right, so nothing pushes toward B on correctness.
-- **That points to design C:** the index for targets, plus a query on the compiler for argument types, static import members, and code that does not compile.
-- **But C's compiler part is the same tool as B.** Since that part has to handle builds that fail, B and C converge. What the index adds over B is that it is maintained and gets each build tool's classpath right. What B adds is answers on code that does not compile.
-- **Not measured:** whether javac's own API (the tree and type API a compiler plugin sees) still answers on code with errors. That is the next run: a thin javac tool on the same three projects and the same seeded gaps, measured against these indexes.
+- **After the first run, design C:** the index's targets are right, so nothing pushed toward B on correctness. That left the index for targets, plus a query on the compiler for argument types, static import members and code that does not compile. And since that query has to handle builds that fail, it is the same tool as B.
+- **After run 2, the measures point to design B for Java.** The thin javac tool meets the second run's rule:
+  - It covers what scip-java covers, except the 60 anonymous classes, which it names by their own class rather than the base type.
+  - It agrees with scip-java on what compiles.
+  - On three of the four seeded gaps, it answers the untouched code and puts javac's error on the broken site.
+  - The fourth, the reflective call, neither tool flags. With javac's element in hand (`Method#invoke()`), `extract` can call it dynamic by rule.
+
+  So C reduces to B: the index adds nothing B needs. B costs its own Gradle step, which also runs the build scripts. The Java design itself is the owner's to choose.
 - **Python: no change.** ty stays. Pyrefly's index answers 867 `no_type` sites with targets that read right, which is evidence for experiment R2 (a second checker) through a documented format, though Pyrefly marks it experimental. scip-python is not a candidate: wrong targets, broken identities and an outdated checker.
 
 ## Deviations from the plan
@@ -154,12 +218,14 @@ The reasons exist, in javac's words with file and line, but only in the build's 
 - **Not every Python disagreement read.** 50 per index were read, not all of them.
 - **Pairing by ask point.** The pairing finds each site's column with Python's own parser, because the site records keep whole lines. When a site's name is the end of a longer name on the same line (`op.add_column(sa.Column(…))`), the longest matching name is the site's.
 - **Java seeded gaps on two projects.** petclinic and realworld (Lombok), not all three.
+- **Run 2 leaves Error Prone out.** It is a check of mockito's code, run as a javac plugin; it changes no name.
 
 ## Not checked
 
-- Overload choice in Java beyond the name.
+- Overload choice in Java beyond the name, in either tool.
+- The javac tool with Maven builds, and on a cold Gradle cache.
 - Answers in test code.
 - Kotlin.
-- Warm-cache indexing times.
+- scip-java's warm-cache indexing times.
 - Whether a newer scip-python fixes its package attribution.
 - Whether the empty-array failure is already reported upstream.

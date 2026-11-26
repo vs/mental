@@ -2,7 +2,8 @@
 
 Research code behind the [report](../report.md) of experiment R4 and its [plan](../plan.md). Part P pairs the sites
 `mentalc build` writes on five Python projects with two SCIP indexes of the same code. Part J
-pairs a Java site walk with scip-java's index on three Java projects. Both parts also break a
+pairs a Java site walk with scip-java's index on three Java projects, and its second run with a
+thin tool on javac. Both parts also break a
 project on purpose and record what each tool writes.
 
 ## Layout
@@ -18,6 +19,12 @@ project on purpose and record what each tool writes.
 | `walk_java.py` | Part J's site walk, on tree-sitter's Java grammar |
 | `pair_java.py` | Pairs the Java sites with scip-java's occurrences |
 | `seeds_java.py` | Part J's seeded gaps on copies of spring-petclinic and spring-boot-realworld-example-app |
+| `javac/JavacQuery.java` | Run 2's tool: javac's `JavacTask` and `Trees` on a project's main sources; one record per name, method and diagnostic |
+| `javac/compile-args.gradle` | A Gradle init script that writes what each project's `compileJava` would hand javac, without compiling |
+| `run_javac.py` | Runs the init script, then the tool on each Gradle project, under `/usr/bin/time` |
+| `pair_javac.py` | Pairs the same Java sites with the tool's records and with scip-java's occurrences |
+| `seeds_javac.py` | The same seeded gaps through the tool, with javac's default error policy and with `FLOW` |
+| `summarize_java.py`, `summarize_javac.py` | The tables of part J and of its second run |
 | `results/` | What the scripts write, and the hand checks |
 
 ## Tools
@@ -31,6 +38,7 @@ project on purpose and record what each tool writes.
 | protobuf, grpcio-tools | 7.36.2, 1.85.4 | to read the indexes and to generate `scip_pb2.py` |
 | tree-sitter, tree-sitter-java | 0.27.0, 0.23.5 | the Java site walk |
 | `mentalc` | this repository's `main` at `3ca28cd` | the sites and ty's answers |
+| JDK | 17.0.11 (JetBrains Runtime, what `/usr/libexec/java_home -v 17` gave) | runs Gradle for scip-java and the javac tool, and the tool itself; Java 17 is what the three builds target |
 
 ## Corpus
 
@@ -71,9 +79,16 @@ for p in spring-petclinic spring-boot-realworld-example-app mockito; do
 done
 $W/py/bin/python -I pair_java.py $W
 $W/py/bin/python -I seeds_java.py $W
+# Run 2: the javac tool, on the same projects and seeds (Gradle offline, Build Scans off).
+for p in spring-petclinic spring-boot-realworld-example-app mockito; do
+  $W/py/bin/python -I run_javac.py $W $W/src/java/$p $W/out/javac/$p
+done
+$W/py/bin/python -I pair_javac.py $W && $W/py/bin/python -I seeds_javac.py $W
+$W/py/bin/python -I summarize_java.py && $W/py/bin/python -I summarize_javac.py
 ```
 
 The indexers run the projects' own builds (scip-java runs Gradle and its build scripts) in the
 work directory, never inside `mentalc`. scip-python gets an environment file made from the
 installed `RECORD` files, so it does not call pip; Pyrefly gets the site-packages path with
-`skip-interpreter-query`.
+`skip-interpreter-query`. The javac tool's Gradle step runs the build scripts too, offline and with
+`--no-scan`, since mockito's build publishes a Build Scan otherwise ([F-I6](../../../findings.md#i-scip-indexes-experiment-r4)).
