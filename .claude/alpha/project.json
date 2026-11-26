@@ -801,7 +801,7 @@
     ],
     "typography": "Fixel Display SemiBold for headings, letter-spacing -0.025em; Fixel Text Regular for prose; Cascadia Mono Medium for code, IDs, labels and values; fallbacks system-ui for sans and SF Mono, ui-monospace for mono",
     "shape": "6 px corners on small elements, 9 px on controls, 12 px on cards and panels, 16 px on large frames; hairline low-contrast borders; flat by default, soft layered shadows only on floating panels and popovers; small uppercase labels used sparingly; 150 ms transitions",
-    "imagery": "Remix Icon line icons at 12 to 24 px; no illustrations",
+    "imagery": "Remix Icon line icons at 12 to 24 px",
     "diagrams": "SVG source committed in docs/images/, light theme: groups are surface panels, components are raised boxes with a line-colored hairline, flows are muted arrows, the subject is in the accent; status colors only for findings (danger a violation, warning a preemption or assumption, success fixed); titles in Fixel, labels in Cascadia Mono; every image has alt text",
     "source": "",
     "palette_check": "advise",

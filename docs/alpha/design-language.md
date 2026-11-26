@@ -38,7 +38,7 @@ Fixel Display SemiBold for headings, letter-spacing -0.025em; Fixel Text Regular
 
 ## Icons and imagery
 
-Remix Icon line icons at 12 to 24 px; no illustrations
+Remix Icon line icons at 12 to 24 px
 
 ## Diagrams and charts
 
