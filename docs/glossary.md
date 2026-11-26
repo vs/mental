@@ -317,7 +317,7 @@ The summary must agree with the full graph; a check enforces it.
 | **`mentalvm`** | The interpreter. Reads a model, produces runs: traces and findings. Also the product's primary name, used for its website (`mentalvm.dev`, `mentalvm.app` or `mentalvm.ai`) and wherever it is published. |
 | **`mentaldbg`** | The debugger. Holds sessions and serves the viewer, coding agents (MCP), IDEs (DAP) and the terminal. |
 | **Viewer** | The graphical front end of `mentaldbg`: a web application that draws the model and plays traces. |
-| **Mental** | The product family built on the three tools: *Mental for Claude Code*, *Mental for Codex*, *Mental Desktop*. |
+| **Mental** | The product family built on the three tools: *Mental for Claude Code*, *Mental for Codex*, *Mental Desktop*; also the project's name in these docs. It is published under the name `mentalvm`. |
 
 ## Words with several meanings
 
