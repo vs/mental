@@ -86,6 +86,7 @@ Nothing here is final. A measured result overrules any sentence in this document
 - All three are written in Rust in one workspace. `mentalc` and `mentalvm` never depend on each other.
 - **Checks that need a run belong to `mentalvm`.** `mentalc` runs only static checks. `mentalvm check` runs the ones that need the interpreter and adds its diagnostics to the same file.
 - The LLM is a setting of the compiler: by default the user's own coding agent answers `mentalc`'s tasks ([9.3](#93-llm-backends)).
+- **The product's primary name is `mentalvm`** (owner choice, 2026-11-26): it is the name of the website, at `mentalvm.dev`, `mentalvm.app` or `mentalvm.ai`, and the one the product is published under. `mentalc` and `mentaldbg` keep their jobs and names as tools of it. Which of the three is used is not settled; none was registered on 2026-11-26.
 
 ## 4. The build at a glance
 

@@ -22,6 +22,8 @@ The LLM is a setting of the compiler: by default your own coding agent answers t
 
 Products built on the tools are called Mental: Mental for Claude Code, Mental for Codex, Mental Desktop.
 
+The product's primary name is `mentalvm`: its website will be at `mentalvm.dev`, `mentalvm.app` or `mentalvm.ai`.
+
 ## Setup, test and run
 
 ### model (`model/`)
