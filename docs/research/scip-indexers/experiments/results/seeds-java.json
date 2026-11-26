@@ -1,0 +1,97 @@
+{
+ "dependency-removed": {
+  "project": "spring-petclinic",
+  "exit": 1,
+  "index written": false,
+  "errors": [
+   "> Task :compileJava FAILED",
+   "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:24: error: package javax.cache.configuration does not exist",
+   "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:49: error: package javax.cache.configuration does not exist",
+   "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:37: error: cannot access CacheManager",
+   "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:50: error: cannot find symbol",
+   "* What went wrong:",
+   "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:37: error: cannot access CacheManager",
+   "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:50: error: cannot find symbol",
+   "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:24: error: package javax.cache.configuration does not exist",
+   "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:49: error: package javax.cache.configuration does not exist",
+   "BUILD FAILED in 6s"
+  ],
+  "lines": []
+ },
+ "name-not-defined": {
+  "project": "spring-petclinic",
+  "exit": 1,
+  "index written": false,
+  "errors": [
+   "> Task :compileJava FAILED",
+   "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java:79: error: cannot find symbol",
+   "* What went wrong:",
+   "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java:79: error: cannot find symbol",
+   "BUILD FAILED in 5s"
+  ],
+  "lines": []
+ },
+ "dynamic-call": {
+  "project": "spring-petclinic",
+  "exit": 0,
+  "index written": true,
+  "errors": [],
+  "lines": [
+   {
+    "path": "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+    "line": 60,
+    "text": "return Owner.class.getMethod(\"getId\").invoke(owner);",
+    "document in index": true,
+    "occurrences": [
+     [
+      "Owner",
+      "scip-java maven . . org/springframework/samples/petclinic/owner/Owner#",
+      []
+     ],
+     [
+      "class",
+      "scip-java maven . . org/springframework/samples/petclinic/owner/Owner#class.",
+      []
+     ],
+     [
+      "getMethod",
+      "scip-java maven jdk 17 java/lang/Class#getMethod().",
+      []
+     ],
+     [
+      "invoke",
+      "scip-java maven jdk 17 java/lang/reflect/Method#invoke().",
+      []
+     ],
+     [
+      "owner",
+      "local 1",
+      []
+     ]
+    ]
+   }
+  ],
+  "main documents": 30,
+  "occurrences with a diagnostic": 0
+ },
+ "annotation-processor-off": {
+  "project": "spring-boot-realworld-example-app",
+  "exit": 1,
+  "index written": false,
+  "errors": [
+   "> Task :compileJava FAILED",
+   "src/main/java/io/spring/core/service/AuthorizationService.java:9: error: cannot find symbol",
+   "src/main/java/io/spring/core/service/AuthorizationService.java:9: error: cannot find symbol",
+   "src/main/java/io/spring/core/service/AuthorizationService.java:13: error: cannot find symbol",
+   "src/main/java/io/spring/core/service/AuthorizationService.java:13: error: cannot find symbol",
+   "src/main/java/io/spring/core/service/AuthorizationService.java:13: error: cannot find symbol",
+   "src/main/java/io/spring/core/service/AuthorizationService.java:13: error: cannot find symbol",
+   "src/main/java/io/spring/graphql/MeDatafetcher.java:38: error: cannot find symbol",
+   "src/main/java/io/spring/graphql/MeDatafetcher.java:42: error: cannot find symbol",
+   "src/main/java/io/spring/graphql/MeDatafetcher.java:43: error: cannot find symbol",
+   "src/main/java/io/spring/graphql/MeDatafetcher.java:44: error: cannot find symbol",
+   "src/main/java/io/spring/graphql/MeDatafetcher.java:55: error: cannot find symbol"
+  ],
+  "lines": []
+ }
+}

@@ -1,0 +1,360 @@
+{
+ "dependency-removed": {
+  "project": "spring-petclinic",
+  "default": {
+   "gradle exit": 0,
+   "tool exit": {
+    "root": 0
+   },
+   "errors": 4,
+   "error codes": {
+    "compiler.err.doesnt.exist": 2,
+    "compiler.err.cant.access": 1,
+    "compiler.err.cant.resolve.location": 1
+   },
+   "first errors": [
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:24: package javax.cache.configuration does not exist",
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:49: package javax.cache.configuration does not exist",
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:37: cannot access javax.cache.CacheManager",
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:50: cannot find symbol"
+   ],
+   "sites": {
+    "files with an error": {
+     "sites": 14,
+     "answered": 10,
+     "answered before the gap": 14
+    },
+    "files without one": {
+     "sites": 771,
+     "answered": 771,
+     "answered before the gap": 771
+    }
+   },
+   "seeded lines": [
+    {
+     "path": "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java",
+     "line": 24,
+     "text": "import javax.cache.configuration.MutableConfiguration;",
+     "sites": [
+      {
+       "kind": "import",
+       "form": "single",
+       "name": "MutableConfiguration",
+       "javac": "error",
+       "symbol": "<error>"
+      }
+     ],
+     "errors": [
+      "compiler.err.doesnt.exist: package javax.cache.configuration does not exist"
+     ]
+    }
+   ]
+  },
+  "flow": {
+   "gradle exit": 0,
+   "tool exit": {
+    "root": 0
+   },
+   "errors": 4,
+   "error codes": {
+    "compiler.err.doesnt.exist": 2,
+    "compiler.err.cant.access": 1,
+    "compiler.err.cant.resolve.location": 1
+   },
+   "first errors": [
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:24: package javax.cache.configuration does not exist",
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:49: package javax.cache.configuration does not exist",
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:37: cannot access javax.cache.CacheManager",
+    "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java:50: cannot find symbol"
+   ],
+   "sites": {
+    "files with an error": {
+     "sites": 14,
+     "answered": 10,
+     "answered before the gap": 14
+    },
+    "files without one": {
+     "sites": 771,
+     "answered": 771,
+     "answered before the gap": 771
+    }
+   },
+   "seeded lines": [
+    {
+     "path": "src/main/java/org/springframework/samples/petclinic/system/CacheConfiguration.java",
+     "line": 24,
+     "text": "import javax.cache.configuration.MutableConfiguration;",
+     "sites": [
+      {
+       "kind": "import",
+       "form": "single",
+       "name": "MutableConfiguration",
+       "javac": "error",
+       "symbol": "<error>"
+      }
+     ],
+     "errors": [
+      "compiler.err.doesnt.exist: package javax.cache.configuration does not exist"
+     ]
+    }
+   ]
+  }
+ },
+ "name-not-defined": {
+  "project": "spring-petclinic",
+  "default": {
+   "gradle exit": 0,
+   "tool exit": {
+    "root": 0
+   },
+   "errors": 1,
+   "error codes": {
+    "compiler.err.cant.resolve.location.args": 1
+   },
+   "first errors": [
+    "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java:79: cannot find symbol"
+   ],
+   "sites": {
+    "files with an error": {
+     "sites": 121,
+     "answered": 120,
+     "answered before the gap": 120
+    },
+    "files without one": {
+     "sites": 665,
+     "answered": 665,
+     "answered before the gap": 665
+    }
+   },
+   "seeded lines": [
+    {
+     "path": "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+     "line": 79,
+     "text": "owner.noSuchMethod();",
+     "sites": [
+      {
+       "kind": "callee",
+       "form": "method",
+       "name": "noSuchMethod",
+       "javac": "error",
+       "symbol": "<error>"
+      }
+     ],
+     "errors": [
+      "compiler.err.cant.resolve.location.args: cannot find symbol"
+     ]
+    }
+   ]
+  },
+  "flow": {
+   "gradle exit": 0,
+   "tool exit": {
+    "root": 0
+   },
+   "errors": 1,
+   "error codes": {
+    "compiler.err.cant.resolve.location.args": 1
+   },
+   "first errors": [
+    "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java:79: cannot find symbol"
+   ],
+   "sites": {
+    "files with an error": {
+     "sites": 121,
+     "answered": 120,
+     "answered before the gap": 120
+    },
+    "files without one": {
+     "sites": 665,
+     "answered": 665,
+     "answered before the gap": 665
+    }
+   },
+   "seeded lines": [
+    {
+     "path": "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+     "line": 79,
+     "text": "owner.noSuchMethod();",
+     "sites": [
+      {
+       "kind": "callee",
+       "form": "method",
+       "name": "noSuchMethod",
+       "javac": "error",
+       "symbol": "<error>"
+      }
+     ],
+     "errors": [
+      "compiler.err.cant.resolve.location.args: cannot find symbol"
+     ]
+    }
+   ]
+  }
+ },
+ "dynamic-call": {
+  "project": "spring-petclinic",
+  "default": {
+   "gradle exit": 0,
+   "tool exit": {
+    "root": 0
+   },
+   "errors": 0,
+   "error codes": {},
+   "first errors": [],
+   "sites": {
+    "files without one": {
+     "sites": 789,
+     "answered": 789,
+     "answered before the gap": 785
+    }
+   },
+   "seeded lines": [
+    {
+     "path": "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+     "line": 60,
+     "text": "return Owner.class.getMethod(\"getId\").invoke(owner);",
+     "sites": [
+      {
+       "kind": "callee",
+       "form": "method",
+       "name": "invoke",
+       "javac": "global",
+       "symbol": "java/lang/reflect/Method#invoke()."
+      },
+      {
+       "kind": "callee",
+       "form": "method",
+       "name": "getMethod",
+       "javac": "global",
+       "symbol": "java/lang/Class#getMethod()."
+      },
+      {
+       "kind": "escape",
+       "form": "argument",
+       "name": "owner",
+       "javac": "global",
+       "symbol": "java/lang/reflect/Method#invoke()."
+      }
+     ],
+     "errors": []
+    }
+   ]
+  },
+  "flow": {
+   "gradle exit": 0,
+   "tool exit": {
+    "root": 0
+   },
+   "errors": 0,
+   "error codes": {},
+   "first errors": [],
+   "sites": {
+    "files without one": {
+     "sites": 789,
+     "answered": 789,
+     "answered before the gap": 785
+    }
+   },
+   "seeded lines": [
+    {
+     "path": "src/main/java/org/springframework/samples/petclinic/owner/OwnerController.java",
+     "line": 60,
+     "text": "return Owner.class.getMethod(\"getId\").invoke(owner);",
+     "sites": [
+      {
+       "kind": "callee",
+       "form": "method",
+       "name": "invoke",
+       "javac": "global",
+       "symbol": "java/lang/reflect/Method#invoke()."
+      },
+      {
+       "kind": "callee",
+       "form": "method",
+       "name": "getMethod",
+       "javac": "global",
+       "symbol": "java/lang/Class#getMethod()."
+      },
+      {
+       "kind": "escape",
+       "form": "argument",
+       "name": "owner",
+       "javac": "global",
+       "symbol": "java/lang/reflect/Method#invoke()."
+      }
+     ],
+     "errors": []
+    }
+   ]
+  }
+ },
+ "annotation-processor-off": {
+  "project": "spring-boot-realworld-example-app",
+  "default": {
+   "gradle exit": 0,
+   "tool exit": {
+    "root": 0
+   },
+   "errors": 213,
+   "error codes": {
+    "compiler.err.cant.resolve.location.args": 193,
+    "compiler.err.prob.found.req": 4,
+    "compiler.err.invalid.mref": 7,
+    "compiler.err.cant.apply.symbol": 9
+   },
+   "first errors": [
+    "src/main/java/io/spring/api/ArticleApi.java:60: cannot find symbol",
+    "src/main/java/io/spring/api/ArticleApi.java:62: incompatible types: no instance(s) of type variable(s) X exist so that java.lang.Object conforms to org.springframework.http.ResponseEntity<?>",
+    "src/main/java/io/spring/application/ArticleQueryService.java:48: cannot find symbol",
+    "src/main/java/io/spring/application/ArticleQueryService.java:63: cannot find symbol",
+    "src/main/java/io/spring/application/ArticleQueryService.java:65: cannot find symbol"
+   ],
+   "sites": {
+    "files with an error": {
+     "sites": 2562,
+     "answered": 2165,
+     "answered before the gap": 2562
+    },
+    "files without one": {
+     "sites": 856,
+     "answered": 856,
+     "answered before the gap": 852
+    }
+   },
+   "seeded lines": []
+  },
+  "flow": {
+   "gradle exit": 0,
+   "tool exit": {
+    "root": 0
+   },
+   "errors": 213,
+   "error codes": {
+    "compiler.err.cant.resolve.location.args": 193,
+    "compiler.err.prob.found.req": 4,
+    "compiler.err.invalid.mref": 7,
+    "compiler.err.cant.apply.symbol": 9
+   },
+   "first errors": [
+    "src/main/java/io/spring/api/ArticleApi.java:60: cannot find symbol",
+    "src/main/java/io/spring/api/ArticleApi.java:62: incompatible types: no instance(s) of type variable(s) X exist so that java.lang.Object conforms to org.springframework.http.ResponseEntity<?>",
+    "src/main/java/io/spring/application/ArticleQueryService.java:48: cannot find symbol",
+    "src/main/java/io/spring/application/ArticleQueryService.java:63: cannot find symbol",
+    "src/main/java/io/spring/application/ArticleQueryService.java:65: cannot find symbol"
+   ],
+   "sites": {
+    "files with an error": {
+     "sites": 2562,
+     "answered": 2172,
+     "answered before the gap": 2562
+    },
+    "files without one": {
+     "sites": 856,
+     "answered": 856,
+     "answered before the gap": 852
+    }
+   },
+   "seeded lines": []
+  }
+ }
+}

@@ -1,6 +1,6 @@
 # Experiment plan: SCIP indexers as the checker behind `extract`
 
-**Status: Experiment, not run.** **Date:** 2026-11-25. Experiment **R4** of the [specification](../../specification.md#152-experiments) (owner choice, 2026-11-26).
+**Status: Experiment, run 2026-11-26, both runs** ([report](report.md)). **Date:** 2026-11-25. Experiment **R4** of the [specification](../../specification.md#152-experiments) (owner choice, 2026-11-26).
 
 ## Question
 
@@ -116,5 +116,20 @@ This plan compares only what is run. Design B for Java isn't built, so no result
 3. **Part J.** Needs a JDK, Maven and Gradle in the work directory, scip-java, and tree-sitter's Java grammar for the walker. Each tool is pinned at its version, with the reason recorded in the experiment's README.
 4. **Seeded gaps,** then the hand checks.
 5. **Write-up:** results in `experiments/results/`, a report in this folder, measured facts as findings, and the chosen design recorded with the decision skill. The designs not chosen stay in this plan, marked as measured and not chosen.
+
+## Run 2: a thin tool on javac (design B)
+
+Added on 2026-11-26, after the first run pointed to a compiler query for Java ([report](report.md#decision-by-the-plans-rules)), before any measurement of it.
+
+**Question.** Does a small program on javac's own API (`JavacTask`, `Trees`: the tree and type API a compiler plugin sees) answer what scip-java's index lacks: static import members, argument types, and answers with reasons on code that does not compile?
+
+1. **Tool.** One Java file, run with the JDK's source launcher; no build of its own. It parses and attributes the main sources of each Gradle project and writes, per name, the element javac chose, its kind, where it is defined (this compilation, another module of the repository, a jar, the JDK), the expression's type, a method's overrides, and every diagnostic with its position.
+2. **Inputs.** The source files, classpath, annotation processor path and compiler options of each project's `compileJava` task, read through a Gradle init script, with Build Scans turned off. Only the tasks `compileJava` depends on run (code generation, sibling modules), not the compile itself.
+3. **Pairing.** The same site walk and positions as part J, so each site has a scip-java answer and a javac answer.
+4. **Seeded gaps.** The same four, each with javac's default policy and with `--should-stop=ifError=FLOW`, which asks javac to attribute every file despite errors.
+
+**Measured:** coverage per site kind and form (measure 1); agreement with scip-java where both answer, and each disagreement read by hand; own code against a dependency from where the element is defined (measure 4); argument escapes decided (measure 6); per seeded gap, the diagnostic on the seeded site and the share of the other sites still answered (measure 7); time and peak memory (measure 9).
+
+**Decide by:** B is enough for Java if it covers what scip-java covers, agrees with it on what compiles, and on every seeded gap still answers the untouched code with a diagnostic on the broken site. Then the index adds nothing B needs, and C reduces to B.
 
 Not in this run: TypeScript, Go, Kotlin and Rust. The pairing script and the seeded gaps carry over to their indexers unchanged, so each is a later run of the same plan.

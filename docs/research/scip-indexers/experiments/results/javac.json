@@ -1,0 +1,535 @@
+{
+ "spring-petclinic": {
+  "gradle seconds": 3.3,
+  "tool": {
+   "root": {
+    "sources": 30,
+    "exit": 0,
+    "seconds": 0.71,
+    "peak MB": 262
+   }
+  },
+  "errors": 0,
+  "kinds": {
+   "base-class: extends": {
+    "javac global": 8,
+    "javac origin source": 8,
+    "own code: same": 8,
+    "scip global, javac global": 8,
+    "sites": 8,
+    "target same": 8
+   },
+   "base-class: implements": {
+    "jar: same coordinates": 7,
+    "javac global": 8,
+    "javac origin jar": 7,
+    "javac origin jdk": 1,
+    "own code: same": 8,
+    "scip global, javac global": 8,
+    "sites": 8,
+    "target same": 8
+   },
+   "callee: method": {
+    "jar: same coordinates": 98,
+    "javac global": 230,
+    "javac origin jar": 98,
+    "javac origin jdk": 47,
+    "javac origin source": 85,
+    "own code: same": 230,
+    "scip global, javac global": 230,
+    "sites": 230,
+    "target same": 230
+   },
+   "callee: new": {
+    "jar: same coordinates": 5,
+    "javac global": 23,
+    "javac origin jar": 5,
+    "javac origin jdk": 12,
+    "javac origin source": 6,
+    "own code: same": 23,
+    "scip global, javac global": 23,
+    "sites": 23,
+    "target same": 23
+   },
+   "decorator: annotation": {
+    "jar: same coordinates": 121,
+    "javac global": 130,
+    "javac origin jar": 121,
+    "javac origin jdk": 9,
+    "own code: same": 130,
+    "scip global, javac global": 130,
+    "sites": 130,
+    "target same": 130
+   },
+   "escape: argument": {
+    "argument: decided": 80,
+    "argument: escapes (own type to outside code)": 14,
+    "javac global": 80,
+    "javac origin jar": 29,
+    "javac origin jdk": 16,
+    "javac origin source": 35,
+    "scip global, javac global": 10,
+    "scip local, javac global": 70,
+    "sites": 80
+   },
+   "escape: lambda": {
+    "javac type": 8,
+    "lambda: functional interface known": 8,
+    "scip local, javac type": 3,
+    "scip no occurrence, javac type": 5,
+    "sites": 8
+   },
+   "escape: method-ref": {
+    "javac global": 1,
+    "javac origin source": 1,
+    "own code: same": 1,
+    "scip global, javac global": 1,
+    "sites": 1,
+    "target same": 1
+   },
+   "escape: override": {
+    "javac global": 87,
+    "javac origin source": 87,
+    "overrides nothing": 78,
+    "overrides outside code": 9,
+    "overrides: same": 86,
+    "own code: same": 86,
+    "scip global, javac global": 86,
+    "scip no occurrence, javac global": 1,
+    "sites": 87,
+    "target same": 86
+   },
+   "handler-type: catch": {
+    "jar: same coordinates": 2,
+    "javac global": 2,
+    "javac origin jar": 2,
+    "own code: same": 2,
+    "scip global, javac global": 2,
+    "sites": 2,
+    "target same": 2
+   },
+   "import: single": {
+    "jar: same coordinates": 140,
+    "javac global": 185,
+    "javac origin jar": 140,
+    "javac origin jdk": 35,
+    "javac origin source": 10,
+    "own code: same": 185,
+    "scip global, javac global": 185,
+    "sites": 185,
+    "target same": 185
+   },
+   "write-receiver: bare": {
+    "javac global": 1,
+    "javac local": 3,
+    "javac origin source": 4,
+    "own code: same": 1,
+    "scip global, javac global": 1,
+    "scip local, javac local": 3,
+    "sites": 4,
+    "target same": 1
+   },
+   "write-receiver: field": {
+    "javac global": 19,
+    "javac origin source": 19,
+    "own code: same": 19,
+    "scip global, javac global": 19,
+    "sites": 19,
+    "target same": 19
+   }
+  }
+ },
+ "mockito": {
+  "gradle seconds": 6.3,
+  "tool": {
+   "mockito-core": {
+    "sources": 486,
+    "exit": 0,
+    "seconds": 1.6,
+    "peak MB": 542
+   },
+   "mockito-extensions-mockito-errorprone": {
+    "sources": 5,
+    "exit": 0,
+    "seconds": 0.64,
+    "peak MB": 204
+   },
+   "mockito-extensions-mockito-junit-jupiter": {
+    "sources": 6,
+    "exit": 0,
+    "seconds": 0.57,
+    "peak MB": 210
+   }
+  },
+  "errors": 0,
+  "kinds": {
+   "base-class: extends": {
+    "jar: same coordinates": 13,
+    "javac global": 96,
+    "javac origin jar": 13,
+    "javac origin jdk": 15,
+    "javac origin source": 68,
+    "own code: same": 96,
+    "scip global, javac global": 96,
+    "sites": 96,
+    "target same": 96
+   },
+   "base-class: implements": {
+    "jar: same coordinates": 15,
+    "javac global": 323,
+    "javac origin jar": 15,
+    "javac origin jdk": 92,
+    "javac origin source": 216,
+    "own code: same": 323,
+    "scip global, javac global": 323,
+    "sites": 323,
+    "target same": 323
+   },
+   "callee: method": {
+    "jar: same coordinates": 481,
+    "javac global": 5973,
+    "javac local": 6,
+    "javac origin jar": 481,
+    "javac origin jdk": 2443,
+    "javac origin repository": 10,
+    "javac origin source": 3045,
+    "own code: differs": 3,
+    "own code: same": 5970,
+    "scip global, javac global": 5973,
+    "scip local, javac local": 6,
+    "sites": 5979,
+    "target differs": 2,
+    "target same": 5971
+   },
+   "callee: new": {
+    "jar: same coordinates": 15,
+    "javac global": 1034,
+    "javac local": 46,
+    "javac origin jar": 15,
+    "javac origin jdk": 300,
+    "javac origin repository": 1,
+    "javac origin source": 764,
+    "own code: same": 1034,
+    "scip global, javac global": 1034,
+    "scip global, javac local": 46,
+    "sites": 1080,
+    "target same": 1034
+   },
+   "callee: super": {
+    "jar: same coordinates": 6,
+    "javac global": 72,
+    "javac origin jar": 6,
+    "javac origin jdk": 15,
+    "javac origin source": 51,
+    "own code: same": 72,
+    "scip global, javac global": 72,
+    "sites": 72,
+    "target same": 72
+   },
+   "callee: this": {
+    "javac global": 27,
+    "javac origin source": 27,
+    "own code: same": 27,
+    "scip global, javac global": 27,
+    "sites": 27,
+    "target same": 27
+   },
+   "decorator: annotation": {
+    "jar: same coordinates": 78,
+    "javac global": 1086,
+    "javac origin jar": 78,
+    "javac origin jdk": 974,
+    "javac origin source": 34,
+    "own code: same": 1086,
+    "scip global, javac global": 1086,
+    "sites": 1086,
+    "target same": 1086
+   },
+   "escape: argument": {
+    "argument: decided": 3126,
+    "argument: escapes (own type to outside code)": 61,
+    "javac global": 3126,
+    "javac origin jar": 185,
+    "javac origin jdk": 646,
+    "javac origin repository": 1,
+    "javac origin source": 2294,
+    "scip global, javac global": 443,
+    "scip local, javac global": 2683,
+    "sites": 3126
+   },
+   "escape: lambda": {
+    "javac type": 55,
+    "lambda: functional interface known": 55,
+    "scip local, javac type": 40,
+    "scip no occurrence, javac type": 15,
+    "sites": 55
+   },
+   "escape: method-ref": {
+    "javac global": 22,
+    "javac origin jdk": 9,
+    "javac origin source": 13,
+    "own code: same": 22,
+    "scip global, javac global": 22,
+    "sites": 22,
+    "target same": 22
+   },
+   "escape: override": {
+    "javac global": 2250,
+    "javac local": 66,
+    "javac origin source": 2316,
+    "overrides nothing": 1483,
+    "overrides outside code": 163,
+    "overrides repository code only": 604,
+    "overrides: same": 2250,
+    "own code: same": 2250,
+    "scip global, javac global": 2250,
+    "scip local, javac local": 66,
+    "sites": 2316,
+    "target same": 2250
+   },
+   "handler-type: catch": {
+    "javac global": 204,
+    "javac origin jdk": 192,
+    "javac origin source": 12,
+    "own code: same": 204,
+    "scip global, javac global": 204,
+    "sites": 204,
+    "target same": 204
+   },
+   "import: on-demand": {
+    "jar: same coordinates": 2,
+    "javac global": 10,
+    "javac origin jar": 2,
+    "javac origin jdk": 1,
+    "javac origin package": 6,
+    "javac origin source": 1,
+    "own code: same": 10,
+    "scip global, javac global": 10,
+    "sites": 10,
+    "target same": 10
+   },
+   "import: single": {
+    "jar: same coordinates": 197,
+    "javac global": 2307,
+    "javac origin jar": 197,
+    "javac origin jdk": 787,
+    "javac origin repository": 12,
+    "javac origin source": 1311,
+    "own code: same": 2307,
+    "scip global, javac global": 2307,
+    "sites": 2307,
+    "target same": 2307
+   },
+   "import: static": {
+    "javac global": 259,
+    "javac origin jar": 30,
+    "javac origin jdk": 20,
+    "javac origin source": 209,
+    "scip no occurrence, javac global": 259,
+    "sites": 259,
+    "static import: several members": 47
+   },
+   "write-receiver: bare": {
+    "javac global": 143,
+    "javac local": 289,
+    "javac origin source": 432,
+    "own code: same": 143,
+    "scip global, javac global": 143,
+    "scip local, javac local": 289,
+    "sites": 432,
+    "target same": 143
+   },
+   "write-receiver: field": {
+    "javac global": 366,
+    "javac local": 2,
+    "javac origin source": 368,
+    "own code: same": 366,
+    "scip global, javac global": 366,
+    "scip local, javac local": 2,
+    "sites": 368,
+    "target same": 366
+   }
+  }
+ },
+ "spring-boot-realworld-example-app": {
+  "gradle seconds": 3.0,
+  "tool": {
+   "root": {
+    "sources": 115,
+    "exit": 0,
+    "seconds": 1.52,
+    "peak MB": 505
+   }
+  },
+  "errors": 0,
+  "kinds": {
+   "base-class: extends": {
+    "jar: same coordinates": 6,
+    "javac global": 12,
+    "javac origin jar": 6,
+    "javac origin jdk": 5,
+    "javac origin source": 1,
+    "own code: same": 12,
+    "scip global, javac global": 12,
+    "sites": 12,
+    "target same": 12
+   },
+   "base-class: implements": {
+    "jar: same coordinates": 6,
+    "javac global": 13,
+    "javac origin jar": 6,
+    "javac origin source": 7,
+    "own code: same": 13,
+    "scip global, javac global": 13,
+    "sites": 13,
+    "target same": 13
+   },
+   "callee: method": {
+    "jar: other coordinates": 2,
+    "jar: same coordinates": 281,
+    "javac global": 1274,
+    "javac origin jar": 283,
+    "javac origin jdk": 324,
+    "javac origin source": 667,
+    "own code: same": 1269,
+    "scip global, javac global": 1269,
+    "scip several symbols, javac global": 5,
+    "sites": 1274,
+    "target same": 1269
+   },
+   "callee: new": {
+    "jar: same coordinates": 23,
+    "javac global": 112,
+    "javac local": 14,
+    "javac origin jar": 23,
+    "javac origin jdk": 25,
+    "javac origin source": 78,
+    "own code: same": 112,
+    "scip global, javac global": 112,
+    "scip global, javac local": 14,
+    "sites": 126,
+    "target same": 112
+   },
+   "callee: super": {
+    "jar: same coordinates": 1,
+    "javac global": 4,
+    "javac origin jar": 1,
+    "javac origin jdk": 2,
+    "javac origin source": 1,
+    "own code: same": 4,
+    "scip global, javac global": 4,
+    "sites": 4,
+    "target same": 4
+   },
+   "callee: this": {
+    "javac global": 1,
+    "javac origin source": 1,
+    "own code: same": 1,
+    "scip global, javac global": 1,
+    "sites": 1,
+    "target same": 1
+   },
+   "decorator: annotation": {
+    "jar: same coordinates": 411,
+    "javac global": 460,
+    "javac no record": 4,
+    "javac no record, no error on the line": 4,
+    "javac origin jar": 411,
+    "javac origin jdk": 45,
+    "javac origin source": 4,
+    "own code: same": 460,
+    "scip global, javac global": 460,
+    "scip no occurrence, javac no record": 4,
+    "sites": 464,
+    "target same": 460
+   },
+   "escape: argument": {
+    "argument: decided": 401,
+    "argument: escapes (own type to outside code)": 41,
+    "javac global": 401,
+    "javac origin jar": 54,
+    "javac origin jdk": 36,
+    "javac origin source": 311,
+    "scip global, javac global": 36,
+    "scip local, javac global": 365,
+    "sites": 401
+   },
+   "escape: lambda": {
+    "javac type": 43,
+    "lambda: functional interface known": 43,
+    "scip local, javac type": 42,
+    "scip no occurrence, javac type": 1,
+    "sites": 43
+   },
+   "escape: method-ref": {
+    "javac global": 47,
+    "javac origin source": 47,
+    "own code: same": 47,
+    "scip global, javac global": 47,
+    "sites": 47,
+    "target same": 47
+   },
+   "escape: override": {
+    "javac global": 217,
+    "javac origin source": 217,
+    "overrides nothing": 180,
+    "overrides outside code": 16,
+    "overrides repository code only": 21,
+    "overrides: same": 216,
+    "own code: same": 216,
+    "scip global, javac global": 216,
+    "scip no occurrence, javac global": 1,
+    "sites": 217,
+    "target same": 216
+   },
+   "handler-type: catch": {
+    "jar: same coordinates": 1,
+    "javac global": 3,
+    "javac origin jar": 1,
+    "javac origin jdk": 2,
+    "own code: same": 3,
+    "scip global, javac global": 3,
+    "sites": 3,
+    "target same": 3
+   },
+   "import: single": {
+    "jar: other coordinates": 4,
+    "jar: same coordinates": 368,
+    "javac global": 725,
+    "javac origin jar": 372,
+    "javac origin jdk": 110,
+    "javac origin source": 243,
+    "own code: same": 725,
+    "scip global, javac global": 725,
+    "sites": 725,
+    "target same": 725
+   },
+   "import: static": {
+    "javac global": 5,
+    "javac origin jar": 2,
+    "javac origin jdk": 3,
+    "scip no occurrence, javac global": 5,
+    "sites": 5,
+    "static import: several members": 0
+   },
+   "write-receiver: bare": {
+    "javac global": 1,
+    "javac local": 14,
+    "javac origin source": 15,
+    "own code: same": 1,
+    "scip global, javac global": 1,
+    "scip local, javac local": 14,
+    "sites": 15,
+    "target same": 1
+   },
+   "write-receiver: field": {
+    "javac global": 68,
+    "javac origin source": 68,
+    "own code: same": 68,
+    "scip global, javac global": 68,
+    "sites": 68,
+    "target same": 68
+   }
+  }
+ }
+}

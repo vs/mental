@@ -1,0 +1,28 @@
+// Gradle init script: write what each project's compileJava task would hand javac, without
+// compiling. Runs only the tasks compileJava depends on (code generation, sibling modules).
+// Usage: gradlew -I compile-args.gradle -Pmental.out=<dir> mentalCompileArgs --no-scan
+allprojects {
+    plugins.withId('java') {
+        tasks.register('mentalCompileArgs') {
+            def compile = tasks.named('compileJava')
+            dependsOn { compile.get().taskDependencies.getDependencies(compile.get()) }
+            doLast {
+                def c = compile.get()
+                def outDir = new File(project.property('mental.out').toString())
+                outDir.mkdirs()
+                def name = project.path == ':' ? 'root' : project.path.substring(1).replace(':', '-')
+                new File(outDir, "${name}.json").text = groovy.json.JsonOutput.toJson([
+                    project      : project.path,
+                    sources      : c.source.files.collect { it.absolutePath }.sort(),
+                    classpath    : c.classpath.files.collect { it.absolutePath },
+                    processorpath: (c.options.annotationProcessorPath?.files ?: []).collect { it.absolutePath },
+                    release      : c.options.release.getOrNull(),
+                    source       : c.sourceCompatibility,
+                    target       : c.targetCompatibility,
+                    encoding     : c.options.encoding,
+                    args         : c.options.allCompilerArgs,
+                ])
+            }
+        }
+    }
+}
