@@ -314,10 +314,10 @@ The summary must agree with the full graph; a check enforces it.
 | Term | Definition |
 |---|---|
 | **`mentalc`** | The compiler. Reads a repository and packs, writes a complete model. Asks an LLM backend for judgment and checks every answer. Pronounced "mental-see". |
-| **`mentalvm`** | The interpreter. Reads a model, produces runs: traces and findings. |
+| **`mentalvm`** | The interpreter. Reads a model, produces runs: traces and findings. Also the product's primary name, used for its website (`mentalvm.dev`, `mentalvm.app` or `mentalvm.ai`) and wherever it is published. |
 | **`mentaldbg`** | The debugger. Holds sessions and serves the viewer, coding agents (MCP), IDEs (DAP) and the terminal. |
 | **Viewer** | The graphical front end of `mentaldbg`: a web application that draws the model and plays traces. |
-| **Mental** | The product family built on the three tools: *Mental for Claude Code*, *Mental for Codex*, *Mental Desktop*. |
+| **Mental** | The product family built on the three tools: *Mental for Claude Code*, *Mental for Codex*, *Mental Desktop*; also the project's name in these docs. It is published under the name `mentalvm`. |
 
 ## Words with several meanings
 
@@ -329,6 +329,7 @@ The summary must agree with the full graph; a check enforces it.
 | **Step** | one event in a run | a node (a part of a behavior) |
 | **Model** | the compiled description of the system | an LLM (always called "LLM" or "LLM model ID") |
 | **Trace** | the output of a run in the interpreter | a distributed-tracing span; a real execution is called an *observed trace* |
+| **`mentalvm`** | the interpreter, in a command or a tool's job; the product, in its website and published name | `mentalc`, the compiler, which is not the product's name |
 | **Task** | a request from `mentalc` to an LLM | a Celery task (always "Celery task") |
 | **Check** | a rule that an answer or the model must pass | a test in the repository |
 | **Stage** | one of the six parts of a build | the *stage* kind of level (a subject moving to its next stage) |
