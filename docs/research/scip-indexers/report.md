@@ -103,7 +103,11 @@ A tree-sitter walk listed 21,965 sites in the main sources, with the plan's mapp
 
 **What the index tells beyond Python:**
 
-- **Overrides.** A method declaration carries its overrides as relationships: 1,140 of 2,552 methods override outside code, so they are escapes. That decides the other kind of escape with no type at all.
+- **Overrides.** A method declaration carries its overrides as relationships: 188 of 2,552 methods override outside code, so they are escapes. That decides the other kind of escape with no type at all, once two habits are allowed for:
+  - **Implementations, flagged like overrides.** scip-java also relates a method to the methods that implement it, with the same flags: `ArgumentMatcher#matches()` lists its 37 implementations. A target in a subclass of the method's own class is one of those.
+  - **Own code, from definitions.** In mockito, own code is told by a definition in the index, not by the package.
+
+  Read without either, as this report first did, the count is 1,140.
 - **Kinds.** The repository's own symbols carry a kind; dependency symbols carry none (4,621 of 8,701 callees have one).
 
 **What it lacks:**

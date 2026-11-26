@@ -287,9 +287,9 @@
     "index local": 66,
     "name matches": 2250,
     "origin maven": 2250,
-    "overrides nothing": 1133,
-    "overrides outside code": 1115,
-    "overrides repository code only": 2,
+    "overrides nothing": 1483,
+    "overrides outside code": 163,
+    "overrides repository code only": 604,
     "package and definition disagree": 2250,
     "sites": 2316
    },
@@ -501,9 +501,9 @@
     "index no occurrence": 1,
     "name matches": 216,
     "origin repository": 216,
-    "overrides nothing": 159,
+    "overrides nothing": 179,
     "overrides outside code": 16,
-    "overrides repository code only": 41,
+    "overrides repository code only": 21,
     "sites": 217
    },
    "handler-type: catch": {

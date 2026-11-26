@@ -39,8 +39,8 @@ Global answers whose target is the repository's own code: by the symbol's packag
 |---|---|
 | `new` sites naming a constructor | 1,169 of 1,229 (the rest: anonymous classes, named by their type) |
 | callees with symbol information (a kind) | 4,621 of 8,701: only the repository's own symbols have it |
-| method declarations that override outside code | 1,140 of 2,552 |
-| … that override repository code only | 43 |
+| method declarations that override outside code | 188 of 2,552 |
+| … that override repository code only | 625 |
 | arguments that are a local or parameter (need a type) | 3,118 of 3,607 |
 | arguments that are a field (need its type) | 489 |
 | bare assignments the index shows are a field | 145 of 451 (the rest: local variables) |

@@ -80,17 +80,6 @@ def index_target(sym):
     return package, module, name
 
 
-def ancestors(index, symbol, seen=None):
-    """Classes a class symbol implements, by the index's relationships, transitively."""
-    seen = set() if seen is None else seen
-    info = index.symbols.get(symbol)
-    for rel in info.relationships if info else ():
-        if rel.is_implementation and rel.symbol not in seen:
-            seen.add(rel.symbol)
-            ancestors(index, rel.symbol, seen)
-    return seen
-
-
 def compare(kind, ty, occ_symbol, index):
     """How the index's answer stands to ty's, for a site ty resolved or made external."""
     _, _, t_module, t_name = ty
@@ -105,7 +94,7 @@ def compare(kind, ty, occ_symbol, index):
                 return "same"
             classes = [k for k in index.symbols if k.endswith("#")
                        and index_target(scip_index.parse_symbol(k))[1:] == (t_module, t_name)]
-            if any(owner_symbol in ancestors(index, k) for k in classes):
+            if any(owner_symbol in scip_index.ancestors(index, k) for k in classes):
                 return "same, attribute declared in a base"
             return "other"
         return "index names no class"

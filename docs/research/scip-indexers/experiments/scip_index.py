@@ -154,6 +154,17 @@ def parse_symbol(symbol):
     return Symbol(manager, package, version, tuple(descriptors))
 
 
+def ancestors(index, symbol, seen=None):
+    """Classes a class symbol implements, by the index's relationships, transitively."""
+    seen = set() if seen is None else seen
+    info = index.symbols.get(symbol)
+    for rel in info.relationships if info else ():
+        if rel.is_implementation and rel.symbol not in seen:
+            seen.add(rel.symbol)
+            ancestors(index, rel.symbol, seen)
+    return seen
+
+
 def by_line(index):
     """Per document, the occurrences by their first line."""
     out = {}

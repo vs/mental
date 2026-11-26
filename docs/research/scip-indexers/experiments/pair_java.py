@@ -45,6 +45,58 @@ def written_name(sym):
     return names[-1] if names else ""
 
 
+def occurrences_at(index):
+    """Per main document, its occurrences by start (0-based line, UTF-16 column)."""
+    out = {}
+    for path, (_, occurrences) in index.documents.items():
+        if "src/main/" in path and path.endswith(".java"):
+            at = collections.defaultdict(list)
+            for occ in occurrences:
+                at[(occ.line, occ.start)].append(occ)
+            out[path] = at
+    return out
+
+
+def index_answer(at, line, column):
+    """The occurrences paired with a site, its symbols, and the answer they make."""
+    occs = at.get((line, column), [])
+    # `Foo::new` has two occurrences at its start: the type, and the reference to the
+    # constructor over the whole `Foo::new`; the longer one is the site's.
+    longest = max(((o.end_line, o.end) for o in occs), default=None)
+    occs = [o for o in occs if (o.end_line, o.end) == longest]
+    symbols = sorted({o.symbol for o in occs if o.symbol})
+    if not symbols:
+        answer = "no occurrence"
+    elif len(symbols) > 1:
+        answer = "several symbols"
+    elif scip_index.parse_symbol(symbols[0]) is None:
+        answer = "local"
+    else:
+        answer = "global"
+    return occs, symbols, answer
+
+
+def owner(symbol):
+    """The class a member symbol belongs to."""
+    return symbol[:symbol.rindex("#") + 1]
+
+
+def overrides(index, symbol, defined):
+    """What a method overrides, by the index's relationships: outside code, own code, nothing.
+
+    scip-java relates a method both to what it overrides and to what implements it, with the
+    same flags; a target in a subclass of the method's class is one of the latter. Own code is
+    code defined in the index (F-I3).
+    """
+    info = index.symbols.get(symbol)
+    targets = [r.symbol for r in (info.relationships if info else ())
+               if r.is_implementation and scip_index.parse_symbol(r.symbol)
+               and owner(symbol) not in scip_index.ancestors(index, owner(r.symbol))]
+    if any(t not in defined for t in targets):
+        return "overrides outside code"
+    return "overrides repository code only" if targets else "overrides nothing"
+
+
 def pair(work, project):
     root = work / "src/java" / project
     index = scip_index.load(work, work / "out/scip-java" / f"{project}.scip")
@@ -52,33 +104,16 @@ def pair(work, project):
     examples = []
     defined = {o.symbol for _, occs in index.documents.values() for o in occs
                if o.roles & scip_index.ROLE_DEFINITION}
-    for path, (encoding, occurrences) in sorted(index.documents.items()):
-        if "src/main/" not in path or not path.endswith(".java"):
-            continue
+    for path, at in sorted(occurrences_at(index).items()):
         source = (root / path).read_bytes()
         lines = source.split(b"\n")
-        at = collections.defaultdict(list)
-        for occ in occurrences:
-            at[(occ.line, occ.start)].append(occ)
         for site in walk_java.sites(source):
             key = f"{site.kind}: {site.form}"
             c = counts[key]
             c["sites"] += 1
-            occs = at.get((site.line, utf16(lines[site.line], site.column)), [])
-            # `Foo::new` has two occurrences at its start: the type, and the reference to the
-            # constructor over the whole `Foo::new`; the longer one is the site's.
-            longest = max(((o.end_line, o.end) for o in occs), default=None)
-            occs = [o for o in occs if (o.end_line, o.end) == longest]
-            symbols = sorted({o.symbol for o in occs if o.symbol})
+            occs, symbols, answer = index_answer(at, site.line,
+                                                 utf16(lines[site.line], site.column))
             parsed = [scip_index.parse_symbol(s) for s in symbols]
-            if not symbols:
-                answer = "no occurrence"
-            elif len(symbols) > 1:
-                answer = "several symbols"
-            elif parsed[0] is None:
-                answer = "local"
-            else:
-                answer = "global"
             c[f"index {answer}"] += 1
             record = {"project": project, "path": path, "line": site.line + 1,
                       "kind": site.kind, "form": site.form, "name": site.name,
@@ -115,14 +150,7 @@ def pair(work, project):
                     c["argument: a method or class" if sym.last_suffix in "#(" else
                       "argument: a field (needs its type)"] += 1
                 if site.kind == "escape" and site.form == "override":
-                    outside = [r for r in (info.relationships if info else ())
-                               if r.is_implementation and scip_index.parse_symbol(r.symbol)
-                               and origin(scip_index.parse_symbol(r.symbol)) != "repository"]
-                    inside = [r for r in (info.relationships if info else ())
-                              if r.is_implementation and scip_index.parse_symbol(r.symbol)
-                              and origin(scip_index.parse_symbol(r.symbol)) == "repository"]
-                    c["overrides outside code" if outside else
-                      "overrides repository code only" if inside else "overrides nothing"] += 1
+                    c[overrides(index, symbols[0], defined)] += 1
                     record["overrides"] = [r.symbol for r in info.relationships] if info else []
             elif answer == "local" and site.kind == "escape" and site.form == "argument":
                 c["argument: a local or parameter (needs its type)"] += 1
