@@ -14,3 +14,9 @@ docs/research/scip-indexers/experiments/results/examples-java.jsonl.gz:generic-p
 .betterleaksignore:generic-password:10
 # the entry on line 12: its line number after the rule name reads as a password (review 2027-05-26)
 .betterleaksignore:generic-password:12
+# report-jobs-java sample system's local dev database URL (reports/reports), fixture data, not a real secret (review 2027-05-27)
+examples/report-jobs-java/src/docker-compose.yml:generic-password:8
+# report-jobs-java sample system's local dev RabbitMQ URL (RabbitMQ's default guest/guest), fixture data, not a real secret (review 2027-05-27)
+examples/report-jobs-java/src/docker-compose.yml:generic-credential-uri:9
+# report-jobs-java sample system's local dev Postgres password, fixture data, not a real secret (review 2027-05-27)
+examples/report-jobs-java/src/docker-compose.yml:generic-password:41
