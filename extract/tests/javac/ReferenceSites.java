@@ -184,8 +184,9 @@ public class ReferenceSites {
             public Void visitImport(ImportTree tree, Void unused) {
                 Tree named = tree.getQualifiedIdentifier();
                 String name = named.toString();
-                if (name.endsWith(".*")) {
-                    named = ((MemberSelectTree) named).getExpression();
+                if (tree.isStatic() || name.endsWith(".*")) {
+                    throw new IllegalStateException("`import " + (tree.isStatic() ? "static " : "") + name
+                            + ";` in " + path + ": the Java site rules do not cover on-demand or static imports yet");
                 }
                 add(getCurrentPath(), tree, "import", name, trees.getElement(at(named)));
                 return null;
@@ -388,9 +389,6 @@ public class ReferenceSites {
     String outcome(Element target) {
         if (target == null || target.asType().getKind() == TypeKind.ERROR) {
             return "{\"unresolved\":{\"reason\":\"not_found\"}}";
-        }
-        if (target instanceof PackageElement) {
-            throw new IllegalStateException("an on-demand import, which the Java site rules do not cover yet");
         }
         TypeElement top = topLevel(target);
         String module = elements.getPackageOf(top).getQualifiedName().toString();

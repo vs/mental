@@ -55,5 +55,5 @@ The javac tool is written from the rules of the specification's 6.7 and uses onl
 
 - How `mentalc` reads a Maven project: the build model of a project with no lockfile, and whether Maven runs or its local repository is read as files.
 - The records after milestone 1 (facts, the mechanical model), for both references. Each milestone writes them for both.
-- On-demand imports, static imports, anonymous and local classes (specification 6.7). The example has none, and the javac tool stops on an on-demand import rather than guess.
+- On-demand imports, static imports, anonymous and local classes (specification 6.7). The example has none, and the javac tool stops on an on-demand or static import rather than guess.
 - CI runs neither example's slow checks: alpha's generated jobs can't install uv's environment, a JDK or Maven's cache yet (CONTRIBUTING.md, Exceptions).
