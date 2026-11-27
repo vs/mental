@@ -1,0 +1,42 @@
+services:
+  api:
+    build: .
+    command: java -jar reports.jar
+    ports:
+      - "8000:8080"
+    environment: &env
+      DATABASE_URL: jdbc:postgresql://postgres/reports?user=reports&password=reports
+      BROKER_URL: amqp://guest:guest@rabbitmq:5672
+      REPORTS_BUCKET: acme-reports
+      SPRING_PROFILES_ACTIVE: api
+    depends_on: [postgres, rabbitmq]
+
+  worker:
+    build: .
+    command: java -jar reports.jar
+    environment:
+      <<: *env
+      SPRING_PROFILES_ACTIVE: worker
+      SPRING_MAIN_WEB_APPLICATION_TYPE: none
+    deploy:
+      replicas: 2
+    depends_on: [postgres, rabbitmq]
+
+  beat:
+    build: .
+    command: java -jar reports.jar
+    environment:
+      <<: *env
+      SPRING_PROFILES_ACTIVE: beat
+      SPRING_MAIN_WEB_APPLICATION_TYPE: none
+    depends_on: [postgres, rabbitmq]
+
+  rabbitmq:
+    image: rabbitmq:4.2
+
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: reports
+      POSTGRES_PASSWORD: reports
+      POSTGRES_DB: reports

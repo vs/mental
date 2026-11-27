@@ -303,6 +303,52 @@ A **pack** is a model of a library, framework, runtime or outside system. The re
 
 Version one: FastAPI, Celery, SQLAlchemy, boto3 (S3), requests, click, Redis, Postgres.
 
+### 6.7 Java sites
+
+**Status: Decided** for which sites a Java file has, how they are named and what each is asked (owner choice, 2026-11-27). Java is not in version one ([14.1](#141-scope)). What a Java build reads, the checker behind it (R4) and a Maven project's build model are open. Until then, the hand-written reference of [`examples/report-jobs-java`](../examples/report-jobs-java/), the Java twin of report-jobs, follows these rules, and javac's own trees and elements check it ([plan](plans/java-reference.md)).
+
+The site kinds are those of [6.1](#61-parse-and-list-sites), found in each file under `src/main/java`:
+
+| Kind | Java |
+|---|---|
+| import | each `import`, one site per declaration |
+| decorator | each annotation, wherever it stands: on a class, a field, a method or a parameter |
+| callee | each method call; each `new`, except the constructor call javac makes for an enum constant; `this(…)` and `super(…)` as written |
+| base class | each type after `extends` or `implements`. An enum's or a record's implicit base is not written, so it is not a site |
+| write receiver | each field assigned to: by `=`, a compound assignment, `++` or `--`. A field's initializer in its declaration is not a write |
+| escape | an argument handed to a call that does not resolve into the repository, when it is a lambda, a method reference, a repository class literal (`Application.class`), or a name or field whose static type is a repository class (`reports.save(report)`). Also a method that overrides one outside the repository (`run` of `CommandLineRunner`) |
+| handler type | each type a `catch` names, one per alternative of `A \| B` |
+
+**Scope** is the qualified name of the innermost method or constructor (`app.ReportTasks.generateReport`; a constructor is `<init>`), else of the innermost class (`app.ReportController.ReportView`). For an import, the scope is the file: its package and the file's name (`app.ReportController`). As in Python, a site in a method's header, such as an annotation or a parameter's annotation, belongs to the method. An annotation on a field belongs to the class. A lambda is not a scope.
+
+**The name as written** follows the Python rule:
+
+- names and field accesses as they are, and a call as `()` after what it applies to: `reports.findById(id).orElse(null)` names `reports.findById().orElse`;
+- `new CommandLine(this).execute(args)` names `CommandLine().execute`;
+- type arguments are dropped;
+- an import names its qualified name, and an annotation its type as written;
+- a lambda has no name, so its slug is its scope and kind (`app-reportqueue-delay-escape`);
+- a method that overrides is named by its own name.
+
+IDs and the counters of a group are made as in [6.1](#61-parse-and-list-sites).
+
+**What each kind is asked**, from the checker's elements:
+
+| Kind | Target |
+|---|---|
+| callee | the method the call is bound to, as declared: `reports.save(report)` names `CrudRepository.save`, the interface that declares it. Overloads are one target. `new` and `this(…)` or `super(…)` name the class |
+| import, decorator, base class, handler type | the type named |
+| write receiver | the class of the object written to: the receiver's static type, or the enclosing class for a bare field |
+| escape | the repository class of the name, or of the class literal; the method a method reference names; the method of the interface a lambda implements; the outside method a method overrides |
+
+A target is named by its top-level class's package as `module`, and its qualified name in that package as `name`, such as `RestClient.Builder.build`.
+
+- It is `resolved` when the class is in the repository's sources.
+- It is `external` with a pin when its class file is in a resolved dependency.
+- It is `external` with `stdlib` when it is in a module of the JDK.
+
+On-demand imports, static imports, and anonymous and local classes are not covered yet: report-jobs-java has none, and the rules for them come with the first project that does.
+
 ## 7. The model
 
 **Status: Decided** for IDs, anchors and storage (2026-11-14). The record kinds are grouped by the stage that writes them.
@@ -651,7 +697,7 @@ Resolution outcomes per site kind and root causes per repository; LLM calls and 
 | **Reading commits without a checkout; several repositories; sharing models; a pack registry** | — |
 | **Deployment** | artifacts, launches, configuration inputs and replica counts, read from Dockerfiles and compose files; the chain from source to running process, checked against a deployed artifact's digest; a space of alternative deployments |
 | **Observed traces** | aligning logs and tracing data with model steps |
-| **The viewer; the desktop product; more languages** | — |
+| **The viewer; the desktop product; more languages** | Java's sites are decided ([6.7](#67-java-sites)) and [`examples/report-jobs-java`](../examples/report-jobs-java/) has its reference; its build model and checker are open |
 
 ### 15.2 Experiments
 

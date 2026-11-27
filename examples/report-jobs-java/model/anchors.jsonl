@@ -1,0 +1,382 @@
+{"id":"reports/unit:reports","path":"pom.xml","lines":[15,15],"quote":"  <artifactId>reports</artifactId>"}
+{"id":"reports/unit:reports/pin:ch-qos-logback-logback-classic","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:ch-qos-logback-logback-core","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:com-fasterxml-jackson-core-jackson-annotations","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:com-rabbitmq-amqp-client","path":"pom.xml","lines":[48,48],"quote":"      <artifactId>spring-boot-starter-rabbitmq</artifactId>"}
+{"id":"reports/unit:reports/pin:com-sun-istack-istack-commons-runtime","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:com-zaxxer-hikaricp","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:commons-logging-commons-logging","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:info-picocli-picocli","path":"pom.xml","lines":[61,61],"quote":"      <artifactId>picocli</artifactId>"}
+{"id":"reports/unit:reports/pin:io-micrometer-micrometer-commons","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:io-micrometer-micrometer-observation","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-buffer","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-codec","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-codec-base","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-codec-compression","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-codec-http","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-codec-http2","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-codec-marshalling","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-codec-protobuf","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-common","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-handler","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-resolver","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-transport","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-transport-classes-epoll","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:io-netty-netty-transport-native-unix-common","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:jakarta-activation-jakarta-activation-api","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:jakarta-annotation-jakarta-annotation-api","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:jakarta-inject-jakarta-inject-api","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:jakarta-persistence-jakarta-persistence-api","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:jakarta-transaction-jakarta-transaction-api","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:jakarta-xml-bind-jakarta-xml-bind-api","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:net-bytebuddy-byte-buddy","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-antlr-antlr4-runtime","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-apache-httpcomponents-client5-httpclient5","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:org-apache-httpcomponents-core5-httpcore5","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:org-apache-httpcomponents-core5-httpcore5-h2","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:org-apache-logging-log4j-log4j-api","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-apache-logging-log4j-log4j-to-slf4j","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-apache-tomcat-embed-tomcat-embed-core","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-apache-tomcat-embed-tomcat-embed-el","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-apache-tomcat-embed-tomcat-embed-websocket","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-aspectj-aspectjweaver","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-checkerframework-checker-qual","path":"pom.xml","lines":[52,52],"quote":"      <artifactId>postgresql</artifactId>"}
+{"id":"reports/unit:reports/pin:org-eclipse-angus-angus-activation","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-glassfish-jaxb-jaxb-core","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-glassfish-jaxb-jaxb-runtime","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-glassfish-jaxb-txw2","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-hibernate-models-hibernate-models","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-hibernate-orm-hibernate-core","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-jboss-logging-jboss-logging","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-jspecify-jspecify","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-postgresql-postgresql","path":"pom.xml","lines":[52,52],"quote":"      <artifactId>postgresql</artifactId>"}
+{"id":"reports/unit:reports/pin:org-reactivestreams-reactive-streams","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:org-slf4j-jul-to-slf4j","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-slf4j-slf4j-api","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-amqp-spring-amqp","path":"pom.xml","lines":[48,48],"quote":"      <artifactId>spring-boot-starter-rabbitmq</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-amqp-spring-rabbit","path":"pom.xml","lines":[48,48],"quote":"      <artifactId>spring-boot-starter-rabbitmq</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-autoconfigure","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-data-commons","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-data-jpa","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-hibernate","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-http-converter","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-jackson","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-jdbc","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-jpa","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-persistence","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-rabbitmq","path":"pom.xml","lines":[48,48],"quote":"      <artifactId>spring-boot-starter-rabbitmq</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-servlet","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-sql","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter-data-jpa","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter-jackson","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter-jdbc","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter-logging","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter-rabbitmq","path":"pom.xml","lines":[48,48],"quote":"      <artifactId>spring-boot-starter-rabbitmq</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter-tomcat","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter-tomcat-runtime","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-starter-webmvc","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-tomcat","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-transaction","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-web-server","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-boot-spring-boot-webmvc","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-data-spring-data-commons","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-data-spring-data-jpa","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-aop","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-aspects","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-beans","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-context","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-core","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-expression","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-jdbc","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-messaging","path":"pom.xml","lines":[48,48],"quote":"      <artifactId>spring-boot-starter-rabbitmq</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-orm","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-tx","path":"pom.xml","lines":[44,44],"quote":"      <artifactId>spring-boot-starter-data-jpa</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-web","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-springframework-spring-webmvc","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:org-yaml-snakeyaml","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-annotations","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-apache5-client","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-arns","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-auth","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-aws-core","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-aws-query-protocol","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-aws-xml-protocol","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-checksums","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-checksums-spi","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-crt-core","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-endpoints-spi","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-eventstream","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-http-auth","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-http-auth-aws","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-http-auth-aws-eventstream","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-http-auth-spi","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-http-client-spi","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-identity-spi","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-json-utils","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-metrics-spi","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-netty-nio-client","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-profiles","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-protocol-core","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-regions","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-retries","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-retries-spi","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-s3","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-sdk-core","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-third-party-jackson-core","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-utils","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:software-amazon-awssdk-utils-lite","path":"pom.xml","lines":[57,57],"quote":"      <artifactId>s3</artifactId>"}
+{"id":"reports/unit:reports/pin:tools-jackson-core-jackson-core","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/pin:tools-jackson-core-jackson-databind","path":"pom.xml","lines":[40,40],"quote":"      <artifactId>spring-boot-starter-webmvc</artifactId>"}
+{"id":"reports/unit:reports/site:app-application-decorator-enablescheduling","path":"src/main/java/app/Application.java","lines":[10,10],"quote":"@EnableScheduling"}
+{"id":"reports/unit:reports/site:app-application-decorator-springbootapplication","path":"src/main/java/app/Application.java","lines":[9,9],"quote":"@SpringBootApplication"}
+{"id":"reports/unit:reports/site:app-application-import-org-springframework-amqp-core-queue","path":"src/main/java/app/Application.java","lines":[3,3],"quote":"import org.springframework.amqp.core.Queue;"}
+{"id":"reports/unit:reports/site:app-application-import-org-springframework-boot-autoconfigure-springbootapplication","path":"src/main/java/app/Application.java","lines":[5,5],"quote":"import org.springframework.boot.autoconfigure.SpringBootApplication;"}
+{"id":"reports/unit:reports/site:app-application-import-org-springframework-boot-springapplication","path":"src/main/java/app/Application.java","lines":[4,4],"quote":"import org.springframework.boot.SpringApplication;"}
+{"id":"reports/unit:reports/site:app-application-import-org-springframework-context-annotation-bean","path":"src/main/java/app/Application.java","lines":[6,6],"quote":"import org.springframework.context.annotation.Bean;"}
+{"id":"reports/unit:reports/site:app-application-import-org-springframework-scheduling-annotation-enablescheduling","path":"src/main/java/app/Application.java","lines":[7,7],"quote":"import org.springframework.scheduling.annotation.EnableScheduling;"}
+{"id":"reports/unit:reports/site:app-application-main-callee-springapplication-run","path":"src/main/java/app/Application.java","lines":[19,19],"quote":"        SpringApplication.run(Application.class, args);"}
+{"id":"reports/unit:reports/site:app-application-main-escape-application-class","path":"src/main/java/app/Application.java","lines":[19,19],"quote":"        SpringApplication.run(Application.class, args);"}
+{"id":"reports/unit:reports/site:app-application-reportsqueue-callee-queue","path":"src/main/java/app/Application.java","lines":[15,15],"quote":"        return new Queue(ReportQueue.NAME);"}
+{"id":"reports/unit:reports/site:app-application-reportsqueue-decorator-bean","path":"src/main/java/app/Application.java","lines":[13,13],"quote":"    @Bean"}
+{"id":"reports/unit:reports/site:app-order-decorator-column-0","path":"src/main/java/app/Order.java","lines":[16,16],"quote":"    @Column(nullable = false)"}
+{"id":"reports/unit:reports/site:app-order-decorator-column-1","path":"src/main/java/app/Order.java","lines":[19,19],"quote":"    @Column(nullable = false)"}
+{"id":"reports/unit:reports/site:app-order-decorator-entity","path":"src/main/java/app/Order.java","lines":[9,9],"quote":"@Entity"}
+{"id":"reports/unit:reports/site:app-order-decorator-id","path":"src/main/java/app/Order.java","lines":[13,13],"quote":"    @Id"}
+{"id":"reports/unit:reports/site:app-order-decorator-table","path":"src/main/java/app/Order.java","lines":[10,10],"quote":"@Table(name = \"orders\")"}
+{"id":"reports/unit:reports/site:app-order-import-jakarta-persistence-column","path":"src/main/java/app/Order.java","lines":[3,3],"quote":"import jakarta.persistence.Column;"}
+{"id":"reports/unit:reports/site:app-order-import-jakarta-persistence-entity","path":"src/main/java/app/Order.java","lines":[4,4],"quote":"import jakarta.persistence.Entity;"}
+{"id":"reports/unit:reports/site:app-order-import-jakarta-persistence-id","path":"src/main/java/app/Order.java","lines":[5,5],"quote":"import jakarta.persistence.Id;"}
+{"id":"reports/unit:reports/site:app-order-import-jakarta-persistence-table","path":"src/main/java/app/Order.java","lines":[6,6],"quote":"import jakarta.persistence.Table;"}
+{"id":"reports/unit:reports/site:app-order-import-java-time-localdate","path":"src/main/java/app/Order.java","lines":[7,7],"quote":"import java.time.LocalDate;"}
+{"id":"reports/unit:reports/site:app-orderrepository-base-class-jparepository","path":"src/main/java/app/OrderRepository.java","lines":[8,8],"quote":"public interface OrderRepository extends JpaRepository<Order, Integer> {"}
+{"id":"reports/unit:reports/site:app-orderrepository-import-java-time-localdate","path":"src/main/java/app/OrderRepository.java","lines":[3,3],"quote":"import java.time.LocalDate;"}
+{"id":"reports/unit:reports/site:app-orderrepository-import-java-util-list","path":"src/main/java/app/OrderRepository.java","lines":[4,4],"quote":"import java.util.List;"}
+{"id":"reports/unit:reports/site:app-orderrepository-import-org-springframework-data-domain-pageable","path":"src/main/java/app/OrderRepository.java","lines":[5,5],"quote":"import org.springframework.data.domain.Pageable;"}
+{"id":"reports/unit:reports/site:app-orderrepository-import-org-springframework-data-jpa-repository-jparepository","path":"src/main/java/app/OrderRepository.java","lines":[6,6],"quote":"import org.springframework.data.jpa.repository.JpaRepository;"}
+{"id":"reports/unit:reports/site:app-report-decorator-column-0","path":"src/main/java/app/Report.java","lines":[20,20],"quote":"    @Column(unique = true, nullable = false)"}
+{"id":"reports/unit:reports/site:app-report-decorator-column-1","path":"src/main/java/app/Report.java","lines":[23,23],"quote":"    @Column(name = \"start_date\", nullable = false)"}
+{"id":"reports/unit:reports/site:app-report-decorator-column-2","path":"src/main/java/app/Report.java","lines":[26,26],"quote":"    @Column(name = \"end_date\", nullable = false)"}
+{"id":"reports/unit:reports/site:app-report-decorator-column-3","path":"src/main/java/app/Report.java","lines":[30,30],"quote":"    @Column(nullable = false)"}
+{"id":"reports/unit:reports/site:app-report-decorator-entity","path":"src/main/java/app/Report.java","lines":[13,13],"quote":"@Entity"}
+{"id":"reports/unit:reports/site:app-report-decorator-enumerated","path":"src/main/java/app/Report.java","lines":[29,29],"quote":"    @Enumerated(EnumType.STRING)"}
+{"id":"reports/unit:reports/site:app-report-decorator-id","path":"src/main/java/app/Report.java","lines":[17,17],"quote":"    @Id"}
+{"id":"reports/unit:reports/site:app-report-decorator-table","path":"src/main/java/app/Report.java","lines":[14,14],"quote":"@Table(name = \"reports\")"}
+{"id":"reports/unit:reports/site:app-report-decorator-updatetimestamp","path":"src/main/java/app/Report.java","lines":[35,35],"quote":"    @UpdateTimestamp"}
+{"id":"reports/unit:reports/site:app-report-import-jakarta-persistence-column","path":"src/main/java/app/Report.java","lines":[3,3],"quote":"import jakarta.persistence.Column;"}
+{"id":"reports/unit:reports/site:app-report-import-jakarta-persistence-entity","path":"src/main/java/app/Report.java","lines":[4,4],"quote":"import jakarta.persistence.Entity;"}
+{"id":"reports/unit:reports/site:app-report-import-jakarta-persistence-enumerated","path":"src/main/java/app/Report.java","lines":[6,6],"quote":"import jakarta.persistence.Enumerated;"}
+{"id":"reports/unit:reports/site:app-report-import-jakarta-persistence-enumtype","path":"src/main/java/app/Report.java","lines":[5,5],"quote":"import jakarta.persistence.EnumType;"}
+{"id":"reports/unit:reports/site:app-report-import-jakarta-persistence-id","path":"src/main/java/app/Report.java","lines":[7,7],"quote":"import jakarta.persistence.Id;"}
+{"id":"reports/unit:reports/site:app-report-import-jakarta-persistence-table","path":"src/main/java/app/Report.java","lines":[8,8],"quote":"import jakarta.persistence.Table;"}
+{"id":"reports/unit:reports/site:app-report-import-java-time-instant","path":"src/main/java/app/Report.java","lines":[9,9],"quote":"import java.time.Instant;"}
+{"id":"reports/unit:reports/site:app-report-import-java-time-localdate","path":"src/main/java/app/Report.java","lines":[10,10],"quote":"import java.time.LocalDate;"}
+{"id":"reports/unit:reports/site:app-report-import-org-hibernate-annotations-updatetimestamp","path":"src/main/java/app/Report.java","lines":[11,11],"quote":"import org.hibernate.annotations.UpdateTimestamp;"}
+{"id":"reports/unit:reports/site:app-report-init-write-receiver-this-end","path":"src/main/java/app/Report.java","lines":[45,45],"quote":"        this.end = end;"}
+{"id":"reports/unit:reports/site:app-report-init-write-receiver-this-id","path":"src/main/java/app/Report.java","lines":[42,42],"quote":"        this.id = id;"}
+{"id":"reports/unit:reports/site:app-report-init-write-receiver-this-idempotencykey","path":"src/main/java/app/Report.java","lines":[43,43],"quote":"        this.idempotencyKey = idempotencyKey;"}
+{"id":"reports/unit:reports/site:app-report-init-write-receiver-this-start","path":"src/main/java/app/Report.java","lines":[44,44],"quote":"        this.start = start;"}
+{"id":"reports/unit:reports/site:app-report-init-write-receiver-this-status","path":"src/main/java/app/Report.java","lines":[46,46],"quote":"        this.status = status;"}
+{"id":"reports/unit:reports/site:app-report-setstatus-write-receiver-this-status","path":"src/main/java/app/Report.java","lines":[66,66],"quote":"        this.status = status;"}
+{"id":"reports/unit:reports/site:app-report-seturl-write-receiver-this-url","path":"src/main/java/app/Report.java","lines":[74,74],"quote":"        this.url = url;"}
+{"id":"reports/unit:reports/site:app-reportbeat-decorator-component","path":"src/main/java/app/ReportBeat.java","lines":[9,9],"quote":"@Component"}
+{"id":"reports/unit:reports/site:app-reportbeat-decorator-profile","path":"src/main/java/app/ReportBeat.java","lines":[10,10],"quote":"@Profile(\"beat\")"}
+{"id":"reports/unit:reports/site:app-reportbeat-import-java-time-duration","path":"src/main/java/app/ReportBeat.java","lines":[3,3],"quote":"import java.time.Duration;"}
+{"id":"reports/unit:reports/site:app-reportbeat-import-java-time-instant","path":"src/main/java/app/ReportBeat.java","lines":[4,4],"quote":"import java.time.Instant;"}
+{"id":"reports/unit:reports/site:app-reportbeat-import-org-springframework-context-annotation-profile","path":"src/main/java/app/ReportBeat.java","lines":[5,5],"quote":"import org.springframework.context.annotation.Profile;"}
+{"id":"reports/unit:reports/site:app-reportbeat-import-org-springframework-scheduling-annotation-scheduled","path":"src/main/java/app/ReportBeat.java","lines":[6,6],"quote":"import org.springframework.scheduling.annotation.Scheduled;"}
+{"id":"reports/unit:reports/site:app-reportbeat-import-org-springframework-stereotype-component","path":"src/main/java/app/ReportBeat.java","lines":[7,7],"quote":"import org.springframework.stereotype.Component;"}
+{"id":"reports/unit:reports/site:app-reportbeat-init-write-receiver-this-queue","path":"src/main/java/app/ReportBeat.java","lines":[18,18],"quote":"        this.queue = queue;"}
+{"id":"reports/unit:reports/site:app-reportbeat-init-write-receiver-this-reports","path":"src/main/java/app/ReportBeat.java","lines":[17,17],"quote":"        this.reports = reports;"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-callee-duration-ofminutes","path":"src/main/java/app/ReportBeat.java","lines":[23,23],"quote":"        var cutoff = Instant.now().minus(Duration.ofMinutes(15));"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-callee-instant-now","path":"src/main/java/app/ReportBeat.java","lines":[23,23],"quote":"        var cutoff = Instant.now().minus(Duration.ofMinutes(15));"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-callee-instant-now-minus","path":"src/main/java/app/ReportBeat.java","lines":[23,23],"quote":"        var cutoff = Instant.now().minus(Duration.ofMinutes(15));"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-callee-queue-delay","path":"src/main/java/app/ReportBeat.java","lines":[30,30],"quote":"            queue.delay(report.getId());"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-callee-report-getid","path":"src/main/java/app/ReportBeat.java","lines":[30,30],"quote":"            queue.delay(report.getId());"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-callee-report-setstatus","path":"src/main/java/app/ReportBeat.java","lines":[26,26],"quote":"            report.setStatus(ReportStatus.PENDING);"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-callee-reports-findbystatusandupdatedatbefore","path":"src/main/java/app/ReportBeat.java","lines":[24,24],"quote":"        var stuck = reports.findByStatusAndUpdatedAtBefore(ReportStatus.RUNNING, cutoff);"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-callee-reports-saveall","path":"src/main/java/app/ReportBeat.java","lines":[28,28],"quote":"        reports.saveAll(stuck);"}
+{"id":"reports/unit:reports/site:app-reportbeat-requeuestuck-decorator-scheduled","path":"src/main/java/app/ReportBeat.java","lines":[21,21],"quote":"    @Scheduled(fixedRate = 300_000)"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-chronounit-days-between","path":"src/main/java/app/ReportController.java","lines":[40,40],"quote":"        if (ChronoUnit.DAYS.between(req.start(), req.end()) > 366) {"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-existing-getid","path":"src/main/java/app/ReportController.java","lines":[45,45],"quote":"            return new ReportView(existing.getId(), existing.getStatus().name(), null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-existing-getstatus","path":"src/main/java/app/ReportController.java","lines":[45,45],"quote":"            return new ReportView(existing.getId(), existing.getStatus().name(), null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-existing-getstatus-name","path":"src/main/java/app/ReportController.java","lines":[45,45],"quote":"            return new ReportView(existing.getId(), existing.getStatus().name(), null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-queue-delay","path":"src/main/java/app/ReportController.java","lines":[51,51],"quote":"            queue.delay(report.getId());"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-report","path":"src/main/java/app/ReportController.java","lines":[47,48],"quote":"        var report = new Report(UUID.randomUUID().toString(), idempotencyKey,\n                                req.start(), req.end(), ReportStatus.PENDING);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-report-getid-0","path":"src/main/java/app/ReportController.java","lines":[51,51],"quote":"            queue.delay(report.getId());"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-report-getid-1","path":"src/main/java/app/ReportController.java","lines":[55,55],"quote":"        return new ReportView(report.getId(), \"PENDING\", null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-reports-findbyidempotencykey","path":"src/main/java/app/ReportController.java","lines":[43,43],"quote":"        var existing = reports.findByIdempotencyKey(idempotencyKey).orElse(null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-reports-findbyidempotencykey-orelse","path":"src/main/java/app/ReportController.java","lines":[43,43],"quote":"        var existing = reports.findByIdempotencyKey(idempotencyKey).orElse(null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-reports-save","path":"src/main/java/app/ReportController.java","lines":[49,49],"quote":"        reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-reportview-0","path":"src/main/java/app/ReportController.java","lines":[45,45],"quote":"            return new ReportView(existing.getId(), existing.getStatus().name(), null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-reportview-1","path":"src/main/java/app/ReportController.java","lines":[55,55],"quote":"        return new ReportView(report.getId(), \"PENDING\", null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-req-end-0","path":"src/main/java/app/ReportController.java","lines":[40,40],"quote":"        if (ChronoUnit.DAYS.between(req.start(), req.end()) > 366) {"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-req-end-1","path":"src/main/java/app/ReportController.java","lines":[48,48],"quote":"                                req.start(), req.end(), ReportStatus.PENDING);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-req-start-0","path":"src/main/java/app/ReportController.java","lines":[40,40],"quote":"        if (ChronoUnit.DAYS.between(req.start(), req.end()) > 366) {"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-req-start-1","path":"src/main/java/app/ReportController.java","lines":[48,48],"quote":"                                req.start(), req.end(), ReportStatus.PENDING);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-responsestatusexception-0","path":"src/main/java/app/ReportController.java","lines":[41,41],"quote":"            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, \"date range longer than 366 days\");"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-responsestatusexception-1","path":"src/main/java/app/ReportController.java","lines":[53,53],"quote":"            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, \"queue unavailable\");"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-uuid-randomuuid","path":"src/main/java/app/ReportController.java","lines":[47,47],"quote":"        var report = new Report(UUID.randomUUID().toString(), idempotencyKey,"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-callee-uuid-randomuuid-tostring","path":"src/main/java/app/ReportController.java","lines":[47,47],"quote":"        var report = new Report(UUID.randomUUID().toString(), idempotencyKey,"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-decorator-postmapping","path":"src/main/java/app/ReportController.java","lines":[36,36],"quote":"    @PostMapping(\"/reports\")"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-decorator-requestbody","path":"src/main/java/app/ReportController.java","lines":[38,38],"quote":"    public ReportView createReport(@RequestBody ReportRequest req,"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-decorator-requestheader","path":"src/main/java/app/ReportController.java","lines":[39,39],"quote":"                                   @RequestHeader(\"Idempotency-Key\") String idempotencyKey) {"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-decorator-responsestatus","path":"src/main/java/app/ReportController.java","lines":[37,37],"quote":"    @ResponseStatus(HttpStatus.ACCEPTED)"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-escape-report","path":"src/main/java/app/ReportController.java","lines":[49,49],"quote":"        reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-createreport-handler-type-amqpexception","path":"src/main/java/app/ReportController.java","lines":[52,52],"quote":"        } catch (AmqpException e) {"}
+{"id":"reports/unit:reports/site:app-reportcontroller-decorator-profile","path":"src/main/java/app/ReportController.java","lines":[19,19],"quote":"@Profile(\"api\")"}
+{"id":"reports/unit:reports/site:app-reportcontroller-decorator-restcontroller","path":"src/main/java/app/ReportController.java","lines":[18,18],"quote":"@RestController"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-callee-report-getid","path":"src/main/java/app/ReportController.java","lines":[64,64],"quote":"        return new ReportView(report.getId(), report.getStatus().name(), report.getUrl());"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-callee-report-getstatus","path":"src/main/java/app/ReportController.java","lines":[64,64],"quote":"        return new ReportView(report.getId(), report.getStatus().name(), report.getUrl());"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-callee-report-getstatus-name","path":"src/main/java/app/ReportController.java","lines":[64,64],"quote":"        return new ReportView(report.getId(), report.getStatus().name(), report.getUrl());"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-callee-report-geturl","path":"src/main/java/app/ReportController.java","lines":[64,64],"quote":"        return new ReportView(report.getId(), report.getStatus().name(), report.getUrl());"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-callee-reports-findbyid","path":"src/main/java/app/ReportController.java","lines":[60,60],"quote":"        var report = reports.findById(reportId).orElse(null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-callee-reports-findbyid-orelse","path":"src/main/java/app/ReportController.java","lines":[60,60],"quote":"        var report = reports.findById(reportId).orElse(null);"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-callee-reportview","path":"src/main/java/app/ReportController.java","lines":[64,64],"quote":"        return new ReportView(report.getId(), report.getStatus().name(), report.getUrl());"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-callee-responsestatusexception","path":"src/main/java/app/ReportController.java","lines":[62,62],"quote":"            throw new ResponseStatusException(HttpStatus.NOT_FOUND, \"not found\");"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-decorator-getmapping","path":"src/main/java/app/ReportController.java","lines":[58,58],"quote":"    @GetMapping(\"/reports/{reportId}\")"}
+{"id":"reports/unit:reports/site:app-reportcontroller-getreport-decorator-pathvariable","path":"src/main/java/app/ReportController.java","lines":[59,59],"quote":"    public ReportView getReport(@PathVariable String reportId) {"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-java-time-localdate","path":"src/main/java/app/ReportController.java","lines":[3,3],"quote":"import java.time.LocalDate;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-java-time-temporal-chronounit","path":"src/main/java/app/ReportController.java","lines":[4,4],"quote":"import java.time.temporal.ChronoUnit;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-java-util-uuid","path":"src/main/java/app/ReportController.java","lines":[5,5],"quote":"import java.util.UUID;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-amqp-amqpexception","path":"src/main/java/app/ReportController.java","lines":[6,6],"quote":"import org.springframework.amqp.AmqpException;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-context-annotation-profile","path":"src/main/java/app/ReportController.java","lines":[7,7],"quote":"import org.springframework.context.annotation.Profile;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-http-httpstatus","path":"src/main/java/app/ReportController.java","lines":[8,8],"quote":"import org.springframework.http.HttpStatus;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-web-bind-annotation-getmapping","path":"src/main/java/app/ReportController.java","lines":[9,9],"quote":"import org.springframework.web.bind.annotation.GetMapping;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-web-bind-annotation-pathvariable","path":"src/main/java/app/ReportController.java","lines":[10,10],"quote":"import org.springframework.web.bind.annotation.PathVariable;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-web-bind-annotation-postmapping","path":"src/main/java/app/ReportController.java","lines":[11,11],"quote":"import org.springframework.web.bind.annotation.PostMapping;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-web-bind-annotation-requestbody","path":"src/main/java/app/ReportController.java","lines":[12,12],"quote":"import org.springframework.web.bind.annotation.RequestBody;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-web-bind-annotation-requestheader","path":"src/main/java/app/ReportController.java","lines":[13,13],"quote":"import org.springframework.web.bind.annotation.RequestHeader;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-web-bind-annotation-responsestatus","path":"src/main/java/app/ReportController.java","lines":[14,14],"quote":"import org.springframework.web.bind.annotation.ResponseStatus;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-web-bind-annotation-restcontroller","path":"src/main/java/app/ReportController.java","lines":[15,15],"quote":"import org.springframework.web.bind.annotation.RestController;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-import-org-springframework-web-server-responsestatusexception","path":"src/main/java/app/ReportController.java","lines":[16,16],"quote":"import org.springframework.web.server.ResponseStatusException;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-init-write-receiver-this-queue","path":"src/main/java/app/ReportController.java","lines":[33,33],"quote":"        this.queue = queue;"}
+{"id":"reports/unit:reports/site:app-reportcontroller-init-write-receiver-this-reports","path":"src/main/java/app/ReportController.java","lines":[32,32],"quote":"        this.reports = reports;"}
+{"id":"reports/unit:reports/site:app-reportctl-base-class-commandlinerunner","path":"src/main/java/app/ReportCtl.java","lines":[13,13],"quote":"public class ReportCtl implements CommandLineRunner {"}
+{"id":"reports/unit:reports/site:app-reportctl-decorator-command","path":"src/main/java/app/ReportCtl.java","lines":[12,12],"quote":"@Command(name = \"reportctl\")"}
+{"id":"reports/unit:reports/site:app-reportctl-decorator-component","path":"src/main/java/app/ReportCtl.java","lines":[10,10],"quote":"@Component"}
+{"id":"reports/unit:reports/site:app-reportctl-decorator-profile","path":"src/main/java/app/ReportCtl.java","lines":[11,11],"quote":"@Profile(\"cli\")"}
+{"id":"reports/unit:reports/site:app-reportctl-import-org-springframework-boot-commandlinerunner","path":"src/main/java/app/ReportCtl.java","lines":[3,3],"quote":"import org.springframework.boot.CommandLineRunner;"}
+{"id":"reports/unit:reports/site:app-reportctl-import-org-springframework-context-annotation-profile","path":"src/main/java/app/ReportCtl.java","lines":[4,4],"quote":"import org.springframework.context.annotation.Profile;"}
+{"id":"reports/unit:reports/site:app-reportctl-import-org-springframework-stereotype-component","path":"src/main/java/app/ReportCtl.java","lines":[5,5],"quote":"import org.springframework.stereotype.Component;"}
+{"id":"reports/unit:reports/site:app-reportctl-import-picocli-commandline","path":"src/main/java/app/ReportCtl.java","lines":[6,6],"quote":"import picocli.CommandLine;"}
+{"id":"reports/unit:reports/site:app-reportctl-import-picocli-commandline-command","path":"src/main/java/app/ReportCtl.java","lines":[7,7],"quote":"import picocli.CommandLine.Command;"}
+{"id":"reports/unit:reports/site:app-reportctl-import-picocli-commandline-parameters","path":"src/main/java/app/ReportCtl.java","lines":[8,8],"quote":"import picocli.CommandLine.Parameters;"}
+{"id":"reports/unit:reports/site:app-reportctl-init-write-receiver-this-queue","path":"src/main/java/app/ReportCtl.java","lines":[20,20],"quote":"        this.queue = queue;"}
+{"id":"reports/unit:reports/site:app-reportctl-init-write-receiver-this-reports","path":"src/main/java/app/ReportCtl.java","lines":[19,19],"quote":"        this.reports = reports;"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-queue-delay","path":"src/main/java/app/ReportCtl.java","lines":[41,41],"quote":"        queue.delay(reportId);"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-report-getstatus-0","path":"src/main/java/app/ReportCtl.java","lines":[35,35],"quote":"        if (report.getStatus() != ReportStatus.FAILED) {"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-report-getstatus-1","path":"src/main/java/app/ReportCtl.java","lines":[36,36],"quote":"            System.err.println(\"Error: report is \" + report.getStatus().name() + \", not FAILED\");"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-report-getstatus-name","path":"src/main/java/app/ReportCtl.java","lines":[36,36],"quote":"            System.err.println(\"Error: report is \" + report.getStatus().name() + \", not FAILED\");"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-report-setstatus","path":"src/main/java/app/ReportCtl.java","lines":[39,39],"quote":"        report.setStatus(ReportStatus.PENDING);"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-reports-findbyid","path":"src/main/java/app/ReportCtl.java","lines":[30,30],"quote":"        var report = reports.findById(reportId).orElse(null);"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-reports-findbyid-orelse","path":"src/main/java/app/ReportCtl.java","lines":[30,30],"quote":"        var report = reports.findById(reportId).orElse(null);"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-reports-save","path":"src/main/java/app/ReportCtl.java","lines":[40,40],"quote":"        reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-system-err-println-0","path":"src/main/java/app/ReportCtl.java","lines":[32,32],"quote":"            System.err.println(\"Error: no such report\");"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-system-err-println-1","path":"src/main/java/app/ReportCtl.java","lines":[36,36],"quote":"            System.err.println(\"Error: report is \" + report.getStatus().name() + \", not FAILED\");"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-callee-system-out-println","path":"src/main/java/app/ReportCtl.java","lines":[42,42],"quote":"        System.out.println(\"requeued\");"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-decorator-command","path":"src/main/java/app/ReportCtl.java","lines":[28,28],"quote":"    @Command(name = \"retry\")"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-decorator-parameters","path":"src/main/java/app/ReportCtl.java","lines":[29,29],"quote":"    int retry(@Parameters(paramLabel = \"REPORT_ID\") String reportId) {"}
+{"id":"reports/unit:reports/site:app-reportctl-retry-escape-report","path":"src/main/java/app/ReportCtl.java","lines":[40,40],"quote":"        reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reportctl-run-callee-commandline","path":"src/main/java/app/ReportCtl.java","lines":[25,25],"quote":"        System.exit(new CommandLine(this).execute(args));"}
+{"id":"reports/unit:reports/site:app-reportctl-run-callee-commandline-execute","path":"src/main/java/app/ReportCtl.java","lines":[25,25],"quote":"        System.exit(new CommandLine(this).execute(args));"}
+{"id":"reports/unit:reports/site:app-reportctl-run-callee-system-exit","path":"src/main/java/app/ReportCtl.java","lines":[25,25],"quote":"        System.exit(new CommandLine(this).execute(args));"}
+{"id":"reports/unit:reports/site:app-reportctl-run-decorator-override","path":"src/main/java/app/ReportCtl.java","lines":[23,23],"quote":"    @Override"}
+{"id":"reports/unit:reports/site:app-reportctl-run-escape-run","path":"src/main/java/app/ReportCtl.java","lines":[24,24],"quote":"    public void run(String... args) {"}
+{"id":"reports/unit:reports/site:app-reportctl-run-escape-this","path":"src/main/java/app/ReportCtl.java","lines":[25,25],"quote":"        System.exit(new CommandLine(this).execute(args));"}
+{"id":"reports/unit:reports/site:app-reportqueue-decorator-component","path":"src/main/java/app/ReportQueue.java","lines":[6,6],"quote":"@Component"}
+{"id":"reports/unit:reports/site:app-reportqueue-delay-callee-delay","path":"src/main/java/app/ReportQueue.java","lines":[18,18],"quote":"        delay(reportId, 0);"}
+{"id":"reports/unit:reports/site:app-reportqueue-delay-callee-message-getmessageproperties","path":"src/main/java/app/ReportQueue.java","lines":[23,23],"quote":"            message.getMessageProperties().setHeader(\"retries\", retries);"}
+{"id":"reports/unit:reports/site:app-reportqueue-delay-callee-message-getmessageproperties-setheader","path":"src/main/java/app/ReportQueue.java","lines":[23,23],"quote":"            message.getMessageProperties().setHeader(\"retries\", retries);"}
+{"id":"reports/unit:reports/site:app-reportqueue-delay-callee-rabbit-convertandsend","path":"src/main/java/app/ReportQueue.java","lines":[22,25],"quote":"        rabbit.convertAndSend(NAME, reportId, message -> {\n            message.getMessageProperties().setHeader(\"retries\", retries);\n            return message;\n        });"}
+{"id":"reports/unit:reports/site:app-reportqueue-delay-escape","path":"src/main/java/app/ReportQueue.java","lines":[22,25],"quote":"        rabbit.convertAndSend(NAME, reportId, message -> {\n            message.getMessageProperties().setHeader(\"retries\", retries);\n            return message;\n        });"}
+{"id":"reports/unit:reports/site:app-reportqueue-import-org-springframework-amqp-rabbit-core-rabbittemplate","path":"src/main/java/app/ReportQueue.java","lines":[3,3],"quote":"import org.springframework.amqp.rabbit.core.RabbitTemplate;"}
+{"id":"reports/unit:reports/site:app-reportqueue-import-org-springframework-stereotype-component","path":"src/main/java/app/ReportQueue.java","lines":[4,4],"quote":"import org.springframework.stereotype.Component;"}
+{"id":"reports/unit:reports/site:app-reportqueue-init-write-receiver-this-rabbit","path":"src/main/java/app/ReportQueue.java","lines":[14,14],"quote":"        this.rabbit = rabbit;"}
+{"id":"reports/unit:reports/site:app-reportrepository-base-class-jparepository","path":"src/main/java/app/ReportRepository.java","lines":[8,8],"quote":"public interface ReportRepository extends JpaRepository<Report, String> {"}
+{"id":"reports/unit:reports/site:app-reportrepository-import-java-time-instant","path":"src/main/java/app/ReportRepository.java","lines":[3,3],"quote":"import java.time.Instant;"}
+{"id":"reports/unit:reports/site:app-reportrepository-import-java-util-list","path":"src/main/java/app/ReportRepository.java","lines":[4,4],"quote":"import java.util.List;"}
+{"id":"reports/unit:reports/site:app-reportrepository-import-java-util-optional","path":"src/main/java/app/ReportRepository.java","lines":[5,5],"quote":"import java.util.Optional;"}
+{"id":"reports/unit:reports/site:app-reportrepository-import-org-springframework-data-jpa-repository-jparepository","path":"src/main/java/app/ReportRepository.java","lines":[6,6],"quote":"import org.springframework.data.jpa.repository.JpaRepository;"}
+{"id":"reports/unit:reports/site:app-reporttasks-callee-s3client-create","path":"src/main/java/app/ReportTasks.java","lines":[27,27],"quote":"    private final S3Client s3 = S3Client.create();"}
+{"id":"reports/unit:reports/site:app-reporttasks-decorator-component","path":"src/main/java/app/ReportTasks.java","lines":[18,18],"quote":"@Component"}
+{"id":"reports/unit:reports/site:app-reporttasks-decorator-profile","path":"src/main/java/app/ReportTasks.java","lines":[19,19],"quote":"@Profile(\"worker\")"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-batch-isempty","path":"src/main/java/app/ReportTasks.java","lines":[59,59],"quote":"            if (batch.isEmpty()) {"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-csv-append","path":"src/main/java/app/ReportTasks.java","lines":[63,63],"quote":"                csv.append(order.getId()).append(',').append(order.getCreated()).append(',')"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-csv-append-append","path":"src/main/java/app/ReportTasks.java","lines":[63,63],"quote":"                csv.append(order.getId()).append(',').append(order.getCreated()).append(',')"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-csv-append-append-append","path":"src/main/java/app/ReportTasks.java","lines":[63,63],"quote":"                csv.append(order.getId()).append(',').append(order.getCreated()).append(',')"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-csv-append-append-append-append","path":"src/main/java/app/ReportTasks.java","lines":[63,63],"quote":"                csv.append(order.getId()).append(',').append(order.getCreated()).append(',')"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-csv-append-append-append-append-append","path":"src/main/java/app/ReportTasks.java","lines":[63,64],"quote":"                csv.append(order.getId()).append(',').append(order.getCreated()).append(',')\n                   .append(order.getTotalCents()).append('\\n');"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-csv-append-append-append-append-append-append","path":"src/main/java/app/ReportTasks.java","lines":[63,64],"quote":"                csv.append(order.getId()).append(',').append(order.getCreated()).append(',')\n                   .append(order.getTotalCents()).append('\\n');"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-csv-tostring","path":"src/main/java/app/ReportTasks.java","lines":[71,71],"quote":"                         RequestBody.fromString(csv.toString()));"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-http-post","path":"src/main/java/app/ReportTasks.java","lines":[86,86],"quote":"            http.post().uri(webhookUrl).body(Map.of(\"id\", reportId, \"status\", \"DONE\"))"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-http-post-uri","path":"src/main/java/app/ReportTasks.java","lines":[86,86],"quote":"            http.post().uri(webhookUrl).body(Map.of(\"id\", reportId, \"status\", \"DONE\"))"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-http-post-uri-body","path":"src/main/java/app/ReportTasks.java","lines":[86,86],"quote":"            http.post().uri(webhookUrl).body(Map.of(\"id\", reportId, \"status\", \"DONE\"))"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-http-post-uri-body-retrieve","path":"src/main/java/app/ReportTasks.java","lines":[86,87],"quote":"            http.post().uri(webhookUrl).body(Map.of(\"id\", reportId, \"status\", \"DONE\"))\n                .retrieve().toBodilessEntity();"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-http-post-uri-body-retrieve-tobodilessentity","path":"src/main/java/app/ReportTasks.java","lines":[86,87],"quote":"            http.post().uri(webhookUrl).body(Map.of(\"id\", reportId, \"status\", \"DONE\"))\n                .retrieve().toBodilessEntity();"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-map-of","path":"src/main/java/app/ReportTasks.java","lines":[86,86],"quote":"            http.post().uri(webhookUrl).body(Map.of(\"id\", reportId, \"status\", \"DONE\"))"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-order-getcreated","path":"src/main/java/app/ReportTasks.java","lines":[63,63],"quote":"                csv.append(order.getId()).append(',').append(order.getCreated()).append(',')"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-order-getid","path":"src/main/java/app/ReportTasks.java","lines":[63,63],"quote":"                csv.append(order.getId()).append(',').append(order.getCreated()).append(',')"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-order-gettotalcents","path":"src/main/java/app/ReportTasks.java","lines":[64,64],"quote":"                   .append(order.getTotalCents()).append('\\n');"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-orders-findbycreatedbetweenorderbyid","path":"src/main/java/app/ReportTasks.java","lines":[57,58],"quote":"            var batch = orders.findByCreatedBetweenOrderById(report.getStart(), report.getEnd(),\n                                                             PageRequest.of(page, 1000));"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-pagerequest-of","path":"src/main/java/app/ReportTasks.java","lines":[58,58],"quote":"                                                             PageRequest.of(page, 1000));"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-putobjectrequest-builder","path":"src/main/java/app/ReportTasks.java","lines":[70,70],"quote":"            s3.putObject(PutObjectRequest.builder().bucket(bucket).key(key).build(),"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-putobjectrequest-builder-bucket","path":"src/main/java/app/ReportTasks.java","lines":[70,70],"quote":"            s3.putObject(PutObjectRequest.builder().bucket(bucket).key(key).build(),"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-putobjectrequest-builder-bucket-key","path":"src/main/java/app/ReportTasks.java","lines":[70,70],"quote":"            s3.putObject(PutObjectRequest.builder().bucket(bucket).key(key).build(),"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-putobjectrequest-builder-bucket-key-build","path":"src/main/java/app/ReportTasks.java","lines":[70,70],"quote":"            s3.putObject(PutObjectRequest.builder().bucket(bucket).key(key).build(),"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-queue-delay","path":"src/main/java/app/ReportTasks.java","lines":[76,76],"quote":"                queue.delay(reportId, retries + 1);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-getend","path":"src/main/java/app/ReportTasks.java","lines":[57,57],"quote":"            var batch = orders.findByCreatedBetweenOrderById(report.getStart(), report.getEnd(),"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-getid","path":"src/main/java/app/ReportTasks.java","lines":[68,68],"quote":"        var key = \"reports/\" + report.getId() + \".csv\";"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-getstart","path":"src/main/java/app/ReportTasks.java","lines":[57,57],"quote":"            var batch = orders.findByCreatedBetweenOrderById(report.getStart(), report.getEnd(),"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-getstatus-0","path":"src/main/java/app/ReportTasks.java","lines":[49,49],"quote":"        if (report == null || report.getStatus() != ReportStatus.PENDING) {"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-getstatus-1","path":"src/main/java/app/ReportTasks.java","lines":[75,75],"quote":"            if (report.getStatus() == ReportStatus.PENDING) {"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-setstatus-0","path":"src/main/java/app/ReportTasks.java","lines":[52,52],"quote":"        report.setStatus(ReportStatus.RUNNING);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-setstatus-1","path":"src/main/java/app/ReportTasks.java","lines":[73,73],"quote":"            report.setStatus(retries >= MAX_RETRIES ? ReportStatus.FAILED : ReportStatus.PENDING);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-setstatus-2","path":"src/main/java/app/ReportTasks.java","lines":[81,81],"quote":"        report.setStatus(ReportStatus.DONE);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-report-seturl","path":"src/main/java/app/ReportTasks.java","lines":[82,82],"quote":"        report.setUrl(\"s3://\" + bucket + \"/\" + key);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-reports-findbyid","path":"src/main/java/app/ReportTasks.java","lines":[48,48],"quote":"        var report = reports.findById(reportId).orElse(null);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-reports-findbyid-orelse","path":"src/main/java/app/ReportTasks.java","lines":[48,48],"quote":"        var report = reports.findById(reportId).orElse(null);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-reports-save-0","path":"src/main/java/app/ReportTasks.java","lines":[53,53],"quote":"        reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-reports-save-1","path":"src/main/java/app/ReportTasks.java","lines":[74,74],"quote":"            reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-reports-save-2","path":"src/main/java/app/ReportTasks.java","lines":[83,83],"quote":"        reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-requestbody-fromstring","path":"src/main/java/app/ReportTasks.java","lines":[71,71],"quote":"                         RequestBody.fromString(csv.toString()));"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-s3-putobject","path":"src/main/java/app/ReportTasks.java","lines":[70,71],"quote":"            s3.putObject(PutObjectRequest.builder().bucket(bucket).key(key).build(),\n                         RequestBody.fromString(csv.toString()));"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-stringbuilder","path":"src/main/java/app/ReportTasks.java","lines":[55,55],"quote":"        var csv = new StringBuilder();"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-callee-webhookurl-isempty","path":"src/main/java/app/ReportTasks.java","lines":[85,85],"quote":"        if (!webhookUrl.isEmpty()) {"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-decorator-header","path":"src/main/java/app/ReportTasks.java","lines":[47,47],"quote":"    public void generateReport(String reportId, @Header(\"retries\") int retries) {"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-decorator-rabbitlistener","path":"src/main/java/app/ReportTasks.java","lines":[46,46],"quote":"    @RabbitListener(queues = ReportQueue.NAME)"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-escape-report-0","path":"src/main/java/app/ReportTasks.java","lines":[53,53],"quote":"        reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-escape-report-1","path":"src/main/java/app/ReportTasks.java","lines":[74,74],"quote":"            reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-escape-report-2","path":"src/main/java/app/ReportTasks.java","lines":[83,83],"quote":"        reports.save(report);"}
+{"id":"reports/unit:reports/site:app-reporttasks-generatereport-handler-type-s3exception","path":"src/main/java/app/ReportTasks.java","lines":[72,72],"quote":"        } catch (S3Exception e) {"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-java-time-duration","path":"src/main/java/app/ReportTasks.java","lines":[3,3],"quote":"import java.time.Duration;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-java-util-map","path":"src/main/java/app/ReportTasks.java","lines":[4,4],"quote":"import java.util.Map;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-org-springframework-amqp-rabbit-annotation-rabbitlistener","path":"src/main/java/app/ReportTasks.java","lines":[5,5],"quote":"import org.springframework.amqp.rabbit.annotation.RabbitListener;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-org-springframework-beans-factory-annotation-value","path":"src/main/java/app/ReportTasks.java","lines":[6,6],"quote":"import org.springframework.beans.factory.annotation.Value;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-org-springframework-context-annotation-profile","path":"src/main/java/app/ReportTasks.java","lines":[7,7],"quote":"import org.springframework.context.annotation.Profile;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-org-springframework-data-domain-pagerequest","path":"src/main/java/app/ReportTasks.java","lines":[8,8],"quote":"import org.springframework.data.domain.PageRequest;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-org-springframework-http-client-simpleclienthttprequestfactory","path":"src/main/java/app/ReportTasks.java","lines":[9,9],"quote":"import org.springframework.http.client.SimpleClientHttpRequestFactory;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-org-springframework-messaging-handler-annotation-header","path":"src/main/java/app/ReportTasks.java","lines":[10,10],"quote":"import org.springframework.messaging.handler.annotation.Header;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-org-springframework-stereotype-component","path":"src/main/java/app/ReportTasks.java","lines":[11,11],"quote":"import org.springframework.stereotype.Component;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-org-springframework-web-client-restclient","path":"src/main/java/app/ReportTasks.java","lines":[12,12],"quote":"import org.springframework.web.client.RestClient;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-software-amazon-awssdk-core-sync-requestbody","path":"src/main/java/app/ReportTasks.java","lines":[13,13],"quote":"import software.amazon.awssdk.core.sync.RequestBody;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-software-amazon-awssdk-services-s3-model-putobjectrequest","path":"src/main/java/app/ReportTasks.java","lines":[15,15],"quote":"import software.amazon.awssdk.services.s3.model.PutObjectRequest;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-software-amazon-awssdk-services-s3-model-s3exception","path":"src/main/java/app/ReportTasks.java","lines":[16,16],"quote":"import software.amazon.awssdk.services.s3.model.S3Exception;"}
+{"id":"reports/unit:reports/site:app-reporttasks-import-software-amazon-awssdk-services-s3-s3client","path":"src/main/java/app/ReportTasks.java","lines":[14,14],"quote":"import software.amazon.awssdk.services.s3.S3Client;"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-callee-duration-ofseconds-0","path":"src/main/java/app/ReportTasks.java","lines":[41,41],"quote":"        requests.setConnectTimeout(Duration.ofSeconds(10));"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-callee-duration-ofseconds-1","path":"src/main/java/app/ReportTasks.java","lines":[42,42],"quote":"        requests.setReadTimeout(Duration.ofSeconds(10));"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-callee-requests-setconnecttimeout","path":"src/main/java/app/ReportTasks.java","lines":[41,41],"quote":"        requests.setConnectTimeout(Duration.ofSeconds(10));"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-callee-requests-setreadtimeout","path":"src/main/java/app/ReportTasks.java","lines":[42,42],"quote":"        requests.setReadTimeout(Duration.ofSeconds(10));"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-callee-restclient-builder","path":"src/main/java/app/ReportTasks.java","lines":[43,43],"quote":"        this.http = RestClient.builder().requestFactory(requests).build();"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-callee-restclient-builder-requestfactory","path":"src/main/java/app/ReportTasks.java","lines":[43,43],"quote":"        this.http = RestClient.builder().requestFactory(requests).build();"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-callee-restclient-builder-requestfactory-build","path":"src/main/java/app/ReportTasks.java","lines":[43,43],"quote":"        this.http = RestClient.builder().requestFactory(requests).build();"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-callee-simpleclienthttprequestfactory","path":"src/main/java/app/ReportTasks.java","lines":[40,40],"quote":"        var requests = new SimpleClientHttpRequestFactory();"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-decorator-value-0","path":"src/main/java/app/ReportTasks.java","lines":[33,33],"quote":"                       @Value(\"${reports.bucket}\") String bucket,"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-decorator-value-1","path":"src/main/java/app/ReportTasks.java","lines":[34,34],"quote":"                       @Value(\"${reports.webhook-url:}\") String webhookUrl) {"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-write-receiver-this-bucket","path":"src/main/java/app/ReportTasks.java","lines":[38,38],"quote":"        this.bucket = bucket;"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-write-receiver-this-http","path":"src/main/java/app/ReportTasks.java","lines":[43,43],"quote":"        this.http = RestClient.builder().requestFactory(requests).build();"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-write-receiver-this-orders","path":"src/main/java/app/ReportTasks.java","lines":[36,36],"quote":"        this.orders = orders;"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-write-receiver-this-queue","path":"src/main/java/app/ReportTasks.java","lines":[37,37],"quote":"        this.queue = queue;"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-write-receiver-this-reports","path":"src/main/java/app/ReportTasks.java","lines":[35,35],"quote":"        this.reports = reports;"}
+{"id":"reports/unit:reports/site:app-reporttasks-init-write-receiver-this-webhookurl","path":"src/main/java/app/ReportTasks.java","lines":[39,39],"quote":"        this.webhookUrl = webhookUrl;"}

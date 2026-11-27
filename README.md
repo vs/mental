@@ -66,6 +66,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) before your first commit.
 | [Guidelines](docs/guidelines/README.md) | Implementation rules per crate, and the testing playbook | you are about to write code |
 | [Milestone 1 plan](docs/plans/milestone-1-build-model.md) | The first implementation step: resolve a simple project | you want to know what is built first |
 | [`examples/report-jobs`](examples/report-jobs/) | The sample system used in every example, and the first target | you want to see the code being modeled |
+| [`examples/report-jobs-java`](examples/report-jobs-java/) | The same system in Java, with its own reference model ([plan](docs/plans/java-reference.md)) | you want the Java counterpart |
 
 Research reports:
 
