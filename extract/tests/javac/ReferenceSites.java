@@ -1,5 +1,5 @@
 // The reference sites of a Maven project's main sources, as javac answers
-// them: every site of the Java site walk (docs/plans/java-reference.md) with
+// them: every site of the Java site rules (docs/specification.md, 6.7) with
 // the element javac binds it to, written as the model's canonical site.jsonl
 // and the sites' lines of anchors.jsonl. tests/java_reference.rs runs it.
 //
